@@ -23,6 +23,7 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — Awards list: each row now shows the award name, the team (with avatar) on its own line, the full description (wraps, no more "...") and a label under every number (points, weeks on top, extra wins, wins lost, points against, won by, lost by). (Claude)
 - 2026-10-09 — **Trade grader v2** (Claude), from Jayson's feedback (who got what was unclear,
   points unlabeled, names splitting across lines, wanted a tracker for ongoing trades, a
   0–0 trade and a "too close to call" at 170–150 looked wrong). Server `tradeReport()` in

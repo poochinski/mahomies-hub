@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Awards rows: full descriptions and a unit label under each number. (Claude)
 - 2026-10-09 — Trade grader v2: who got what, points-started labels, per-week verdict scale, full breakdown sheet with weekly tracker, chart, team impact and insights. (Claude)
 - 2026-10-09 — "How it works" buttons + sheets explaining every stat, plus a How the app works list on the Me tab. (Claude)
 - 2026-10-09 — Header scrolls with the page (no longer pinned to the top). (Claude)

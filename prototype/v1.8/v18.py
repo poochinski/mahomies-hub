@@ -65,6 +65,27 @@ s=s[:a]+"""function me(){
 
 """+s[b:]
 rep("D.version+' test build · ","D.version+' · ")
+# AWARDS pass: full award rows with a unit under each number (Jayson 2026-10-09)
+a_="""<span class="aw-m"><b>'+esc(a.title)+'</b><span>'+esc(tnS(s,a.uid))+' · '+esc(a.note)+'</span></span><span class="aw-v num">'+esc(a.val)+'</span></button>'"""
+assert s.count(a_)==1
+s=s.replace(a_,"""<span class="aw-m"><b>'+esc(a.title)+'</b><span class="aw-tm">'+av(a.uid,18)+esc(tnS(s,a.uid))+'</span><span class="aw-note">'+esc(a.note)+'</span></span>'+awVal(a)+'</button>'""")
+s=s.replace("function awardsView(){","""var AW_UNIT={points:['points','points'],topb:['week on top','weeks on top'],rotb:['week at the bottom','weeks at the bottom'],lucky:['extra wins','extra wins'],unlucky:['wins lost','wins lost'],pa:['points against','points against'],high:['points','points'],blow:['won by','won by'],heart:['lost by','lost by']};
+function awVal(a){var v=String(a.val),u=AW_UNIT[a.key],n=parseFloat(v.replace(/[^0-9.\\-+]/g,''));
+  if(a.key==='topb'||a.key==='rotb')v=v.replace(/×/,'');
+  if(a.key==='blow'||a.key==='heart')v=v.replace(/^[+-]/,'');
+  if(a.key==='lucky'||a.key==='unlucky')v=v.replace(/^[+-]/,'');
+  var unit=u?(Math.abs(n)===1?u[0]:u[1]):'';
+  return '<span class="aw-vb"><span class="aw-v num">'+esc(v)+'</span>'+(unit?'<small>'+esc(unit)+'</small>':'')+'</span>'}
+function awardsView(){""",1)
+AW_CSS=""".aw-row{grid-template-columns:30px minmax(0,1fr) auto!important;align-items:center!important}
+.aw-m{display:grid;gap:2px;min-width:0}.aw-m b{font-size:15px;font-weight:600}
+.aw-m .aw-tm{display:flex;align-items:center;gap:6px;font:500 12.5px var(--sans,inherit);color:var(--ink);white-space:normal;overflow:visible}
+.aw-m .aw-tm .av{flex:0 0 auto}
+.aw-m .aw-note{font:11.5px var(--mono);color:var(--muted);white-space:normal;overflow:visible;line-height:1.4}
+.aw-vb{display:grid;justify-items:end;align-self:center;min-width:64px;text-align:right}
+.aw-vb small{font:500 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);max-width:84px;line-height:1.25;margin-top:2px}
+"""
+
 # TRADES pass: trade grader v2 (Jayson 2026-10-09)
 a_=s.index('function tradesHtml(d){'); b_=s.index('function draftHtml(d){')
 s=s[:a_]+open('v18_trades.js').read()+'\n'+s[b_:]
@@ -120,6 +141,7 @@ css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500
 .info-row{display:flex;justify-content:center}
 """
 css+=open('/home/claude/data/v18_trades.css').read()
+css+=AW_CSS
 # RENAME (Jayson 2026-10-09: no Banana Bets branding in this app)
 LOGO='<img class="mark" src="/brand-96.png" alt="" width="34" height="34">'
 a=s.index('<svg class="mark"'); b=s.index('</svg>',a)+6; s=s[:a]+LOGO+s[b:]

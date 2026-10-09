@@ -452,6 +452,13 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .imp-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);padding:2px 0}.imp-row b{color:var(--ink);font-family:var(--mono);font-size:12px}
 .ins{margin:6px 0 0 16px;display:grid;gap:6px;font-size:13px;line-height:1.5}
 .wkb-sub .up,.wkb-sub .dn{white-space:nowrap}
+.aw-row{grid-template-columns:30px minmax(0,1fr) auto!important;align-items:center!important}
+.aw-m{display:grid;gap:2px;min-width:0}.aw-m b{font-size:15px;font-weight:600}
+.aw-m .aw-tm{display:flex;align-items:center;gap:6px;font:500 12.5px var(--sans,inherit);color:var(--ink);white-space:normal;overflow:visible}
+.aw-m .aw-tm .av{flex:0 0 auto}
+.aw-m .aw-note{font:11.5px var(--mono);color:var(--muted);white-space:normal;overflow:visible;line-height:1.4}
+.aw-vb{display:grid;justify-items:end;align-self:center;min-width:64px;text-align:right}
+.aw-vb small{font:500 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);max-width:84px;line-height:1.25;margin-top:2px}
 </style>
 
 <header class="topbar">
@@ -671,6 +678,13 @@ function h2hView(){
   return h;
 }
 var AW_ICON={champ:'🏆',sacko:'🚽',points:'👑',topb:'🔥',rotb:'🧊',lucky:'🍀',unlucky:'🐍',pa:'🥊',high:'💥',blow:'🔨',heart:'💔'};
+var AW_UNIT={points:['points','points'],topb:['week on top','weeks on top'],rotb:['week at the bottom','weeks at the bottom'],lucky:['extra wins','extra wins'],unlucky:['wins lost','wins lost'],pa:['points against','points against'],high:['points','points'],blow:['won by','won by'],heart:['lost by','lost by']};
+function awVal(a){var v=String(a.val),u=AW_UNIT[a.key],n=parseFloat(v.replace(/[^0-9.\-+]/g,''));
+  if(a.key==='topb'||a.key==='rotb')v=v.replace(/×/,'');
+  if(a.key==='blow'||a.key==='heart')v=v.replace(/^[+-]/,'');
+  if(a.key==='lucky'||a.key==='unlucky')v=v.replace(/^[+-]/,'');
+  var unit=u?(Math.abs(n)===1?u[0]:u[1]):'';
+  return '<span class="aw-vb"><span class="aw-v num">'+esc(v)+'</span>'+(unit?'<small>'+esc(unit)+'</small>':'')+'</span>'}
 function awardsView(){
   var s=S.aws;var A=D.awards[s]||[];
   var h='<div class="seg seg4">'+ALLS().map(function(x){return '<button type="button" class="'+(x===s?'on':'')+'" data-aws="'+x+'">'+x+'</button>'}).join('')+'</div>';
@@ -679,7 +693,7 @@ function awardsView(){
   if(champ)h+='<div class="podium2"><button type="button" class="p2 gold" data-mgr="'+champ.uid+'"><span class="p2i">🏆</span>'+av(champ.uid,44)+'<b>'+esc(tnS(s,champ.uid))+'</b><small>Champion</small></button>'+(sacko?'<button type="button" class="p2 poo" data-mgr="'+sacko.uid+'"><span class="p2i">🚽</span>'+av(sacko.uid,44)+'<b>'+esc(tnS(s,sacko.uid))+'</b><small>Sacko</small></button>':'')+'</div>';
   else h+='<p class="sub">Leaders change every week until the season ends.</p>';
   h+='</section><section class="panel tight"><div class="rows">'+A.filter(function(a){return a.key!=='champ'&&a.key!=='sacko'}).map(function(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
-    return '<button type="button" class="row aw-row" '+(gx>=0?'data-game="'+gx+'"':'data-mgr="'+a.uid+'"')+'><span class="aw-ic">'+(AW_ICON[a.key]||'⭐')+'</span><span class="aw-m"><b>'+esc(a.title)+'</b><span>'+esc(tnS(s,a.uid))+' · '+esc(a.note)+'</span></span><span class="aw-v num">'+esc(a.val)+'</span></button>'}).join('')+'</div></section>';
+    return '<button type="button" class="row aw-row" '+(gx>=0?'data-game="'+gx+'"':'data-mgr="'+a.uid+'"')+'><span class="aw-ic">'+(AW_ICON[a.key]||'⭐')+'</span><span class="aw-m"><b>'+esc(a.title)+'</b><span class="aw-tm">'+av(a.uid,18)+esc(tnS(s,a.uid))+'</span><span class="aw-note">'+esc(a.note)+'</span></span>'+awVal(a)+'</button>'}).join('')+'</div></section>';
   h+='<button type="button" class="share-btn wide" data-share-aw="'+s+'">Share '+s+' awards</button>';
   return h;
 }
