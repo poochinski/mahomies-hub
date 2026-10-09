@@ -22,7 +22,7 @@ export default function Home() {
           {league ? `${league.season} SEASON · WEEK ${state.nfl.week}` : 'LOADING LEAGUE…'}
         </div>
         <h1>{league?.name ?? "Rollin' with Mahomies"}</h1>
-        <p className="hero-copy">League HQ is under construction. History, records and the Banana Book are on the way.</p>
+        <p className="hero-copy">League HQ is under construction. History, records and the Sportsbook are on the way.</p>
 
         {error && <div className="error-banner">Couldn't load league data: {error}</div>}
 

@@ -1,5 +1,5 @@
--- Banana Book tables. Safe to run on every start (IF NOT EXISTS everywhere).
--- Play money only: Banana Bucks have no cash value.
+-- Sportsbook tables. Safe to run on every start (IF NOT EXISTS everywhere).
+-- Play money only: Mahomie Bucks have no cash value.
 
 CREATE TABLE IF NOT EXISTS app_users (
   user_id       TEXT PRIMARY KEY,            -- Sleeper user id
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS bet_legs (
 CREATE INDEX IF NOT EXISTS legs_bet ON bet_legs(bet_id);
 CREATE INDEX IF NOT EXISTS legs_line ON bet_legs(line_id);
 
--- Every Banana Buck that moves. A bankroll is always SUM(amount), never stored.
+-- Every Mahomie Buck that moves. A bankroll is always SUM(amount), never stored.
 CREATE TABLE IF NOT EXISTS bankroll_ledger (
   id          BIGSERIAL PRIMARY KEY,
   user_id     TEXT NOT NULL REFERENCES app_users(user_id),

@@ -1,15 +1,13 @@
 # HANDOFF — where we left off
 
 **Last updated:** 2026-10-09 12:10 (Pacific) · **AI:** Claude
-**Current phase:** v1.8 — Banana Book is live in the app (login, bets, parlays, leaders, commish tools); Week 6 lines post Tue Oct 13 6 AM; next = specials + futures
-**Last commit:** "v1.8: Banana Book screens wired to the real Book"
+**Current phase:** v1.8 — Sportsbook is live in the app (login, bets, parlays, leaders, commish tools); Week 6 lines post Tue Oct 13 6 AM; next = specials + futures
+**Last commit:** "Remove all banana branding: Sportsbook, Mahomie Bucks, On Fire / Ice Cold, new football icon"
 **App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v1.7; old builds at /test/v1.6, /test/v1.5, /test/v1.0)
 
 ## What we're working toward right now
-Jayson wants to perfect the UI/UX on his phone first, using a test build with
-real league data, then bring it to Railway. Two looks are being compared:
-"Night" (Banana Bets layout + the neon night-street palette from his dinner
-plan page — currently favored) and the original light Banana Bets look.
+The app is live on Railway with real Sleeper data and the Sportsbook. Look = "Night"
+(neon night-street palette). **No Banana Bets branding anywhere** — this is its own app.
 VERSIONS: **v1.8 is current** (source prototype/v1.8/: app18.template.html is built by v18.py from the v1.7 template + v18_book.js; output prototype/dist/night.html). v1.7 saved at prototype/v1.7/night.html (/test/v1.7). v1.6 saved at prototype/v1.6/night.html (/test/v1.6) and branch release-v1.6. v1.5 saved at prototype/v1.5/night.html (/test/v1.5) and branch release-v1.5. Older: v1.5 (night theme only). v1.0 is saved in prototype/v1.0/
 and on GitHub branch `release-v1.0` (git tags are blocked from Claude's push) — go back to it if v1.5 ever needs to be undone.
 On Railway: every address = v1.5; /test/v1.0 and /test/v1.0/light = the old builds.
@@ -25,6 +23,13 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Banana branding removed** (Claude), Jayson: "this isn't the Banana Bets app".
+  Banana Book → **Mahomie's Sportsbook** ("the Book"), Banana Bucks → **Mahomie Bucks** (💵),
+  Top Banana / Rotten Banana → **🔥 On Fire / 🧊 Ice Cold** (awards, Home "Last week" cells
+  now say High score / Low score, all-time table), Banana Book Champion → Sportsbook Champion,
+  new **neon football app icon + header logo** (replaces the banana). CSS color names are
+  now --gold (same yellow). Server text, manifest, BIBLE §4 (rewritten for the Night look)
+  updated. Old saved builds (/test/v1.0–v1.7) still show the old names; left as history.
 - 2026-10-09 — **v1.8: Book screens** (Claude). Book tab now talks to `/api/book`:
   log in (pick team → PIN pad; first time sets + confirms the PIN), lines with
   lock countdowns + live scores, tap prices to build a slip (1 pick = straight,
@@ -35,7 +40,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
   PIN, Book log). Old practice bets saved on the phone are gone. Click-tested
   in a phone-size browser against local Postgres (screenshots looked right,
   no page errors, no sideways scroll).
-- 2026-10-09 — **Banana Book backend** (Claude). New folder `server/book/`:
+- 2026-10-09 — **Sportsbook backend** (Claude). New folder `server/book/`:
   `schema.sql` (tables, created automatically on every start), `engine.js` (odds
   math + grading, pure functions), `kickoffs.js` (ESPN kickoff times, Pacific
   time helpers), `data.js` (what the Book reads from Sleeper), `book.js` (logins,
@@ -51,7 +56,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 - 2026-10-09 — **v1.7** (Claude), after Jayson said v1.6 was still crowded and had
   too much sideways swiping: Home is now ~1 screen — hero with "Your game"
   (your live score, opponent, win %), "This week" 2-column live score grid,
-  "Last week" 3 stat cells (Top Banana / Rotten / Top player) with a
+  "Last week" 3 stat cells (High score / Low score / Top player) with a
   "Recap & scores" sheet, and a 3×3 Explore grid (Awards, Playoff odds, Power
   rankings, Record book, History, Rivals, Weekly results, This week in
   history, Lab). Removed all Home carousels. Awards = season segmented control +
@@ -132,7 +137,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 A. Jayson: confirm `/api/health` shows the database connected, log in to the Book
    as The Water Boyz to claim the commish team + PIN, and tell the league to log in.
    Tue Oct 13 6 AM: check Week 6 lines posted (if not: Me → Book controls → Post lines).
-B. Weekly specials (Top Banana / Rotten Banana / low-score O-U), priced by simulation.
+B. Weekly specials (On Fire = top score of the week / Ice Cold = lowest / low-score O-U), priced by simulation.
 C. Futures (Champion / Sacko) repriced Tuesdays.
 D. Playoff weeks (15–17) lines: only bracket games; not built yet (Book stops after Wk 14 for now).
 E. Verify Lab endpoints with real data on Railway.
@@ -140,7 +145,7 @@ E. Verify Lab endpoints with real data on Railway.
 ## Decisions made (and why)
 - **Book details decided while building (Claude, 2026-10-09):** you can bet the over on your own game but not the under; bets can be cancelled until their game locks; 5 wrong PINs = 15-minute lock; phones stay logged in 180 days; parlays pay at most 10,000 back; lines keep the v1.5 projection formula (BIBLE §7) instead of Sleeper player projections; if ESPN kickoff times can't be read, betting pauses rather than guessing.
 - **Lock rule detail:** a game's lock time = earliest kickoff among both lineups' current starters, rechecked every few minutes; once locked it never reopens (Sleeper locks a player once his game starts, so the time can't move earlier after that).
-- **Banana Book rules (Jayson, 2026-10-09):** per-game lock (first starter's kickoff), 1,000 Bucks once per season with NO allowance, launch with spread/ML/total + weekly specials + parlays + futures, team + 4-digit PIN login. Full rules in BIBLE §7. Book opens for real in Week 6.
+- **Sportsbook rules (Jayson, 2026-10-09):** per-game lock (first starter's kickoff), 1,000 Bucks once per season with NO allowance, launch with spread/ML/total + weekly specials + parlays + futures, team + 4-digit PIN login. Full rules in BIBLE §7. Book opens for real in Week 6.
 - Former managers (rpkid426, nstynate85) stay in every list and stat, tagged "Former" wherever shown — Jayson's call (he didn't want them hidden or separated).
 - App name: Mahomie's Hub, repo `poochinski/mahomies-hub` — Jayson's pick.
 - No one-feature-per-session limit; every push carries an updated HANDOFF — so
@@ -153,7 +158,7 @@ E. Verify Lab endpoints with real data on Railway.
 ## What we talked about / ideas parked
 - Avatars: real Sleeper avatars only load on Railway (test pages block outside images).
 - Book lines early in season are wide (e.g. -35.5); may tighten.
-- Banana Bets theme, Banana Bucks and the Banana Book name carry over.
+- No banana names anywhere (Jayson, 2026-10-09).
 - Start/Sit helper may stay admin-only.
 
 ## Testing notes
@@ -172,5 +177,6 @@ E. Verify Lab endpoints with real data on Railway.
 - Player names in the snapshot only for 16 players; full names come from /api/game on Railway.
 
 ## Files changed in the latest push
-- New: prototype/v1.8/ (app18.template.html, v18_book.js, v18.py), prototype/v1.7/night.html (saved build)
-- Changed: prototype/dist/night.html (v1.8), server/index.js (/test/v1.7), server/hub/build.js (version 1.8), HANDOFF.md, CHANGELOG.md
+- prototype/v1.8/ (v18_book.js, v18.py rename pass, app18.template.html, logo.svg), prototype/dist/night.html
+- public/ icons + favicon.svg (football), server text (build.js award titles, index.js manifest, book comments)
+- src/ (unused React shell) names, index.html, BIBLE.md, README.md, HANDOFF.md, CHANGELOG.md

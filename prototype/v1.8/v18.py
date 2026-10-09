@@ -90,10 +90,31 @@ css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500
 .fld input{min-height:46px;border:1px solid var(--line-2);border-radius:9px;background:var(--ground-2);color:var(--ink);padding:0 12px;font-family:inherit;font-size:16px;width:100%}
 .chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 """
+# RENAME (Jayson 2026-10-09: no Banana Bets branding in this app)
+LOGO=open('/home/claude/data/logo.svg').read().replace('<svg ','<svg class="mark" aria-hidden="true" ',1)
+a=s.index('<svg class="mark"'); b=s.index('</svg>',a)+6; s=s[:a]+LOGO+s[b:]
+for a_,b_ in [('/* Layout: same Banana Bets shell (sticky brand bar','/* Layout: sticky brand bar'),('banana yellow lead','gold lead'),
+  ('aria-label="Open the Banana Book"><span>🍌</span>','aria-label="Open the Sportsbook"><span>💵</span>'),
+  ("<small>🍌 Top Banana</small><strong class=\"num\">","<small>🔥 High score</small><strong class=\"num\">"),("<small>🤢 Rotten</small><strong class=\"num\">'+f1(rot.p)","<small>🧊 Low score</small><strong class=\"num\">'+f1(rot.p)"),
+  ("<th>🍌</th><th>🤢</th>","<th>🔥</th><th>🧊</th>"),
+  ("🍌 Top Banana = weeks as the league\\'s top scorer. 🤢 Rotten Banana = weeks as the lowest.","🔥 On Fire = weeks as the league\\'s top scorer. 🧊 Ice Cold = weeks as the lowest."),
+  ("topb:'🍌',rotb:'🤢'","topb:'🔥',rotb:'🧊'"),
+  ("<small>🍌 Top Banana</small><strong>'+a.tb","<small>🔥 On Fire</small><strong>'+a.tb"),("<small>🤢 Rotten</small><strong>'+a.rb","<small>🧊 Ice Cold</small><strong>'+a.rb"),
+  ('Win chance from the Banana Book','Win chance from the Sportsbook'),('<div class="kicker">Banana Book</div><h2>The line</h2>','<div class="kicker">Sportsbook</div><h2>The line</h2>'),
+  ("'Top Banana: '","'On Fire: '"),('Logged in to the Banana Book',"Logged in to the Sportsbook")]:
+    assert s.count(a_)>=1,a_
+    s=s.replace(a_,b_)
+s=s.replace('--banana-2','--gold-2').replace('--banana-ink','--gold-ink').replace('--banana','--gold')
+left=[l.strip()[:120] for l in s.split('\n') if re.search('anana|🍌',l)]
+assert not left,left
 i=s.index("</style>")
-s=s[:i]+css+s[i:]
+s=s[:i]+css.replace('--banana-ink','--gold-ink').replace('--banana','--gold')+s[i:]
 open('app18.template.html','w').write(s)
-d=json.load(open('app17.json'));d['version']='1.8';json.dump(d,open('app18.json','w'))
+d=json.load(open('app17.json'));d['version']='1.8'
+for A in d['awards'].values():
+    for x in A:
+        if x['key']=='topb':x['title']='On Fire'
+        if x['key']=='rotb':x['title']='Ice Cold';json.dump(d,open('app18.json','w'))
 data=json.dumps(d)
 page=s.replace('__DATA__',data.replace('</','<\\/'))
 open('/home/claude/mahomies-hub-v18.html','w').write(page)

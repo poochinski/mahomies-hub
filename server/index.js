@@ -1,4 +1,4 @@
-// Mahomie's Hub server: serves /api (incl. the Banana Book) and the app page (v1.8 build).
+// Mahomie's Hub server: serves /api (incl. the Sportsbook) and the app page (v1.8 build).
 import dns from 'node:dns';
 import express from 'express';
 import path from 'node:path';
@@ -52,7 +52,7 @@ app.get(/^\/workbox-.*\.js$/, (_req, res) => res.set('Cache-Control', 'no-store'
 app.get('/manifest.webmanifest', (_req, res) => {
   res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({
     name: "Mahomie's Hub", short_name: "Mahomie's Hub",
-    description: "Rollin' with Mahomies league HQ: history, stats and the Banana Book.",
+    description: "Rollin' with Mahomies league HQ: history, stats and the Sportsbook.",
     start_url: '/', scope: '/', display: 'standalone', orientation: 'portrait',
     theme_color: '#130f1d', background_color: '#130f1d',
     icons: [
@@ -81,7 +81,7 @@ app.get('*', (_req, res) => {
 
 app.listen(PORT, () => console.log(`Mahomie's Hub running on port ${PORT}`));
 
-// Banana Book: create tables if needed, then run the clock job every 10 minutes
+// Sportsbook: create tables if needed, then run the clock job every 10 minutes
 // (posts lines Tuesday 6 AM, keeps game locks current, settles Wednesday 3 AM).
 if (pool) {
   initBook().then(() => console.log('[book] database ready')).catch((e) => console.error('[book] database not ready yet:', e.message));

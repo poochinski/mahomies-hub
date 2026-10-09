@@ -1,6 +1,6 @@
 # Mahomie's Hub
 
-League HQ for **Rollin' with Mahomies**: league history, record book, season stats and the Banana Book.
+League HQ for **Rollin' with Mahomies**: league history, record book, season stats and the Sportsbook (Mahomie Bucks, play money only).
 
 - **Rules, design and plan:** [BIBLE.md](BIBLE.md)
 - **Where we left off:** [HANDOFF.md](HANDOFF.md)

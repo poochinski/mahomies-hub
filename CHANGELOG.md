@@ -2,8 +2,9 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Removed all banana branding: Mahomie's Sportsbook, Mahomie Bucks 💵, On Fire / Ice Cold, new football icon. (Claude)
 - 2026-10-09 — **v1.8**: Book tab wired to the real Book: PIN login, live lines + lock countdowns, straight bets + parlays, My bets, Leaders + feed, commish Book controls. v1.7 kept at /test/v1.7. (Claude)
-- 2026-10-09 — **Banana Book backend**: tables, team + PIN login, 1,000-Buck season grant, frozen Tuesday lines, per-game locks from ESPN kickoffs, straight bets + parlays, cancel, Wednesday settlement, leaderboard, feed, commish tools. (Claude)
+- 2026-10-09 — **Sportsbook backend**: tables, team + PIN login, 1,000-Buck season grant, frozen Tuesday lines, per-game locks from ESPN kickoffs, straight bets + parlays, cancel, Wednesday settlement, leaderboard, feed, commish tools. (Claude)
 - 2026-10-09 — **v1.7**: one-screen Home (Your game, live grid, Last week, Explore 3×3), compact Awards, record picker, no sideways rows. v1.6 kept at /test/v1.6. (Claude)
 - 2026-10-09 — **v1.6**: swipe cards, Explore tiles, League tile menu, new Awards page, show-more lists. v1.5 kept at /test/v1.5 and branch release-v1.5. (Claude)
 - 2026-10-09 — Bye-week record scores open a Playoff bye card with lineup. (Claude)

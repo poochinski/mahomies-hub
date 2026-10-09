@@ -1,4 +1,4 @@
-// Banana Book math: projections, lines, odds, payouts and grading.
+// Sportsbook math: projections, lines, odds, payouts and grading.
 // Pure functions only (no database, no network) so they are easy to test.
 
 export const HOLD = 0.045; // 4.5% book margin on moneylines

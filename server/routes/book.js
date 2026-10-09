@@ -1,4 +1,4 @@
-// /api/book/* — the Banana Book. Phones send "Authorization: Bearer <token>" after logging in.
+// /api/book/* — the Sportsbook. Phones send "Authorization: Bearer <token>" after logging in.
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { COMMISH_USER_ID } from '../config.js';

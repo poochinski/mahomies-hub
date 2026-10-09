@@ -1,5 +1,5 @@
 // Builds the whole app's data straight from Sleeper: every season, game,
-// standing, record, award, playoff odds and Banana Book line.
+// standing, record, award, playoff odds and Sportsbook line.
 // Same shape as prototype/data/app15.json, so the page can swap it in.
 import { sleeper, leagueChain, getPlayers } from '../sleeper/client.js';
 
@@ -274,7 +274,7 @@ export async function buildHub(leagueId, me) {
   const twMap = {};
   for (const t of tw) { twMap[`${t.s}|${t.w}|${t.uid}`] = [t.p, t.pid, t.pp]; const n = pname(t.pid); if (n && !/defense$/.test(n)) names[t.pid] = n; }
 
-  // ---------- Banana Book ----------
+  // ---------- Sportsbook ----------
   const prev = SE.length > 1 ? SE[SE.length - 2] : null;
   const regScores = (u, s) => scored.filter((t) => t.uid === u && t.s === s && t.w < P_of[s]).map((t) => t.p);
   const sdOf = (u) => { const sc = [...(prev ? regScores(u, prev.s) : []), ...regScores(u, CUR)]; const s = sc.length > 3 ? pstdev(sc) : 24; const n = sc.length; return Math.sqrt((n * s * s + 6 * 24 * 24) / (n + 6)); };
@@ -342,8 +342,8 @@ export async function buildHub(leagueId, me) {
     if (places[x.s]) { add('champ', 'Champion', places[x.s].champ, '🏆', 'Won the title'); if (places[x.s].sacko) add('sacko', 'Sacko', places[x.s].sacko, '🚽', 'Won the Toilet Bowl, lost the season'); }
     const best = (o) => Object.entries(o).sort((a, b) => b[1] - a[1])[0];
     let t = [...stn].sort((a, b) => b.pf - a.pf)[0]; add('points', 'Points King', t.uid, t.pf.toFixed(1), 'Most points in the regular season');
-    let e = best(hi); if (e) add('topb', 'Top Banana', e[0], `${e[1]}×`, 'Most weeks as the league high scorer');
-    e = best(lo); if (e) add('rotb', 'Rotten Banana', e[0], `${e[1]}×`, 'Most weeks as the league low scorer');
+    let e = best(hi); if (e) add('topb', 'On Fire', e[0], `${e[1]}×`, 'Most weeks as the league high scorer');
+    e = best(lo); if (e) add('rotb', 'Ice Cold', e[0], `${e[1]}×`, 'Most weeks as the league low scorer');
     t = [...stn].sort((a, b) => b.luck - a.luck)[0]; add('lucky', 'Horseshoe', t.uid, `+${t.luck.toFixed(1)}`, 'Luckiest: more wins than the points deserved');
     t = [...stn].sort((a, b) => a.luck - b.luck)[0]; add('unlucky', 'Snakebitten', t.uid, t.luck.toFixed(1), 'Unluckiest: fewer wins than the points deserved');
     t = [...stn].sort((a, b) => b.pa - a.pa)[0]; add('pa', 'Punching Bag', t.uid, t.pa.toFixed(1), 'Most points scored against');

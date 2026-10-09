@@ -27,6 +27,6 @@ export const MeIcon = () => (
   <svg {...base}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
 );
 
-export const BananaMark = ({ size = 34 }) => (
-  <img src="/favicon.svg" width={size} height={size} alt="" className="banana-mark" />
+export const HubMark = ({ size = 34 }) => (
+  <img src="/favicon.svg" width={size} height={size} alt="" className="hub-mark" />
 );

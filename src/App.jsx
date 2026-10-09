@@ -2,7 +2,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
-import { BananaMark, BookIcon, HomeIcon, LeagueIcon, MeIcon, RecordsIcon } from './components/Icons.jsx';
+import { HubMark, BookIcon, HomeIcon, LeagueIcon, MeIcon, RecordsIcon } from './components/Icons.jsx';
 
 const TABS = [
   { to: '/', label: 'Home', icon: HomeIcon, end: true },
@@ -15,7 +15,7 @@ const TABS = [
 function Brand() {
   return (
     <div className="brand">
-      <BananaMark size={40} />
+      <HubMark size={40} />
       <div>
         <div className="brand-name">
           MAHOMIE'S <strong>HUB</strong>
@@ -58,7 +58,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/history" element={<ComingSoon title="League History" phase={2} blurb="Every season since 2023: champions, Sackos, all-time standings and trophy cases." />} />
             <Route path="/records" element={<ComingSoon title="Record Book" phase={2} blurb="Highs, lows, blowouts and best player games, updated every week." />} />
-            <Route path="/book" element={<ComingSoon title="The Banana Book" phase={4} blurb="Moneyline, spread and over/under on every matchup, bet with Banana Bucks." />} />
+            <Route path="/book" element={<ComingSoon title="The Sportsbook" phase={4} blurb="Moneyline, spread and over/under on every matchup, bet with Mahomie Bucks." />} />
             <Route path="/me" element={<ComingSoon title="My Team" phase={2} blurb="Your career stats, trophy case, bets and bankroll." />} />
             <Route path="*" element={<ComingSoon title="Page not found" blurb="That page doesn't exist. Use the tabs to get back." />} />
           </Routes>

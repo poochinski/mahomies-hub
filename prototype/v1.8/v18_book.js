@@ -1,4 +1,4 @@
-/* ---------- BANANA BOOK (live, v1.8): talks to /api/book ---------- */
+/* ---------- SPORTSBOOK (live, v1.8): talks to /api/book ---------- */
 var BK={on:null,status:null,wk:null,me:null,lb:null,feed:null,teams:null,err:null};
 var AUTH=store('auth')||null;
 function api(path,opt){opt=opt||{};var h={accept:'application/json'};if(opt.body)h['content-type']='application/json';if(AUTH&&AUTH.token)h.authorization='Bearer '+AUTH.token;
@@ -41,14 +41,14 @@ function sideRowB(l,s){var u=s==='a'?l.a:l.b,sp=s==='a'?-l.spread:l.spread,ml=s=
   return '<div class="mu-t">'+who(u,(sc!=null&&isLk(l)?f2(sc)+' pts · ':'')+'proj '+f1(s==='a'?l.proj_a:l.proj_b),30)+obk(l,'spread',s,spr(sp),l.spread_price,sp<0)+obk(l,'ml',s,odds(ml),null,sp<0)+'</div>'}
 function bookHero(){
   if(AUTH&&BK.me){var open=BK.me.bets.filter(function(b){return b.status==='open'});
-    return '<section class="hero bk-hero"><div class="eyebrow">The Banana Book · '+esc(team(BK.me.user_id))+'</div><div class="bank">🍌 '+money2(BK.me.balance)+'</div><p class="sub" style="margin-top:6px">Banana Bucks to bet · '+open.length+' open bet'+(open.length===1?'':'s')+(open.length?' ('+money2(BK.me.in_play)+' in play)':'')+'</p></section>'}
-  return '<section class="hero bk-hero"><div class="eyebrow">The Banana Book</div><h1 style="margin-top:6px">Bet with Banana Bucks</h1><p class="sub">Every manager gets '+money(BS().grant)+' Bucks for the season. No refills.</p>'+
+    return '<section class="hero bk-hero"><div class="eyebrow">Mahomie\'s Sportsbook · '+esc(team(BK.me.user_id))+'</div><div class="bank">💵 '+money2(BK.me.balance)+'</div><p class="sub" style="margin-top:6px">Mahomie Bucks to bet · '+open.length+' open bet'+(open.length===1?'':'s')+(open.length?' ('+money2(BK.me.in_play)+' in play)':'')+'</p></section>'}
+  return '<section class="hero bk-hero"><div class="eyebrow">Mahomie\'s Sportsbook</div><h1 style="margin-top:6px">Bet with Mahomie Bucks</h1><p class="sub">Every manager gets '+money(BS().grant)+' Bucks for the season. No refills.</p>'+
    (BK.on?'<button type="button" class="cta" data-login="1" style="margin-top:12px">Log in to bet</button>':'')+'</section>'}
-function bookOff(){return '<section class="panel"><div class="ph"><div><div class="kicker">Banana Book</div><h2>'+(LIVE?'The Book is offline':'Open the live app')+'</h2></div></div><p class="muted" style="font-size:13px;line-height:1.5">'+
+function bookOff(){return '<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>'+(LIVE?'The Book is offline':'Open the live app')+'</h2></div></div><p class="muted" style="font-size:13px;line-height:1.5">'+
   (LIVE?esc(BK.err||'The Book couldn\'t load.')+' Try again in a minute.':'Betting only works in the live app on Railway.')+'</p>'+(LIVE?'<button type="button" class="ghost" data-bkreload="1" style="margin-top:10px">Try again</button>':'')+'</section>'}
 function betCard(b,mine){var lk=b.legs.some(function(g){return g.locked});
   var st=b.status==='open'?(lk?'<span class="st pending">Live</span>':'<span class="st pending">Open</span>'):'<span class="st s-'+b.status+'">'+b.status+'</span>';
-  return '<div class="bet"><div>'+(mine?'':'<b style="font-size:12.5px;color:var(--banana)">'+esc(team(b.user_id))+'</b>')+
+  return '<div class="bet"><div>'+(mine?'':'<b style="font-size:12.5px;color:var(--gold)">'+esc(team(b.user_id))+'</b>')+
    b.legs.map(function(g){return '<b style="display:block">'+(b.legs.length>1?'<i class="lg lg-'+g.result+'"></i>':'')+esc(g.label)+'</b>'}).join('')+
    '<span style="display:block">'+(b.kind==='parlay'?b.legs.length+'-pick parlay · ':'')+odds(b.odds)+' · '+money2(b.stake)+(b.status==='won'?' → won '+money2(b.payout-b.stake):b.status==='lost'?' · lost':b.status==='push'||b.status==='void'?' · stake back':' to win '+money2(b.to_win))+' · Wk '+b.week+'</span></div>'+
    '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">'+st+(mine&&b.status==='open'&&!lk?'<button class="x" type="button" data-bcancel="'+b.id+'">Cancel</button>':'')+'</div></div>'}
@@ -59,7 +59,7 @@ function book(){
   if(S.bseg==='lines'){
     var W=BK.wk;
     if(!W||!W.week||!W.lines.length){var nx=BK.status&&BK.status.next;
-      h+='<section class="panel"><div class="ph"><div><div class="kicker">Week '+(nx?nx.week:D.league.week)+'</div><h2>Lines aren\'t up yet</h2></div></div><p class="muted" style="font-size:13px;line-height:1.5">'+(nx&&nx.posts_label?'They post <b style="color:var(--banana)">'+esc(nx.posts_label)+'</b> (Pacific) and stay frozen all week.':'They post Tuesday at 6 AM Pacific.')+' Each game locks when the first starter in either lineup kicks off.</p></section>';
+      h+='<section class="panel"><div class="ph"><div><div class="kicker">Week '+(nx?nx.week:D.league.week)+'</div><h2>Lines aren\'t up yet</h2></div></div><p class="muted" style="font-size:13px;line-height:1.5">'+(nx&&nx.posts_label?'They post <b style="color:var(--gold)">'+esc(nx.posts_label)+'</b> (Pacific) and stay frozen all week.':'They post Tuesday at 6 AM Pacific.')+' Each game locks when the first starter in either lineup kicks off.</p></section>';
     } else {
       var settled=!!W.settled_at;
       h+='<div class="bk-sub"><span>Week '+W.week+(settled?' · settled':W.settle_at?' · settles '+whenTxt(W.settle_at):'')+'</span><span>Spread · Money</span></div>';
@@ -83,7 +83,7 @@ function book(){
   if(S.bseg==='leaders'){
     var lb=BK.lb||[];
     h+='<section class="panel"><div class="ph"><div><div class="kicker">Bucks + open bets</div><h2>Leaderboard</h2></div></div><div class="rows">'+
-     lb.map(function(x){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(x.rank===1&&x.joined?' gold':'')+'">'+x.rank+'</span>'+who(x.user_id,x.joined?x.record+(x.in_play?' · '+money(x.in_play)+' in play':''):'Hasn\'t logged in yet',30)+'<span class="val">🍌 '+money(x.bankroll)+'</span></div>'}).join('')+'</div></section>';
+     lb.map(function(x){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(x.rank===1&&x.joined?' gold':'')+'">'+x.rank+'</span>'+who(x.user_id,x.joined?x.record+(x.in_play?' · '+money(x.in_play)+' in play':''):'Hasn\'t logged in yet',30)+'<span class="val">💵 '+money(x.bankroll)+'</span></div>'}).join('')+'</div></section>';
     var fd=BK.feed||[];
     h+='<section class="panel"><div class="ph"><div><div class="kicker">Who\'s on what</div><h2>Bet feed</h2></div></div>'+(fd.length?'<div>'+fd.map(function(b){return betCard(b,false)}).join('')+'</div>':'<p class="muted">Bets show up here as people place them.</p>')+'</section>';
   }
@@ -92,8 +92,8 @@ function book(){
   return h+foot();
 }
 function bookRules(){var s=BS(),bt=D.backtest;
-  return '<section class="panel"><div class="ph"><div><div class="kicker">House rules</div><h2>Banana Bucks only</h2></div></div><div class="rows">'+
-   [['Bankroll',money(s.grant)+' Bucks once per season. No weekly refills: go broke and you\'re done until next year. The bankroll leader wins Banana Book Champion.'],
+  return '<section class="panel"><div class="ph"><div><div class="kicker">House rules</div><h2>Mahomie Bucks only</h2></div></div><div class="rows">'+
+   [['Bankroll',money(s.grant)+' Bucks once per season. No weekly refills: go broke and you\'re done until next year. The bankroll leader wins Sportsbook Champion.'],
     ['Bets',s.min_bet+' to '+s.max_bet+' Bucks each. Spread and total pay -110. Moneyline odds come from each team\'s win chance plus a 4.5% house edge.'],
     ['Parlays','2 to '+s.parlay_max_legs+' picks from different games. Every pick must win. A pushed pick drops out. Pays up to '+money(s.parlay_max_payout)+' back.'],
     ['Locks','Lines post Tuesday 6 AM and stay frozen. Each game locks when the first starter in either lineup kicks off. You can cancel a bet until its game locks.'],
@@ -108,17 +108,17 @@ function bookRules(){var s=BS(),bt=D.backtest;
 /* bet slip */
 function slipHtml(){
   var n=S.picks.length,s=BS(),st=S.stake;if(!n)return '<p class="muted">Your slip is empty.</p>'+CLOSE;
-  var bad=!(st>=s.min_bet&&st<=s.max_bet&&Math.round(st)===st)?'Bets are '+s.min_bet+' to '+s.max_bet+' Banana Bucks.':AUTH&&BK.me&&st>bank()?'Not enough Banana Bucks (you have '+money2(bank())+').':'';
+  var bad=!(st>=s.min_bet&&st<=s.max_bet&&Math.round(st)===st)?'Bets are '+s.min_bet+' to '+s.max_bet+' Mahomie Bucks.':AUTH&&BK.me&&st>bank()?'Not enough Mahomie Bucks (you have '+money2(bank())+').':'';
   var h='<div class="ph" style="margin:0"><div><div class="kicker">Bet slip · '+(n===1?'straight bet':n+'-pick parlay')+'</div><h2 style="font-size:20px">'+(n===1?esc(legLabel(S.picks[0])):'Parlay '+odds(slipOdds()))+'</h2></div></div>';
   h+='<div class="legs">'+S.picks.map(function(p,i){var l=bl(p.line);return '<div class="leg"><div><b>'+esc(legLabel(p))+'</b><span>'+esc(team(l.a))+' vs '+esc(team(l.b))+' · '+odds(legOdds(p))+' · '+esc(lockTxt(l))+'</span></div><button type="button" class="x" data-unpick="'+i+'" aria-label="Remove">✕</button></div>'}).join('')+'</div>';
   if(n===1)h+='<p class="muted" style="font-size:12px">Want a parlay? Close this and tap prices in other games.</p>';
-  h+='<div class="stake"><input id="stake" type="number" inputmode="numeric" min="'+s.min_bet+'" max="'+s.max_bet+'" step="5" value="'+st+'" aria-label="Stake in Banana Bucks"><span class="kicker">'+(BK.me?'🍌 '+money2(bank())+' left':'')+'</span></div>'+
+  h+='<div class="stake"><input id="stake" type="number" inputmode="numeric" min="'+s.min_bet+'" max="'+s.max_bet+'" step="5" value="'+st+'" aria-label="Stake in Mahomie Bucks"><span class="kicker">'+(BK.me?'💵 '+money2(bank())+' left':'')+'</span></div>'+
    '<div class="quick">'+[10,25,50,100,250].map(function(v){return '<button type="button" data-stake="'+v+'">'+v+'</button>'}).join('')+'</div>'+
    '<div class="towin"><span>To win</span><b id="towin">'+(bad?'–':money2(Math.round(slipWin(st)*100)/100))+'</b></div><p class="err" id="slipErr">'+bad+'</p>';
   h+=AUTH?'<button type="button" class="cta" id="place"'+(bad?' disabled':'')+'>Place bet</button>':'<button type="button" class="cta" data-login="1">Log in to place it</button>';
   return h+'<button type="button" class="ghost" id="clearSlip">Clear slip</button>'+CLOSE;
 }
-function slipCheck(){var s=BS(),st=S.stake;var bad=!(st>=s.min_bet&&st<=s.max_bet)?'Bets are '+s.min_bet+' to '+s.max_bet+' Banana Bucks.':AUTH&&BK.me&&st>bank()?'Not enough Banana Bucks (you have '+money2(bank())+').':'';
+function slipCheck(){var s=BS(),st=S.stake;var bad=!(st>=s.min_bet&&st<=s.max_bet)?'Bets are '+s.min_bet+' to '+s.max_bet+' Mahomie Bucks.':AUTH&&BK.me&&st>bank()?'Not enough Mahomie Bucks (you have '+money2(bank())+').':'';
   var tw=$('#towin');if(tw)tw.textContent=bad?'–':money2(Math.round(slipWin(st)*100)/100);var er=$('#slipErr');if(er)er.textContent=bad;var pl=$('#place');if(pl)pl.disabled=!!bad}
 function togglePick(id,mkt,side){var l=bl(id);if(!l)return;if(isLk(l)){toast('That game is locked');return}
   var i=S.picks.findIndex(function(p){return p.line===id&&p.mkt===mkt&&p.side===side});
@@ -129,13 +129,13 @@ function togglePick(id,mkt,side){var l=bl(id);if(!l)return;if(isLk(l)){toast('Th
   render();if(S.picks.length===1)openSheet(slipHtml());else toast(S.picks.length+'-pick parlay · '+odds(slipOdds()))}
 function placeBet(btn){btn.disabled=true;btn.textContent='Placing…';
   api('/bets',{body:{legs:S.picks.map(function(p){return {line_id:p.line,market:p.mkt,pick:p.side}}),stake:S.stake}})
-   .then(function(r){var n=S.picks.length;S.picks=[];closeSheetQuiet();if(BK.me)BK.me.balance=r.balance;toast(n>1?'Parlay placed 🍌':'Bet placed 🍌');S.bseg='mine';bookLoad();render()})
+   .then(function(r){var n=S.picks.length;S.picks=[];closeSheetQuiet();if(BK.me)BK.me.balance=r.balance;toast(n>1?'Parlay placed 💵':'Bet placed 💵');S.bseg='mine';bookLoad();render()})
    .catch(function(e){btn.disabled=false;btn.textContent='Place bet';var er=$('#slipErr');if(er)er.textContent=e.message;bookLoad()})}
 
 /* login: pick team, then PIN pad */
 function loginSheet(){
   if(!BK.teams)return '<p class="muted">Loading teams…</p>'+CLOSE;
-  if(!S.lt)return '<div class="ph" style="margin:0"><div><div class="kicker">Banana Book login</div><h2>Which team is yours?</h2></div></div><div class="rows">'+
+  if(!S.lt)return '<div class="ph" style="margin:0"><div><div class="kicker">Sportsbook login</div><h2>Which team is yours?</h2></div></div><div class="rows">'+
     BK.teams.map(function(t){return '<button type="button" class="row" data-lteam="'+t.id+'" style="grid-template-columns:minmax(0,1fr) auto 10px">'+whoS(t.id,t.name,30)+'<span class="tr '+(t.has_pin?'r':'p')+'" style="font-size:10px">'+(t.has_pin?'PIN set':'New')+'</span>'+CHEV+'</button>'}).join('')+'</div>'+CLOSE;
   var t=BK.teams.find(function(x){return x.id===S.lt})||{};var setting=!t.has_pin;
   var title=setting?(S.pin1?'Type it again':'Pick a 4-digit PIN'):'Enter your PIN';

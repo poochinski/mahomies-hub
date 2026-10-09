@@ -1,5 +1,5 @@
-// The Banana Book: logins, bankrolls, frozen lines, bets, locks and settlement.
-// House rules live in BIBLE.md §7. Play money only.
+// The Sportsbook (Mahomie Bucks, play money): logins, bankrolls, frozen lines, bets, locks and settlement.
+// House rules live in BIBLE.md §7. 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,14 +1,14 @@
 # MAHOMIE'S HUB — Project Bible
 
-**LEAGUE HQ · HISTORY + STATS + SPORTSBOOK** · *Peel back the league.*
+**LEAGUE HQ · HISTORY + STATS + SPORTSBOOK**
 
 > This file is the single source of truth for the Mahomie's Hub app. It lives at the root of the GitHub repo.
 > Any AI assistant (Claude, ChatGPT, Grok, or another) must read this file **and** `HANDOFF.md` before writing code. Section 15 has the prompt to start any session.
 > If something you are asked to do conflicts with this file, stop and say so before changing anything.
 
 - **Owner / commissioner:** Jayson
-- **App name:** Mahomie's Hub (repo `poochinski/mahomies-hub`). The Banana Bets look, Banana Bucks and the Banana Book carry over from the Banana Bets family.
-- **Sister projects:** Banana Bets (`poochinski/banana-bets`) and Jaypardy. This is a **separate repo and separate Railway service**. Never mix code between them.
+- **App name:** Mahomie's Hub (repo `poochinski/mahomies-hub`). It is its own app with its own look and names. **No Banana Bets branding anywhere** (no "banana" names, emoji or logo) — Jayson, 2026-10-09.
+- **Other projects by Jayson** live in separate repos and Railway services. Never mix code or branding between them.
 - **Prototype version:** v1.5 (v1.0 saved at git tag `v1.0`)
 - **Bible version:** 1.1 · 2026-10-07 (relay workflow: unlimited work per session, handoff on every push)
 
@@ -21,13 +21,13 @@ A private, phone-installable web app (PWA) for one Sleeper fantasy football leag
 1. **League history and Hall of Fame** — every season, champion, and manager record since the league started on Sleeper.
 2. **Record book** — highs, lows, blowouts, and single-player performances, updated automatically every week.
 3. **Season hub** — standings, power rankings, luck index, weekly recaps, rivalries.
-4. **The Banana Book** — a league-only sportsbook with moneyline, spread, and over/under on every weekly matchup, using play money (Banana Bucks).
+4. **The Sportsbook** — a league-only sportsbook with moneyline, spread, and over/under on every weekly matchup, using play money (Mahomie Bucks).
 5. **Awards** — automatic end-of-year awards plus commissioner-entered ones.
 6. **Commissioner tools** — start/sit help, line control, bet settlement, manual awards. Visible only to the commissioner.
 
 **Who uses it:** every manager in the league, on their phone, from the home-screen icon. Login is a simple pick-your-team + PIN. No public access.
 
-**What it is not:** it is not a real-money betting app. All wagers are Banana Bucks. Any real money between leaguemates is settled outside the app.
+**What it is not:** it is not a real-money betting app. All wagers are Mahomie Bucks. Any real money between leaguemates is settled outside the app.
 
 ## 1b. League facts (from Sleeper, checked 2026-10-07)
 
@@ -50,13 +50,13 @@ Team names change; always read them from Sleeper (`metadata.team_name`, falling 
 
 ## 2. Tech stack (locked)
 
-Same family as Banana Bets and Jaypardy, so every AI and every session works the same way.
+Every AI and every session works the same way.
 
 | Layer | Choice | Notes |
 |---|---|---|
 | Frontend | React + Vite | Single-page app, React Router for pages |
 | App shell | PWA | `manifest.webmanifest`, service worker via `vite-plugin-pwa`, installable on iOS and Android |
-| Styling | Plain CSS with design tokens | Copy tokens from Banana Bets `src/styles.css` (section 4) |
+| Styling | Plain CSS with design tokens | Tokens in section 4 |
 | Backend | Node + Express | Same repo, `/server` folder, serves the API and the built frontend |
 | Database | PostgreSQL on Railway | Caches all Sleeper data + stores app data (bets, users, awards) |
 | Jobs | `node-cron` inside the server | Pulls Sleeper data on a schedule |
@@ -104,68 +104,38 @@ mahomies-hub/
 
 ---
 
-## 4. Design system (inherited from Banana Bets)
+## 4. Design system ("Night")
 
-Same look as Banana Bets: light graphite surfaces, dark slate hero panels with a faint grid, four "controller dot" accents (blue, green, red, yellow), heavy Inter type, yellow as the signature highlight.
+Deep violet ground, gold as the lead color, neon pink + cyan support, green for wins, red for losses.
+Display type **Chakra Petch**, body **IBM Plex Sans**, labels and numbers **IBM Plex Mono**. One committed dark look.
 
-### Color tokens (copy exactly)
-
+### Color tokens (as used in the live page, prototype/v1.8)
 ```css
-:root {
-  --background: #ececef;   --background-2: #e2e3e7;
-  --surface: #f8f8f7;      --surface-2: #dedee2;   --surface-3: #cacbd0;
-  --border: #a8aab1;       --border-soft: #d0d1d5;
-  --text: #303238;         --text-soft: #686b73;
-  --dark: #3b3e45;         --dark-2: #585b63;
-  --blue: #0862d9;         --blue-light: #1875ef;
-  --green: #00a76d;        --green-light: #10be80;
-  --red: #d91e2c;          --red-light: #ef3b46;
-  --yellow: #e7b92f;       --yellow-light: #f6cf4c;
-  --shadow: 0 7px 22px rgba(40, 42, 48, 0.10);
-}
+--ground #130f1d (page)    --panel / --panel-3 (cards)    --line / --line-2 (borders)
+--gold #f6cf4c (lead)      --gold-2 #e7b92f   --gold-ink #1a1405 (text on gold)
+--pink #ff5fd6   --cyan #4cecff   --win (green)   --loss (red)   --muted / --faint (gray text)
 ```
 
-**Hero panel background** (used on the top card of every page):
-```css
-background:
-  radial-gradient(circle at 85% 5%, rgba(24,117,239,.14), transparent 28%),
-  radial-gradient(circle at 4% 100%, rgba(231,185,47,.08), transparent 31%),
-  linear-gradient(135deg, #41444b 0%, #2f3238 52%, #25282d 100%);
-```
-plus a 32px grid overlay at 14% opacity (see Banana Bets `.hero::before`).
-
-### What each color means in this app
-
+### What each color means
 | Color | Meaning |
 |---|---|
-| Yellow | Mahomie's Hub brand, champions, "Top Banana", active nav, primary buttons |
-| Blue | Probabilities, projections, model numbers |
-| Green | Wins, positive results, bet won, money up |
-| Red | Losses, Sacko, bet lost, "Rotten Banana" |
-| Gray | Neutral, pending, historical |
-
-### Type
-- Font: **Inter** (400–900), fallback `ui-sans-serif, system-ui, -apple-system, sans-serif`.
-- Headlines: weight 900, tight letter-spacing (−0.8px to −1.7px).
-- Eyebrows and labels: uppercase, weight 900, letter-spacing 1.2–2.4px, small (8–10px on desktop, 10–11px on phone).
-- Numbers: `font-variant-numeric: tabular-nums` everywhere digits line up.
-
-### Components to reuse from Banana Bets
-`.hero`, `.highlight-card` (colored 3px top bar), `.metric-card`, `.panel`, `.team-badge`, `.confidence-badge`, `.value-rank` (dark circle with yellow number), the tutorial overlay, `.brand-dots`.
+| Gold | Brand, champions, active tab, primary buttons, your Bucks |
+| Cyan | Probabilities, projections, favorites, open bets |
+| Green | Wins, bet won, money up, live |
+| Red / pink | Losses, Sacko, bet lost |
+| Gray | Neutral, pending, history |
 
 ### Mobile-first rules (this app lives on phones)
-- Design at **390px wide first**, then scale up.
-- **Bottom tab bar** on phones: Home · League · Records · Book · Me. Sidebar only on desktop (≥900px).
-- Tap targets at least 44px tall.
-- Respect safe areas: `padding-bottom: env(safe-area-inset-bottom)` on the tab bar.
-- No horizontal page scroll. Wide tables scroll inside their own container.
-- Standalone PWA: `display: standalone`, `theme_color: #2f3238`, `background_color: #ececef`.
+- Design at **390px wide first**. Bottom tab bar: Home · League · Records · Book · Me.
+- Tap targets at least 44px. Respect safe areas. **No sideways scrolling** (Jayson's call in v1.7): no carousels or chip rows that run off-screen.
+- Every game/score is tappable for details. Former managers stay in every list, tagged "Former".
+- Standalone PWA, `theme_color #130f1d`. App icon: neon football (public/favicon.svg, source prototype/v1.8/logo.svg).
 
-### Branding copy
-- Name: **MAHOMIE'S HUB** (display as `MAHOMIE'S <strong>HUB</strong>`, same treatment as `BANANA <strong>BETS</strong>`)
-- Subtitle: **LEAGUE HQ · HISTORY + STATS + SPORTSBOOK**
-- Tagline: *Peel back the league.*
-- Currency: **Banana Bucks** (symbol 🍌 is allowed only on the currency, nowhere else)
+### Names (decided 2026-10-09)
+- App: **MAHOMIE'S HUB** · subtitle **ROLLIN' WITH MAHOMIES**
+- Sportsbook: **Mahomie's Sportsbook** ("the Book" for short) · currency **Mahomie Bucks** ("Bucks", icon 💵)
+- Weekly high / low score: **🔥 On Fire** (most weeks as top scorer) / **🧊 Ice Cold** (most weeks as lowest)
+- Season bankroll leader: **Sportsbook Champion**
 
 ---
 
@@ -214,7 +184,7 @@ transactions(transaction_id PK, league_id, week, type, status, roster_ids_json, 
 draft_picks(draft_id, pick_no, round, roster_id, player_id, PRIMARY KEY(draft_id, pick_no))
 brackets(league_id, bracket, match_id, round, t1, t2, winner, loser, place, PRIMARY KEY(league_id, bracket, match_id))
 
--- App data: Banana Book (built 2026-10-09; exact SQL in server/book/schema.sql, run on every start)
+-- App data: Sportsbook (built 2026-10-09; exact SQL in server/book/schema.sql, run on every start)
 app_users(user_id PK, pin_hash, pin_salt, pin_set_at, failed_tries, locked_until)    -- commish = COMMISH_USER_ID
 sessions(token_hash PK, user_id, expires_at)                                       -- phone keeps the token; DB keeps its sha256
 book_weeks(season, week PK, posted_at, first_kick, last_kick, settle_at, settled_at)
@@ -230,14 +200,14 @@ awards(id PK, season, award_key, title, roster_id, value, note, source)       --
 recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 ```
 
-**Rule:** a bankroll is never stored as a single number. It is always the sum of the ledger, so every Banana Buck can be traced.
+**Rule:** a bankroll is never stored as a single number. It is always the sum of the ledger, so every Mahomie Buck can be traced.
 
 ---
 
-## 7. The Banana Book (sportsbook rules + odds engine)
+## 7. The Sportsbook (sportsbook rules + odds engine)
 
 ### House rules (decided by Jayson, 2026-10-09)
-- **Bankroll:** every manager gets **1,000 Banana Bucks once per season. No weekly allowance.** Go broke and you're out until next season. Only the commish can add Bucks by hand (always written to the ledger with a reason).
+- **Bankroll:** every manager gets **1,000 Mahomie Bucks once per season. No weekly allowance.** Go broke and you're out until next season. Only the commish can add Bucks by hand (always written to the ledger with a reason).
 - **Login:** pick your team + set a **4-digit PIN** the first time. PIN stored hashed. Commish can reset anyone's PIN.
 - **Bets:** min 10, max 250 per bet (commish can change). Every bet is a ledger entry; a bankroll is never stored as one number.
 - **Own game:** you may bet on yourself to win/cover (and the over), never against yourself or the under on your own game (blocks tanking).
@@ -245,11 +215,11 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 - **Login safety:** 5 wrong PINs locks that team for 15 minutes; a phone stays logged in 180 days.
 - **Parlay cap:** a parlay pays at most 10,000 Bucks back (commish setting).
 - **Ties:** exact tie on a spread or total = push (stake back). A parlay with a pushed leg drops that leg.
-- Season prize: bankroll leader = **Banana Book Champion** award. Bragging rights only; no real money in the app.
+- Season prize: bankroll leader = **Sportsbook Champion** award. Bragging rights only; no real money in the app.
 
 ### Markets at launch
 1. **Spread** (-110 both sides), **Moneyline**, **Total (over/under)** on every matchup.
-2. **Weekly specials:** Top Banana (who scores the most), Rotten Banana (who scores the least), over/under on the week's lowest score. Priced from each team's projection + swing via simulation, with the same 4.5% hold.
+2. **Weekly specials:** On Fire (who scores the most), Ice Cold (who scores the least), over/under on the week's lowest score. Priced from each team's projection + swing via simulation, with the same 4.5% hold.
 3. **Parlays:** 2–4 legs from spreads/moneylines/totals/specials; no two legs from the same matchup; payout = product of decimal odds; all legs must win.
 4. **Futures:** League Champion and Sacko odds from the playoff/season simulation, repriced every Tuesday.
 
@@ -325,8 +295,8 @@ push → ledger +stake
 Status tags: **MVP** (Phase 2), **v1** (Phases 3–5), **v2** (Phase 6–7), **COMMISH** (commissioner-only).
 
 ### Home (MVP)
-- This week: every matchup with live scores (during games) and Banana Book lines
-- Top Banana (week high score) and Rotten Banana (week low score)
+- This week: every matchup with live scores (during games) and Sportsbook lines
+- On Fire (week high score) and Ice Cold (week low score)
 - Quick links to My Team, Book, Records
 
 ### League History & Hall of Fame (MVP)
@@ -362,14 +332,14 @@ Status tags: **MVP** (Phase 2), **v1** (Phases 3–5), **v2** (Phase 6–7), **C
 - **Draft Re-grade**: each pick's points vs where it was drafted; best steal and worst bust
 - **Waiver Wizard tracker**: points scored by players picked up mid-season
 
-### The Banana Book (v1)
+### The Sportsbook (v1)
 - Lines board for the week, bet slip, my open bets, my history
 - Bankroll leaderboard + weekly profit/loss
 - Bet feed ("Mike took the over 241.5 for 150") for trash talk
 - How sharp is the Book? page
 
 ### Awards (v1, ready before championship week)
-Auto awards: MVP manager (most PF), Top Banana count (most weekly highs), Rotten Banana (most weekly lows), Unluckiest (most PA), Luckiest (Luck Index), Waiver Wizard, Trade of the Year, Draft Steal, Draft Bust, Bench Shame champion, Banana Book Champion, Biggest Blowout, Comeback Kid.
+Auto awards: MVP manager (most PF), On Fire count (most weekly highs), Ice Cold (most weekly lows), Unluckiest (most PA), Luckiest (Luck Index), Waiver Wizard, Trade of the Year, Draft Steal, Draft Bust, Bench Shame champion, Sportsbook Champion, Biggest Blowout, Comeback Kid.
 Commissioner awards: free-text entries added in the admin panel.
 Optional: league voting on 1–2 awards (Phase 7).
 
@@ -473,7 +443,7 @@ POST /api/commish/*                 sync, lines, settle, awards (commish only)
 | 1 | Data pipeline | Sleeper sync into Postgres, full history chain | Every season's matchups are in the database and `/api/state` works |
 | 2 | MVP: History + Records | Home, History, Records, Manager profiles, login | The league can install it and browse history; shared in the group chat |
 | 3 | Season hub | Power rankings, all-play, luck, recaps, rivalries, Bench Shame | Wednesday recap posts automatically |
-| 4 | Banana Book | Lines, bets, bankrolls, settlement, admin line control | One full week of bets placed, locked, and settled correctly |
+| 4 | Sportsbook | Lines, bets, bankrolls, settlement, admin line control | One full week of bets placed, locked, and settled correctly |
 | 5 | Awards | Auto + commish awards, trade grader, draft re-grade | Awards page ready before the championship week |
 | 6 | Commish tools | Start/Sit helper, admin panel polish | Jayson uses it for his own lineup |
 | 7 | Extras | Parlays, props, survivor, notifications, share cards | Pick from the v2 list |
@@ -504,7 +474,7 @@ Phases 0–1 this week · Phase 2 live in about 2 weeks · Phase 3 the week afte
 9. **Never** put secrets (database URL, admin PIN) in code. They go in Railway environment variables.
 10. **Never call Sleeper from the browser.** Frontend talks only to `/api`.
 11. **Mobile first.** Every page must work at 390px wide before it ships.
-12. **Banana Bucks only.** Never add real-money payment features.
+12. **Mahomie Bucks only.** Never add real-money payment features.
 13. **If Jayson says he is switching AIs or running low on usage,** give the full updated `HANDOFF.md` and `CHANGELOG.md` line right away, with the git commands.
 
 ---
