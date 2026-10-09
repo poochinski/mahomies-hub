@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Trade grader v2: who got what, points-started labels, per-week verdict scale, full breakdown sheet with weekly tracker, chart, team impact and insights. (Claude)
 - 2026-10-09 — "How it works" buttons + sheets explaining every stat, plus a How the app works list on the Me tab. (Claude)
 - 2026-10-09 — Header scrolls with the page (no longer pinned to the top). (Claude)
 - 2026-10-09 — Live betting: nothing locks, odds move with the score once a game starts; new MH logo for the app icon + header. (Claude)

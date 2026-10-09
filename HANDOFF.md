@@ -23,6 +23,23 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Trade grader v2** (Claude), from Jayson's feedback (who got what was unclear,
+  points unlabeled, names splitting across lines, wanted a tracker for ongoing trades, a
+  0–0 trade and a "too close to call" at 170–150 looked wrong). Server `tradeReport()` in
+  server/routes/lab.js now returns, per side: got/gave players (pos, NFL team), picks, FAAB,
+  players dropped to make room, week-by-week (each received player started/bench/gone, points
+  started, bench points, team score, opponent, W/L, median W/L), points per game + record
+  before vs since, and a verdict. **New verdict rule:** gap in points started ÷ weeks since
+  the trade: <3/wk = too close to call, 3–7 slight edge, 7–15 clear win, 15+ landslide; first
+  2 weeks marked "early". (Old rule was a 15% gap in season totals, which called 170–150 a
+  coin flip no matter how many weeks.) App: cards show "Got" chips (names never split),
+  "Pts started" label, Ongoing/Final tag, tug-of-war bar; tapping opens a full breakdown
+  (verdict + scale, the deal, running-total chart with tap tooltips, week-by-week, did it
+  help the team, insights). The 0–0 trade (2024 Wk 8, Worthy for McMillan + $30 FAAB):
+  checked against Sleeper — neither team ever started the player it got (Worthy sat on the
+  bench, scored −1 in Wk 9), so 0 started is correct; the new view shows their bench points
+  and the FAAB. Chart colors validated for the dark background (gold #b38c14, blue #3b8fe8,
+  rose #d9577a). Sources: prototype/v1.8/v18_trades.js + v18_trades.css.
 - 2026-10-09 — **"How it works" explanations** (Claude), Jayson wants people to understand how
   every number is made. A cyan "ⓘ How it works" button on Standings, Power rankings, Playoff
   odds, Awards, Record book, All-time, Rivals, matchup preview, Sportsbook lines, Bench Shame,

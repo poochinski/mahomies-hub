@@ -412,7 +412,7 @@ GET  /api/records                   record book
 GET  /api/managers/:id              profile
 GET  /api/game?season=&week=&users=a,b   box score: starters by slot + bench, names, positions, points (built)
 GET  /api/bench?season=              Bench Shame: optimal minus actual, per team + worst week (built)
-GET  /api/trades?season=             Trade grader: starter points each side got after the trade (built)
+GET  /api/trades?season=             Trade grader v2: got/gave, picks, FAAB, week-by-week tracker, team before/after, verdict by pts started per week (built)
 GET  /api/draft?season=              Draft re-grade: steals and busts by pick vs points rank (built)
 GET  /api/season/:season            standings, power, luck, playoff odds
 GET  /api/h2h                       matrix

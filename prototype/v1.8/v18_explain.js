@@ -52,9 +52,13 @@ var EXPLAIN={
   ['The number','Points left on the bench across the season. Higher = more shame. Your worst week is shown too.'],
   ['Eligibility','FLEX can take an RB, WR or TE. Every player is used at most once.']]},
  trades:{t:'Trade grader',b:[
-  ['How it grades','For every completed trade, it adds up the points each player scored in his new team\'s starting lineup from the trade week on. Bench points don\'t count.'],
-  ['Winner','If one side got more than 15% more starter points, that side wins. Closer than that = even.'],
-  ['Limits','Draft picks are listed but given no value, and a player stops counting if he\'s later dropped or traded away. It judges with hindsight, not whether the trade made sense at the time.']]},
+  ['Points started','The main number. Every week after the trade, the app adds up what the players a team GOT scored while in that team\'s starting lineup. Points scored on the bench are shown separately (in gray) but don\'t count, because they didn\'t help the team win.'],
+  ['When a player leaves','Once a player is dropped or traded away, he stops counting for that side.'],
+  ['The verdict','The gap in points started, divided by the weeks since the trade: under 3 pts/week = too close to call, 3–7 = slight edge, 7–15 = clear win, 15+ = landslide. Per week matters: 20 points over 2 weeks is a real lead, 20 points over 9 weeks is a coin flip.'],
+  ['Early verdicts','In the first two weeks after a trade the verdict is marked early, because one big game can flip it.'],
+  ['Did it help the team?','Each team\'s points per game and record before the trade vs since (regular season, including the median game). Lots of things change a team\'s scoring, so read it as context, not proof.'],
+  ['Picks and FAAB','Draft picks and waiver budget that changed hands are listed with the deal, but aren\'t scored.'],
+  ['Data','Trades, lineups and every player\'s weekly points come straight from Sleeper and update every few minutes during the season.']]},
  draft:{t:'Draft re-grade',b:[
   ['How it works','Every drafted player (no kickers or defenses) is ranked by the points he has scored on league rosters this season. That rank is compared with where he was picked.'],
   ['Steals','Players who have outscored their draft spot the most (late picks playing like early ones).'],

@@ -65,6 +65,12 @@ s=s[:a]+"""function me(){
 
 """+s[b:]
 rep("D.version+' test build · ","D.version+' · ")
+# TRADES pass: trade grader v2 (Jayson 2026-10-09)
+a_=s.index('function tradesHtml(d){'); b_=s.index('function draftHtml(d){')
+s=s[:a_]+open('v18_trades.js').read()+'\n'+s[b_:]
+s=s.replace("  if(d.info){openSheet(","  if(d.trade!==undefined){openSheet(tradeSheet(+d.trade)+CLOSE);return}\n  if(d.info){openSheet(",1) if "if(d.info){openSheet(" in s else s
+s=s.replace("$('#scrim').addEventListener('click',closeSheet);","$('#scrim').addEventListener('click',closeSheet);\nfunction twHit(e){var r=e.target.closest&&e.target.closest('[data-tw]');if(!r)return;var box=r.closest('.chartbox');if(box)chartTip(box,+r.dataset.tw)}\ndocument.addEventListener('click',twHit);document.addEventListener('pointermove',function(e){if(e.pointerType==='mouse')twHit(e)});",1)
+
 # EXPLAIN pass: "How it works" buttons + sheets (Jayson 2026-10-09)
 s=s.replace("/* ---------- ME / PROFILE ---------- */",open('v18_explain.js').read()+"\n/* ---------- ME / PROFILE ---------- */",1)
 for a_,b_ in [
@@ -75,13 +81,12 @@ for a_,b_ in [
   ("<h2>Rivalry card</h2></div></div>","<h2>Rivalry card</h2></div>'+info('h2h')+'</div>"),
   ("<h1>'+s+' awards</h1>';","<h1>'+s+' awards</h1>'+info('awards');"),
   ("<h2>Bench Shame</h2></div></div>","<h2>Bench Shame</h2></div>'+info('bench')+'</div>"),
-  ("<h2>Trade grader</h2></div></div>","<h2>Trade grader</h2></div>'+info('trades')+'</div>"),
   ("<h2>Biggest steals</h2></div></div>","<h2>Biggest steals</h2></div>'+info('draft')+'</div>"),
   ('data-share-rec="1">Share</button></section>','data-share-rec="1">Share</button>\'+info(\'records\')+\'</section>'),
   ('<p class="margin">Win chance from the Banana Book</p>','<p class="margin">Win chance from the Sportsbook</p>\'+info(\'preview\')+\''),
   ("      if(!AUTH)h+='<p class=\"note\"><b>Look around all you want.</b>","      h+='<div class=\"info-row\">'+info('book')+'</div>';\n      if(!AUTH)h+='<p class=\"note\"><b>Look around all you want.</b>"),
   ("  h+=admPanel();\n  return h+foot();","  h+=explainPanel();\n  h+=admPanel();\n  return h+foot();"),
-  ("  if(d.tab){go(d.tab);","  if(d.info){openSheet(explainSheet(d.info)+CLOSE);return}\n  if(d.tab){go(d.tab);"),
+  ("  if(d.tab){go(d.tab);","  if(d.info){openSheet(explainSheet(d.info)+CLOSE);return}\n  if(d.trade!==undefined){openSheet(tradeSheet(+d.trade)+CLOSE);return}\n  if(d.tab){go(d.tab);"),
   ]:
     assert s.count(a_)==1,(s.count(a_),a_)
     s=s.replace(a_,b_)
@@ -114,6 +119,7 @@ css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500
 .hero .info{margin-top:10px}
 .info-row{display:flex;justify-content:center}
 """
+css+=open('/home/claude/data/v18_trades.css').read()
 # RENAME (Jayson 2026-10-09: no Banana Bets branding in this app)
 LOGO='<img class="mark" src="/brand-96.png" alt="" width="34" height="34">'
 a=s.index('<svg class="mark"'); b=s.index('</svg>',a)+6; s=s[:a]+LOGO+s[b:]
