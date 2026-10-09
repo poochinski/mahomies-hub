@@ -32,8 +32,8 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
   League (chips): 2026 standings/power, Playoff odds (10,000 sims incl. median
   game, using the real remaining schedule Wks 6–14), History cards that open a
   full season page (standings, winners bracket + Toilet Bowl with scores,
-  every week with recaps), All-time table with former managers tucked away,
-  Rivals with Current/Former groups + 12×12 head-to-head grid, Awards per
+  every week with recaps), All-time table (former managers included, tagged "Former"),
+  Rivals (former managers labeled) + head-to-head grid incl. former managers, Awards per
   season (11 auto awards; 5 more listed for live sync), Lab (Bench Shame,
   Trade grader, Draft re-grade — live on Railway only).
   Records: All / Regular season / Playoffs filter; share cards (PNG via canvas,
@@ -78,6 +78,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
    then the sync job for seasons → users → rosters → matchups.
 
 ## Decisions made (and why)
+- Former managers (rpkid426, nstynate85) stay in every list and stat, tagged "Former" wherever shown — Jayson's call (he didn't want them hidden or separated).
 - App name: Mahomie's Hub, repo `poochinski/mahomies-hub` — Jayson's pick.
 - No one-feature-per-session limit; every push carries an updated HANDOFF — so
   any AI can pick up the moment another runs out of usage.
