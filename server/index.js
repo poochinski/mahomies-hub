@@ -14,7 +14,7 @@ dns.setDefaultResultOrder('ipv4first');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const proto = path.join(root, 'prototype');
-const APP_PAGE = path.join(proto, 'dist', 'night.html'); // v1.6
+const APP_PAGE = path.join(proto, 'dist', 'night.html'); // v1.7
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -62,6 +62,7 @@ app.get('/manifest.webmanifest', (_req, res) => {
 app.use(express.static(path.join(root, 'public'), { index: false }));
 
 // Older builds, kept in case we need to go back.
+app.get('/test/v1.6', (_req, res) => res.sendFile(path.join(proto, 'v1.6', 'night.html')));
 app.get('/test/v1.5', (_req, res) => res.sendFile(path.join(proto, 'v1.5', 'night.html')));
 app.get('/test/v1.0', (_req, res) => res.sendFile(path.join(proto, 'v1.0', 'night.html')));
 app.get('/test/v1.0/light', (_req, res) => res.sendFile(path.join(proto, 'v1.0', 'light.html')));

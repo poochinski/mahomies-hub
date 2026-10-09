@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — **v1.7**: one-screen Home (Your game, live grid, Last week, Explore 3×3), compact Awards, record picker, no sideways rows. v1.6 kept at /test/v1.6. (Claude)
 - 2026-10-09 — **v1.6**: swipe cards, Explore tiles, League tile menu, new Awards page, show-more lists. v1.5 kept at /test/v1.5 and branch release-v1.5. (Claude)
 - 2026-10-09 — Bye-week record scores open a Playoff bye card with lineup. (Claude)
 - 2026-10-09 — Serve v1.5 at every address; self-removing service worker clears the old placeholder app from phones. (Claude)

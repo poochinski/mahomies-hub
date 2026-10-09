@@ -1,16 +1,16 @@
 # HANDOFF — where we left off
 
 **Last updated:** 2026-10-09 10:45 (Pacific) · **AI:** Claude
-**Current phase:** v1.6 live on Railway (less scrolling, tile navigation, new Awards page); next = Jayson feedback, then v1.7 features + Phase 1 (Postgres)
+**Current phase:** v1.7 live on Railway (calmer screens); next = Jayson feedback, then features + Phase 1 (Postgres)
 **Last commit:** "Live data: /api/hub builds everything from Sleeper; test build loads it"
-**App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (opens v1.5, pulls Sleeper live via /api/hub)
+**App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v1.7; old builds at /test/v1.6, /test/v1.5, /test/v1.0)
 
 ## What we're working toward right now
 Jayson wants to perfect the UI/UX on his phone first, using a test build with
 real league data, then bring it to Railway. Two looks are being compared:
 "Night" (Banana Bets layout + the neon night-street palette from his dinner
 plan page — currently favored) and the original light Banana Bets look.
-VERSIONS: **v1.6 is current** (source prototype/v1.6/, built into prototype/dist/night.html). v1.5 saved at prototype/v1.5/night.html (/test/v1.5) and branch release-v1.5. Older: v1.5 (night theme only). v1.0 is saved in prototype/v1.0/
+VERSIONS: **v1.7 is current** (source prototype/v1.7/, built into prototype/dist/night.html). v1.6 saved at prototype/v1.6/night.html (/test/v1.6) and branch release-v1.6. v1.5 saved at prototype/v1.5/night.html (/test/v1.5) and branch release-v1.5. Older: v1.5 (night theme only). v1.0 is saved in prototype/v1.0/
 and on GitHub branch `release-v1.0` (git tags are blocked from Claude's push) — go back to it if v1.5 ever needs to be undone.
 On Railway: every address = v1.5; /test/v1.0 and /test/v1.0/light = the old builds.
 v1.5 source: prototype/v1.5/ (app15.template.html + v15_main.js, v15_extra.js,
@@ -25,6 +25,16 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **v1.7** (Claude), after Jayson said v1.6 was still crowded and had
+  too much sideways swiping: Home is now ~1 screen — hero with "Your game"
+  (your live score, opponent, win %), "This week" 2-column live score grid,
+  "Last week" 3 stat cells (Top Banana / Rotten / Top player) with a
+  "Recap & scores" sheet, and a 3×3 Explore grid (Awards, Playoff odds, Power
+  rankings, Record book, History, Rivals, Weekly results, This week in
+  history, Lab). Removed all Home carousels. Awards = season segmented control +
+  compact list rows. Records = "Change ▾" picker sheet instead of an 11-chip
+  sideways row; #1 in the hero, #2–5 below. Week/season chips wrap instead of
+  scrolling sideways.
 - 2026-10-09 — **v1.6** (Claude), after Jayson said there was too much scrolling
   and he couldn't find Awards: Home hero tiles swipe sideways; Week matchups are
   swipeable cards (tap = preview); "Explore the league" tile grid (Awards, Playoff
