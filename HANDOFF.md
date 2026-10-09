@@ -11,7 +11,7 @@ real league data, then bring it to Railway. Two looks are being compared:
 "Night" (Banana Bets layout + the neon night-street palette from his dinner
 plan page — currently favored) and the original light Banana Bets look.
 VERSIONS: v1.5 is current (night theme only). v1.0 is saved in prototype/v1.0/
-and git tag `v1.0` — go back to it if v1.5 ever needs to be undone.
+and on GitHub branch `release-v1.0` (git tags are blocked from Claude's push) — go back to it if v1.5 ever needs to be undone.
 On Railway: /test = v1.5, /test/v1.0 and /test/v1.0/light = the old builds.
 v1.5 source: prototype/v1.5/ (app15.template.html + v15_main.js, v15_extra.js,
 v15_events.js, v15.css; data from compute15.py → prototype/data/app15.json).
@@ -108,8 +108,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 ## Known bugs / open questions
 - Lab endpoints only tested with fake data; verify on Railway with real Sleeper data.
 - Playoff odds tiebreak = points for (check league's real tiebreaker setting).
-- GitHub push from Claude is blocked until the Claude GitHub App is given
-  access to poochinski/mahomies-hub.
+- Claude can push to main now; pushing git tags is blocked, so saved versions live on branches (release-v1.0).
 - Test build data is a snapshot (Oct 8, 2026 night). Live sync = Phase 1.
 - 2026 uses a league-median game (records include median W/L); 2023–2025 did not.
 - Player names in the snapshot only for 16 players; full names come from /api/game on Railway.
