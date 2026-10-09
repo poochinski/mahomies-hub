@@ -1,9 +1,9 @@
 # HANDOFF — where we left off
 
 **Last updated:** 2026-10-09 10:45 (Pacific) · **AI:** Claude
-**Current phase:** Going live — GitHub push + Railway deploy (v1.5 test build now reads live Sleeper data)
+**Current phase:** Live on Railway; next = Jayson tests live app, then v1.6 features + Phase 1 (Postgres)
 **Last commit:** "Live data: /api/hub builds everything from Sleeper; test build loads it"
-**App status:** Deployed to Railway (first deploy showed 'SLEEPER_LEAGUE_ID is not set' — fixed with defaults) · **Live URL:** Jayson's Railway domain + /test
+**App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (opens v1.5, pulls Sleeper live via /api/hub)
 
 ## What we're working toward right now
 Jayson wants to perfect the UI/UX on his phone first, using a test build with
@@ -25,6 +25,10 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Live on Railway** (Claude): Sleeper calls now prefer IPv4 and
+  time out instead of hanging; `/api/diag` confirms Railway reaches Sleeper
+  (200 in 76 ms, all 4 seasons found). `/api/hub` returns real live data
+  (14 managers, Week 5 live). .gitignore fixed so prototype/dist is committed.
 - 2026-10-09 — Railway fix (Claude): league ID + commish ID now default in
   `server/config.js` (Railway variables still override), so a missing variable
   can't break the app. Home address `/` now redirects to `/test` until the
@@ -111,6 +115,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Known bugs / open questions
 - Lab endpoints only tested with fake data; verify on Railway with real Sleeper data.
+- Railway variables appear to be on the wrong service (server reports DATABASE_URL not set). Not needed until Phase 1.
 - Playoff odds tiebreak = points for (check league's real tiebreaker setting).
 - Claude can push to main now; pushing git tags is blocked, so saved versions live on branches (release-v1.0).
 - Test build data is a snapshot (Oct 8, 2026 night). Live sync = Phase 1.
