@@ -233,18 +233,26 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 
 ## 7. The Banana Book (sportsbook rules + odds engine)
 
-### House rules
-- Every manager starts each season with **1,000 Banana Bucks**.
-- **+100 weekly allowance** every Tuesday so nobody is knocked out for the season.
-- Min bet 10, max bet 250 per wager (commissioner can change).
-- Spreads are capped at 20 points; in Weeks 1–6 projections are pulled harder (35%) toward the league average.
-- Markets per matchup: **moneyline, spread, total (over/under)**. Parlays come in Phase 7.
-- You **can** bet on your own matchup, but only on yourself to win (no betting against yourself).
-- All lines **lock at the first NFL kickoff of the week** (usually Thursday night). After that, no bets.
-- Bets settle when the week is final (Wednesday 3 AM job), using Sleeper's final points.
-- Exact tie on a spread or total = **push** (stake returned).
-- Commissioner can void a line (refunds every bet on it) or override any number before lock.
-- Season prize: the bankroll leader gets the **Banana Book Champion** award. Bragging rights only.
+### House rules (decided by Jayson, 2026-10-09)
+- **Bankroll:** every manager gets **1,000 Banana Bucks once per season. No weekly allowance.** Go broke and you're out until next season. Only the commish can add Bucks by hand (always written to the ledger with a reason).
+- **Login:** pick your team + set a **4-digit PIN** the first time. PIN stored hashed. Commish can reset anyone's PIN.
+- **Bets:** min 10, max 250 per bet (commish can change). Every bet is a ledger entry; a bankroll is never stored as one number.
+- **Own game:** you may bet on yourself to win/cover, never against yourself (blocks tanking).
+- **Ties:** exact tie on a spread or total = push (stake back). A parlay with a pushed leg drops that leg.
+- Season prize: bankroll leader = **Banana Book Champion** award. Bragging rights only; no real money in the app.
+
+### Markets at launch
+1. **Spread** (-110 both sides), **Moneyline**, **Total (over/under)** on every matchup.
+2. **Weekly specials:** Top Banana (who scores the most), Rotten Banana (who scores the least), over/under on the week's lowest score. Priced from each team's projection + swing via simulation, with the same 4.5% hold.
+3. **Parlays:** 2–4 legs from spreads/moneylines/totals/specials; no two legs from the same matchup; payout = product of decimal odds; all legs must win.
+4. **Futures:** League Champion and Sacko odds from the playoff/season simulation, repriced every Tuesday.
+
+### Weekly timeline (Pacific)
+- **Tuesday ~6 AM:** settle anything still open; post new lines (lines are frozen into the `lines` table so everyone bets the same numbers); reprice futures.
+- **Per-game lock:** each matchup locks when the **first starter in either lineup kicks off** (NFL kickoff times from ESPN's public scoreboard, `site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?week=N`; starters from Sleeper matchups at that moment). Weekly specials + futures lock at the **first kickoff of the week**. A parlay locks when its earliest leg locks.
+- **Sun–Mon:** live bet tracking (winning/losing) from live scores.
+- **Wednesday 3 AM:** final settlement after Sleeper stat corrections; payouts written to the ledger; bet feed + leaderboard update.
+- Launch: **Week 6 of 2026** (lines post Tue Oct 13).
 
 ### Odds engine (`server/book/engine.js`)
 
@@ -293,7 +301,7 @@ American odds from implied probability q:
 Round to the nearest 5. Cap at -1000 / +700.
 ```
 
-**Step 6 — Line movement (Phase 4b)**
+**Step 6 — Line movement (Phase 4b, optional)**
 If more than 70% of the money on a market is on one side, shift that side's price by 10 cents (or half a point on spreads). Max 2 moves per line. All moves logged.
 
 **Payouts**

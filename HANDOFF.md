@@ -106,6 +106,9 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 - Railway deploy (Jayson's steps below)
 
 ## Next steps (in order)
+A. Jayson: fix Railway variable — put `DATABASE_URL = ${{Postgres.DATABASE_URL}}` on the **mahomies-hub** service (it's missing there now).
+B. Build the Book backend: Postgres tables (app_users, sessions, lines, bets, bet_legs, bankroll_ledger), PIN login, frozen weekly lines, place/cancel bets, ESPN kickoff schedule + per-game lock, settlement job, leaderboard + feed.
+C. Then specials, parlays, futures; then the Book UI in the app.
 1. Jayson: Railway → New Project → Deploy from GitHub repo → `poochinski/mahomies-hub`.
 2. Jayson: in the same Railway project, add a PostgreSQL database.
 3. Jayson: on the app service → Variables, add:
@@ -118,6 +121,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
    then the sync job for seasons → users → rosters → matchups.
 
 ## Decisions made (and why)
+- **Banana Book rules (Jayson, 2026-10-09):** per-game lock (first starter's kickoff), 1,000 Bucks once per season with NO allowance, launch with spread/ML/total + weekly specials + parlays + futures, team + 4-digit PIN login. Full rules in BIBLE §7. Book opens for real in Week 6.
 - Former managers (rpkid426, nstynate85) stay in every list and stat, tagged "Former" wherever shown — Jayson's call (he didn't want them hidden or separated).
 - App name: Mahomie's Hub, repo `poochinski/mahomies-hub` — Jayson's pick.
 - No one-feature-per-session limit; every push carries an updated HANDOFF — so
