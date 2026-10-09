@@ -126,7 +126,7 @@ Display type **Chakra Petch**, body **IBM Plex Sans**, labels and numbers **IBM 
 | Gray | Neutral, pending, history |
 
 ### Mobile-first rules (this app lives on phones)
-- Design at **390px wide first**. Bottom tab bar: Home · League · Records · Book · Me.
+- Design at **390px wide first**. Bottom tab bar (fixed): Home · League · Records · Book · Me. The top header scrolls away with the page (not sticky).
 - Tap targets at least 44px. Respect safe areas. **No sideways scrolling** (Jayson's call in v1.7): no carousels or chip rows that run off-screen.
 - Every game/score is tappable for details. Former managers stay in every list, tagged "Former".
 - Standalone PWA, `theme_color #130f1d`. **Logo: Jayson's gold "MH" with football** (source prototype/v1.8/logo-mh.png → public/icon-*.png, apple-touch-icon.png, brand-96.png for the header, favicon.svg).

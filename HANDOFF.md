@@ -23,6 +23,7 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — Header (logo + Bucks/Log in button) now scrolls away with the page instead of sticking to the top (Jayson: "looks bad"). A solid strip behind the phone's status bar keeps the clock readable. Bottom tab bar still stays put. (Claude)
 - 2026-10-09 — **Live betting + MH logo** (Claude). Jayson: "I don't want anything to be locked —
   the odds should change like betting during a game." Once a matchup's first starter
   kicks off, its odds go live (engine.js `livePrice`: points so far + projection × share of

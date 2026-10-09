@@ -30,7 +30,8 @@ p{margin:0}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 
 /* top bar */
-.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px 12px;background:rgba(19,15,29,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.topbar{position:relative;z-index:30;padding-top:calc(10px + env(safe-area-inset-top,0px)) !important;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px 12px;background:rgba(19,15,29,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--ground);z-index:80;pointer-events:none}
 .topbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--rule);opacity:.9}
 .brand{display:flex;align-items:center;gap:9px;min-width:0}
 .mark{width:34px;height:34px;border-radius:9px;flex:0 0 auto;box-shadow:0 0 0 1px var(--line-2),0 0 18px rgba(246,207,76,.18)}

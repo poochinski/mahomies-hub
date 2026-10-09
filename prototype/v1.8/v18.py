@@ -105,6 +105,11 @@ for a_,b_ in [('/* Layout: same Banana Bets shell (sticky brand bar','/* Layout:
     assert s.count(a_)>=1,a_
     s=s.replace(a_,b_)
 s=s.replace('--banana-2','--gold-2').replace('--banana-ink','--gold-ink').replace('--banana','--gold')
+# topbar scrolls away with the page (Jayson 2026-10-09); a solid strip keeps the phone's status bar readable
+a_='.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;'
+assert a_ in s
+s=s.replace(a_,'.topbar{position:relative;z-index:30;padding-top:calc(10px + env(safe-area-inset-top,0px)) !important;')
+s=s.replace('.topbar::after{','body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--ground);z-index:80;pointer-events:none}\n.topbar::after{',1)
 left=[l.strip()[:120] for l in s.split('\n') if re.search('anana|🍌',l)]
 assert not left,left
 i=s.index("</style>")
