@@ -18,3 +18,10 @@ s=s.replace("<title>Mahomie's Hub</title>","<title>Mahomie's Hub Night</title>")
 left=sorted(set(re.findall(r'var\(--(green|red|blue|yellow|text|text-soft|text-faint|dark|surface[-0-9]*|border[-a-z]*)\)',s)))
 open('/home/claude/mahomies-hub-night.html','w').write(s.replace('__DATA__',d))
 print('night leftover tokens',left)
+# standalone copies served by Express at /test and /test/light
+import os
+os.makedirs('/home/claude/mahomies-hub/prototype/dist',exist_ok=True)
+head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="icon" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body>'
+for src,dst in [('/home/claude/mahomies-hub-night.html','night.html'),('/home/claude/mahomies-hub-test.html','light.html')]:
+    open('/home/claude/mahomies-hub/prototype/dist/'+dst,'w').write(head+open(src).read()+'</body></html>')
+print('dist written')

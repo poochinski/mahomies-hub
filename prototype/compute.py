@@ -232,6 +232,7 @@ out=dict(league=dict(name="Rollin' with Mahomies",season='2026',week=5,teams=12,
   managers=mgrs,seasons=seasons,records=rec,alltime=alltime,h2h=h2h,recap=recap,lines=lines,games=G,
   power=[dict(uid=x['uid'],power=x['power'],rank=x['prank'],move=x['pmove'],rec=f"{x['w']}-{x['l']}",avg=x['avg'],ap=x['ap'],luck=x['luck'],last3=x['last3'],scores=x['scores']) for x in pr],
   tw={f"{t['s']}|{t['w']}|{t['uid']}":[t['p'],t['pid'],t['pp']] for t in tw},names=names,
+  avatars={'367052813991436288':'3e98f56c666f6c34e6fe8557442dd20a','490041312167325696':'8b6bfd212305f3a0323af5ed7998b130','862901935416655872':'216619f115c350985aa1a5b74c18fc58','868569620376891392':'68e27681ec0aeb27f89b86387ae417fc','871806408952348672':'f03b2961233344c09d15635dbd18f242','986472317486215168':'282729a2430fd560b637d880c53148ef','987883933205323776':'8eb8f8bf999945d523f2c4033f70473e','988314780391849984':'3505110aeaa06d822e7f0647e10675d3','988923929580388352':'15d7cf259bc30eab8f6120f45f652fb6','990823521775325184':'b319fdf8b7b5b0359d3c78622ba4d70c','996588984589606912':'b3338675f635c2c1f42b469621d38ec6','1127453975508324352':'b5da51f5562cb2830b7a02d445a687b7'},
   me='862901935416655872',updated='2026-10-08T22:50:00-07:00')
 json.dump(out,open('/home/claude/data/app.json','w'),ensure_ascii=False,separators=(',',':'))
 import os;print(os.path.getsize('/home/claude/data/app.json'))

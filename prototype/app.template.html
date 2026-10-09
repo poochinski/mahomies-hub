@@ -254,7 +254,7 @@ function M(u){return D.managers[u]||{name:'?',team:'?'}}
 function team(u){return (M(u).team||M(u).name).trim()}
 function initials(u){var n=M(u).name;var p=n.replace(/[^A-Za-z0-9 ]/g,'').match(/[A-Z][a-z]*|[a-z]+|\d+/g)||[n];return ((p[0]||'')[0]+((p[1]||'')[0]||(p[0]||'')[1]||'')).toUpperCase()}
 function color(u){return PAL[ids.indexOf(u)%PAL.length]}
-function av(u,sz){sz=sz||32;return '<span class="av" style="width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*.38)+'px;background:'+color(u)+'">'+esc(initials(u))+'</span>'}
+function av(u,sz){sz=sz||32;var a=LIVE&&D.avatars&&D.avatars[u];return '<span class="av" style="width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*.38)+'px;background:'+color(u)+'">'+esc(initials(u))+(a?'<img src="https://sleepercdn.com/avatars/thumbs/'+a+'" alt="" loading="lazy" onerror="this.remove()">':'')+'</span>'}
 function who(u,sub,sz){return '<button class="who" type="button" data-mgr="'+u+'">'+av(u,sz)+'<span class="tx"><b>'+esc(team(u))+'</b><span>'+esc(sub!=null?sub:M(u).name)+'</span></span></button>'}
 function whoS(u,sub,sz){return '<span class="who">'+av(u,sz)+'<span class="tx"><b>'+esc(team(u))+'</b><span>'+esc(sub!=null?sub:M(u).name)+'</span></span></span>'}
 function gi(s,w,u){for(var i=0;i<D.games.length;i++){var g=D.games[i];if(g.s===s&&g.w===w&&(g.win===u||g.lose===u))return i}return -1}
@@ -269,6 +269,9 @@ function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(
 
 var S={tab:'home',lseg:'season',rec:'high',h2a:null,h2b:null,me:store('me')||D.me,bets:store('bets')||[],bseg:'lines',slip:null,stake:25};
 S.h2a=S.me;
+/* On Railway the page sits next to our server: turn on live lineups + real avatars. */
+var LIVE=false;
+try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render()}}).catch(function(){})}catch(e){}
 
 /* ---------- Book math ---------- */
 function profit(stake,o){return o>0?stake*o/100:stake*100/Math.abs(o)}
@@ -491,8 +494,29 @@ function gameSheet(i){
   var mx=ws.length?ws[0].p:1;
   h+='<section class="panel"><div class="ph"><div><div class="kicker">'+g.s+' · Week '+g.w+'</div><h2>Every score that week</h2></div></div>'+
    ws.map(function(x,j){var hl=x.u===g.win||x.u===g.lose;return '<div class="wk'+(hl?' hl':'')+'"><span class="rk'+(j===0?' gold':'')+'" style="width:22px;height:22px;font-size:10px">'+(j+1)+'</span><div style="min-width:0"><b>'+esc(tnS(g.s,x.u))+'</b><div class="bar"><i style="width:'+(x.p/mx*100).toFixed(1)+'%"></i></div></div><span class="p">'+f2(x.p)+'</span></div>'}).join('')+'</section>';
-  h+='<p class="note"><b>Full lineups coming.</b> Every starter and bench player with their points loads straight from Sleeper once the app is live.</p>';
+  h+=LIVE?'<section class="panel"><div class="ph"><div><div class="kicker">Box score</div><h2>Lineups</h2></div></div><div id="lineups"><p class="muted">Loading lineups from Sleeper…</p></div></section>':
+    '<p class="note"><b>Full lineups coming.</b> Every starter and bench player with their points loads straight from Sleeper once the app is live on Railway.</p>';
   return h;
+}
+
+function loadLineups(i){
+  if(!LIVE)return;var g=D.games[i];
+  fetch('/api/game?season='+g.s+'&week='+g.w+'&users='+g.win+','+g.lose).then(function(r){return r.json()}).then(function(d){
+    var el=document.getElementById('lineups');if(!el)return;
+    if(!d||!d.teams||d.error){el.innerHTML='<p class="err">Couldn\'t load lineups: '+esc(d&&d.error||'unknown error')+'</p>';return}
+    el.innerHTML=lineupHtml(g,d);
+  }).catch(function(){var el=document.getElementById('lineups');if(el)el.innerHTML='<p class="err">Couldn\'t reach the server for lineups.</p>'});
+}
+function lineupHtml(g,d){
+  var A=d.teams[0],B=d.teams[1],n=Math.max(A.starters.length,B.starters.length);
+  var pl=function(p,side){if(!p)return '<div class="pl '+side+'"></div>';return '<div class="pl '+side+'"><b>'+esc(p.name)+'</b><span>'+esc([p.pos,p.team].filter(Boolean).join(' · '))+'</span></div>'};
+  var h='<div class="ln head"><span class="pl a">'+esc(tnS(g.s,g.win))+'</span><span></span><span></span><span></span><span class="pl b">'+esc(tnS(g.s,g.lose))+'</span></div>';
+  for(var j=0;j<n;j++){var a=A.starters[j],b=B.starters[j],ap=a?a.pts:0,bp=b?b.pts:0;
+    h+='<div class="ln">'+pl(a,'a')+'<span class="pp'+(ap>bp?' hi':'')+'">'+(a?f1(ap):'')+'</span><span class="slot">'+esc((a||b).slot.replace('SUPER_FLEX','SF').replace('FLEX','FLX'))+'</span><span class="pp'+(bp>ap?' hi':'')+'">'+(b?f1(bp):'')+'</span>'+pl(b,'b')+'</div>'}
+  h+='<div class="ln tot"><span class="pl a">Total</span><span class="pp hi">'+f2(A.points)+'</span><span class="slot"></span><span class="pp">'+f2(B.points)+'</span><span class="pl b"></span></div>';
+  var bench=function(t,u){var tot=t.bench.reduce(function(x,p){return x+p.pts},0);
+    return '<details class="bench"><summary>'+esc(tnS(g.s,u))+' bench · '+f1(tot)+' pts</summary>'+t.bench.map(function(p){return '<div class="bn"><div class="pl a"><b>'+esc(p.name)+'</b><span>'+esc([p.pos,p.team].filter(Boolean).join(' · '))+'</span></div><span class="pp">'+f1(p.pts)+'</span></div>'}).join('')+'</details>'};
+  return h+bench(A,g.win)+bench(B,g.lose);
 }
 
 /* ---------- sheets ---------- */
@@ -529,7 +553,7 @@ document.addEventListener('click',function(e){
   if(t.id==='cancelSlip'){closeSheet();return}
   if(t.dataset.cancel!=null&&t.dataset.cancel!==undefined&&t.classList.contains('x')){S.bets.splice(+t.dataset.cancel,1);store('bets',S.bets);render();toast('Bet cancelled, Bucks returned');return}
   if(t.id==='bucksBtn'){go('book');return}
-  if(t.dataset.game!==undefined){var gx=+t.dataset.game;if(gx>=0){openSheet(gameSheet(gx)+'<button type="button" class="ghost" id="closeP">Close</button>');return}}
+  if(t.dataset.game!==undefined){var gx=+t.dataset.game;if(gx>=0){openSheet(gameSheet(gx)+'<button type="button" class="ghost" id="closeP">Close</button>');loadLineups(gx);return}}
   if(t.dataset.mgr){openSheet(profile(t.dataset.mgr,false)+'<button type="button" class="ghost" id="closeP">Close</button>');return}
   if(t.id==='closeP'){closeSheet();return}
 });

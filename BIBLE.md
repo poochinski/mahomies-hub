@@ -424,6 +424,7 @@ GET  /api/state                     current season/week + last sync time
 GET  /api/history                   all seasons, champions, all-time table
 GET  /api/records                   record book
 GET  /api/managers/:id              profile
+GET  /api/game?season=&week=&users=a,b   box score: starters by slot + bench, names, positions, points (built)
 GET  /api/season/:season            standings, power, luck, playoff odds
 GET  /api/h2h                       matrix
 GET  /api/recap/:season/:week
