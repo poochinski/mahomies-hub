@@ -86,6 +86,15 @@ AW_CSS=""".aw-row{grid-template-columns:30px minmax(0,1fr) auto!important;align-
 .aw-vb small{font:500 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);max-width:84px;line-height:1.25;margin-top:2px}
 """
 
+# DRAFT pass: clearer draft re-grade rows (Jayson 2026-10-09)
+a_=s.index('function draftHtml(d){'); b_=s.index('/* ---------- RECORDS ---------- */')
+s=s[:a_]+open('/home/claude/data/v18_draft.js').read()+'\n'+s[b_:]
+AW_CSS+=""".dr-row{grid-template-columns:52px minmax(0,1fr) auto!important;align-items:center!important}
+.dr-pk{display:grid;justify-items:center;font:700 14px var(--mono);color:var(--cyan);border:1px solid var(--line-2);border-radius:7px;padding:4px 0;line-height:1.15}.dr-pk small{font:500 9px var(--mono);color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+.dr-team{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-top:2px}
+.dr-mv{font-size:11.5px;color:var(--muted);margin-top:2px}.dr-mv b{color:var(--ink);font-family:var(--mono);font-weight:600}.dr-mv .up,.dr-mv .dn{font-family:var(--mono);white-space:nowrap}
+"""
+
 # TRADES pass: trade grader v2 (Jayson 2026-10-09)
 a_=s.index('function tradesHtml(d){'); b_=s.index('function draftHtml(d){')
 s=s[:a_]+open('v18_trades.js').read()+'\n'+s[b_:]
@@ -102,7 +111,6 @@ for a_,b_ in [
   ("<h2>Rivalry card</h2></div></div>","<h2>Rivalry card</h2></div>'+info('h2h')+'</div>"),
   ("<h1>'+s+' awards</h1>';","<h1>'+s+' awards</h1>'+info('awards');"),
   ("<h2>Bench Shame</h2></div></div>","<h2>Bench Shame</h2></div>'+info('bench')+'</div>"),
-  ("<h2>Biggest steals</h2></div></div>","<h2>Biggest steals</h2></div>'+info('draft')+'</div>"),
   ('data-share-rec="1">Share</button></section>','data-share-rec="1">Share</button>\'+info(\'records\')+\'</section>'),
   ('<p class="margin">Win chance from the Banana Book</p>','<p class="margin">Win chance from the Sportsbook</p>\'+info(\'preview\')+\''),
   ("      if(!AUTH)h+='<p class=\"note\"><b>Look around all you want.</b>","      h+='<div class=\"info-row\">'+info('book')+'</div>';\n      if(!AUTH)h+='<p class=\"note\"><b>Look around all you want.</b>"),

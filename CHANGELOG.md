@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Draft re-grade: clearer rows (drafted → finished, spots gained/lost, labeled points). (Claude)
 - 2026-10-09 — Awards rows: full descriptions and a unit label under each number. (Claude)
 - 2026-10-09 — Trade grader v2: who got what, points-started labels, per-week verdict scale, full breakdown sheet with weekly tracker, chart, team impact and insights. (Claude)
 - 2026-10-09 — "How it works" buttons + sheets explaining every stat, plus a How the app works list on the Me tab. (Claude)
