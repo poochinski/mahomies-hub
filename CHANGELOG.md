@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Serve v1.5 at every address; self-removing service worker clears the old placeholder app from phones. (Claude)
 - 2026-10-09 — Live on Railway: IPv4 + timeouts for Sleeper calls, `/api/diag`; real data confirmed. (Claude)
 - 2026-10-09 — League ID defaults in code (fixes 'SLEEPER_LEAGUE_ID is not set'); `/` opens the test build. (Claude)
 - 2026-10-09 — Live data: `/api/hub` builds every stat from Sleeper; /test loads it and refreshes every 3 min. (Claude)

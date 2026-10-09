@@ -12,7 +12,7 @@ real league data, then bring it to Railway. Two looks are being compared:
 plan page — currently favored) and the original light Banana Bets look.
 VERSIONS: v1.5 is current (night theme only). v1.0 is saved in prototype/v1.0/
 and on GitHub branch `release-v1.0` (git tags are blocked from Claude's push) — go back to it if v1.5 ever needs to be undone.
-On Railway: /test = v1.5, /test/v1.0 and /test/v1.0/light = the old builds.
+On Railway: every address = v1.5; /test/v1.0 and /test/v1.0/light = the old builds.
 v1.5 source: prototype/v1.5/ (app15.template.html + v15_main.js, v15_extra.js,
 v15_events.js, v15.css; data from compute15.py → prototype/data/app15.json).
 Built file: prototype/dist/night.html. Build paths are absolute to Claude's
@@ -25,6 +25,12 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — Fixed "old placeholder app showing" (Claude): the Phase 0 React
+  build had installed a service worker on phones that kept serving the old
+  page. Server now serves v1.5 at every address, replaces /sw.js with a
+  self-removing worker that clears caches, and the page unregisters any old
+  worker on load. Manifest + icons served directly. The React app in src/ is
+  NOT served right now (v1.5 page is the app until React catches up).
 - 2026-10-09 — **Live on Railway** (Claude): Sleeper calls now prefer IPv4 and
   time out instead of hanging; `/api/diag` confirms Railway reaches Sleeper
   (200 in 76 ms, all 4 seasons found). `/api/hub` returns real live data
