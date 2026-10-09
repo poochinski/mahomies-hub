@@ -1,4 +1,4 @@
-// Mahomie's Hub server: serves /api and the app page (currently the v1.5 build).
+// Mahomie's Hub server: serves /api (incl. the Banana Book) and the app page (v1.7 build).
 import dns from 'node:dns';
 import express from 'express';
 import path from 'node:path';
@@ -7,6 +7,9 @@ import stateRoutes from './routes/state.js';
 import gameRoutes from './routes/game.js';
 import labRoutes from './routes/lab.js';
 import hubRoutes from './routes/hub.js';
+import bookRoutes from './routes/book.js';
+import { initBook, startBookJobs } from './book/book.js';
+import { pool } from './db.js';
 
 // Some hosts can't route IPv6 out; prefer IPv4 so calls to Sleeper don't hang.
 dns.setDefaultResultOrder('ipv4first');
@@ -18,12 +21,14 @@ const APP_PAGE = path.join(proto, 'dist', 'night.html'); // v1.7
 const PORT = process.env.PORT || 3000;
 
 const app = express();
+app.set('trust proxy', 1); // Railway sits in front; use the phone's real address for login limits
 app.use(express.json());
 
 app.use('/api', stateRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', labRoutes);
 app.use('/api', hubRoutes);
+app.use('/api', bookRoutes);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
 // The first deploy installed a service worker that keeps showing the old
@@ -74,3 +79,10 @@ app.get('*', (_req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Mahomie's Hub running on port ${PORT}`));
+
+// Banana Book: create tables if needed, then run the clock job every 10 minutes
+// (posts lines Tuesday 6 AM, keeps game locks current, settles Wednesday 3 AM).
+if (pool) {
+  initBook().then(() => console.log('[book] database ready')).catch((e) => console.error('[book] database not ready yet:', e.message));
+  if (process.env.BOOK_JOBS !== 'off') startBookJobs();
+}

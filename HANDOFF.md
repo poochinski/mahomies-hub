@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-09 10:45 (Pacific) · **AI:** Claude
-**Current phase:** v1.7 live on Railway (calmer screens); next = Jayson feedback, then features + Phase 1 (Postgres)
-**Last commit:** "Live data: /api/hub builds everything from Sleeper; test build loads it"
+**Last updated:** 2026-10-09 12:10 (Pacific) · **AI:** Claude
+**Current phase:** Banana Book backend built (part 1 + parlays); next = Book screens in the app, then specials + futures
+**Last commit:** "Banana Book backend: PIN login, frozen lines, per-game locks, bets, parlays, settlement"
 **App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v1.7; old builds at /test/v1.6, /test/v1.5, /test/v1.0)
 
 ## What we're working toward right now
@@ -25,6 +25,19 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Banana Book backend** (Claude). New folder `server/book/`:
+  `schema.sql` (tables, created automatically on every start), `engine.js` (odds
+  math + grading, pure functions), `kickoffs.js` (ESPN kickoff times, Pacific
+  time helpers), `data.js` (what the Book reads from Sleeper), `book.js` (logins,
+  ledger, lines, bets, locks, settlement, clock job). Routes in
+  `server/routes/book.js` (list in BIBLE §10). Clock job runs every 10 min:
+  posts lines Tuesday 6 AM for the coming week (from Week 6), refreshes each
+  game's lock time (first starter's kickoff), settles Wednesday 3 AM once
+  Sleeper has finalized the week. Parlays (2–4 legs) are included already.
+  Tested end to end against a local Postgres + stand-in Sleeper/ESPN
+  (36 checks: posting time, locks incl. Thursday + London games, PIN rules,
+  own-game rules, limits, cancel, parlay, commish tools, payouts to the cent,
+  no double settle). Test script: Claude's scratchpad `booktest/run.mjs`.
 - 2026-10-09 — **v1.7** (Claude), after Jayson said v1.6 was still crowded and had
   too much sideways swiping: Home is now ~1 screen — hero with "Your game"
   (your live score, opponent, win %), "This week" 2-column live score grid,
@@ -103,24 +116,24 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
   confirmed, relay workflow decided. (Claude)
 
 ## In progress (not finished)
-- Railway deploy (Jayson's steps below)
+- Nothing half-done in code. The app's Book tab still shows the old test slip;
+  it is NOT wired to the real Book yet (next step A).
 
 ## Next steps (in order)
-A. Jayson: fix Railway variable — put `DATABASE_URL = ${{Postgres.DATABASE_URL}}` on the **mahomies-hub** service (it's missing there now).
-B. Build the Book backend: Postgres tables (app_users, sessions, lines, bets, bet_legs, bankroll_ledger), PIN login, frozen weekly lines, place/cancel bets, ESPN kickoff schedule + per-game lock, settlement job, leaderboard + feed.
-C. Then specials, parlays, futures; then the Book UI in the app.
-1. Jayson: Railway → New Project → Deploy from GitHub repo → `poochinski/mahomies-hub`.
-2. Jayson: in the same Railway project, add a PostgreSQL database.
-3. Jayson: on the app service → Variables, add:
-   `SLEEPER_LEAGUE_ID=1312104253497540608`, `COMMISH_USER_ID=862901935416655872`,
-   `TZ=America/Los_Angeles`, and `DATABASE_URL` as a reference to the Postgres
-   service (`${{Postgres.DATABASE_URL}}`).
-4. Jayson: app service → Settings → Networking → Generate Domain. Open it on
-   the phone, check all three system-check dots are green, then Add to Home Screen.
-5. Phase 1: `server/schema.sql` with the Sleeper mirror tables (BIBLE §6),
-   then the sync job for seasons → users → rosters → matchups.
+A. **Book screens in the app** (v1.8): login sheet (pick team → 4-digit PIN pad),
+   lines from `/api/book/lines` with lock countdowns and live scores, bet slip
+   that posts to `/api/book/bets` (straight + parlay), My bets (cancel before
+   lock), Leaders from `/api/book/leaderboard`, feed from `/api/book/feed`,
+   commish tools (post/settle/move/void line, adjust Bucks, reset PIN).
+   Must be live before Tue Oct 13 6 AM when Week 6 lines post.
+B. Weekly specials (Top Banana / Rotten Banana / low-score O-U), priced by simulation.
+C. Futures (Champion / Sacko) repriced Tuesdays.
+D. Playoff weeks (15–17) lines: only bracket games; not built yet (Book stops after Wk 14 for now).
+E. Verify Lab endpoints with real data on Railway.
 
 ## Decisions made (and why)
+- **Book details decided while building (Claude, 2026-10-09):** you can bet the over on your own game but not the under; bets can be cancelled until their game locks; 5 wrong PINs = 15-minute lock; phones stay logged in 180 days; parlays pay at most 10,000 back; lines keep the v1.5 projection formula (BIBLE §7) instead of Sleeper player projections; if ESPN kickoff times can't be read, betting pauses rather than guessing.
+- **Lock rule detail:** a game's lock time = earliest kickoff among both lineups' current starters, rechecked every few minutes; once locked it never reopens (Sleeper locks a player once his game starts, so the time can't move earlier after that).
 - **Banana Book rules (Jayson, 2026-10-09):** per-game lock (first starter's kickoff), 1,000 Bucks once per season with NO allowance, launch with spread/ML/total + weekly specials + parlays + futures, team + 4-digit PIN login. Full rules in BIBLE §7. Book opens for real in Week 6.
 - Former managers (rpkid426, nstynate85) stay in every list and stat, tagged "Former" wherever shown — Jayson's call (he didn't want them hidden or separated).
 - App name: Mahomie's Hub, repo `poochinski/mahomies-hub` — Jayson's pick.
@@ -144,7 +157,8 @@ C. Then specials, parlays, futures; then the Book UI in the app.
 
 ## Known bugs / open questions
 - Lab endpoints only tested with fake data; verify on Railway with real Sleeper data.
-- Railway variables appear to be on the wrong service (server reports DATABASE_URL not set). Not needed until Phase 1.
+- DATABASE_URL was added on the mahomies-hub service 2026-10-09; confirm `/api/health` says db connected after the redeploy.
+- First login to a team sets its PIN, so whoever logs in first owns it; commish can reset a PIN if someone grabs the wrong team.
 - Playoff odds tiebreak = points for (check league's real tiebreaker setting).
 - Claude can push to main now; pushing git tags is blocked, so saved versions live on branches (release-v1.0).
 - Test build data is a snapshot (Oct 8, 2026 night). Live sync = Phase 1.
@@ -152,5 +166,6 @@ C. Then specials, parlays, futures; then the Book UI in the app.
 - Player names in the snapshot only for 16 players; full names come from /api/game on Railway.
 
 ## Files changed in the latest push
-- Everything (first commit): package.json, vite.config.js, index.html,
-  public/*, src/*, server/*, BIBLE.md, HANDOFF.md, CHANGELOG.md, README.md
+- New: server/book/schema.sql, engine.js, kickoffs.js, data.js, book.js; server/routes/book.js
+- Changed: server/index.js (Book routes, trust proxy, clock job), server/db.js (no SSL for local test DBs),
+  BIBLE.md (§6 tables, §7 rules + engine, §10 routes), HANDOFF.md, CHANGELOG.md

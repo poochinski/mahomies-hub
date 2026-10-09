@@ -8,8 +8,8 @@ const { Pool } = pg;
 export const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      // Railway's internal network doesn't need SSL; public URLs do.
-      ssl: process.env.DATABASE_URL.includes('railway.internal')
+      // Railway's internal network (and a local test database) doesn't use SSL; public URLs do.
+      ssl: /railway\.internal|localhost|127\.0\.0\.1|sslmode=disable/.test(process.env.DATABASE_URL)
         ? false
         : { rejectUnauthorized: false }
     })

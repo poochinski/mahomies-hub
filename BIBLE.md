@@ -214,15 +214,18 @@ transactions(transaction_id PK, league_id, week, type, status, roster_ids_json, 
 draft_picks(draft_id, pick_no, round, roster_id, player_id, PRIMARY KEY(draft_id, pick_no))
 brackets(league_id, bracket, match_id, round, t1, t2, winner, loser, place, PRIMARY KEY(league_id, bracket, match_id))
 
--- App data
-app_users(user_id PK → managers, pin_hash, role DEFAULT 'manager', created_at)   -- role: 'manager' | 'commish'
-sessions(token PK, user_id, expires_at)
-lines(id PK, league_id, week, matchup_id, home_roster, away_roster,
-      proj_home, proj_away, spread, total, ml_home, ml_away, win_prob_home,
-      status, locked_at, settled_at, override_by)                          -- status: open | locked | settled | void
-bets(id PK, user_id, line_id, market, side, stake, odds, line_value,
-     status, payout, placed_at, settled_at)                               -- market: ml | spread | total; status: pending | won | lost | push | void
-bankroll_ledger(id PK, user_id, season, amount, reason, ref_id, created_at)   -- balance = SUM(amount)
+-- App data: Banana Book (built 2026-10-09; exact SQL in server/book/schema.sql, run on every start)
+app_users(user_id PK, pin_hash, pin_salt, pin_set_at, failed_tries, locked_until)    -- commish = COMMISH_USER_ID
+sessions(token_hash PK, user_id, expires_at)                                       -- phone keeps the token; DB keeps its sha256
+book_weeks(season, week PK, posted_at, first_kick, last_kick, settle_at, settled_at)
+lines(id PK '2026-w6-m3', season, week, matchup_id, team_a, team_b, roster_a, roster_b, proj_a, proj_b,
+      spread, total, ml_a, ml_b, spread_price, total_price, wp_a, lock_at, locked, status, final_a, final_b, note)
+                                                                                   -- spread = team A's expected margin; status open | final | void
+bets(id PK, user_id, season, week, kind, stake, dec_odds, odds, to_win, status, payout, lock_at, placed_at, settled_at)
+                                                                                   -- kind single | parlay; status open | won | lost | push | void | cancelled
+bet_legs(id PK, bet_id, line_id, market, pick, point, odds, result)                 -- market spread | ml | total; pick a | b | over | under
+bankroll_ledger(id PK, user_id, season, amount, kind, bet_id, note, created_by)    -- kind grant | stake | payout | refund | adjust; balance = SUM(amount)
+book_settings(key PK, value)     book_log(id, at, kind, by_user, detail)
 awards(id PK, season, award_key, title, roster_id, value, note, source)       -- source: auto | commish
 recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 ```
@@ -237,7 +240,10 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 - **Bankroll:** every manager gets **1,000 Banana Bucks once per season. No weekly allowance.** Go broke and you're out until next season. Only the commish can add Bucks by hand (always written to the ledger with a reason).
 - **Login:** pick your team + set a **4-digit PIN** the first time. PIN stored hashed. Commish can reset anyone's PIN.
 - **Bets:** min 10, max 250 per bet (commish can change). Every bet is a ledger entry; a bankroll is never stored as one number.
-- **Own game:** you may bet on yourself to win/cover, never against yourself (blocks tanking).
+- **Own game:** you may bet on yourself to win/cover (and the over), never against yourself or the under on your own game (blocks tanking).
+- **Cancel:** a bet can be cancelled for a full refund until its game locks.
+- **Login safety:** 5 wrong PINs locks that team for 15 minutes; a phone stays logged in 180 days.
+- **Parlay cap:** a parlay pays at most 10,000 Bucks back (commish setting).
 - **Ties:** exact tie on a spread or total = push (stake back). A parlay with a pushed leg drops that leg.
 - Season prize: bankroll leader = **Banana Book Champion** award. Bragging rights only; no real money in the app.
 
@@ -254,27 +260,25 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 - **Wednesday 3 AM:** final settlement after Sleeper stat corrections; payouts written to the ledger; bet feed + leaderboard update.
 - Launch: **Week 6 of 2026** (lines post Tue Oct 13).
 
-### Odds engine (`server/book/engine.js`)
+### Odds engine (`server/book/engine.js`; jobs + rules in `server/book/book.js`)
 
 For each matchup, team A vs team B:
 
-**Step 1 — Projected score for each team**
+**Step 1 — Projected score for each team** (built; same numbers the app has shown since v1.5)
 ```
-proj_sleeper = sum of Sleeper projections for the team's current starters
-proj_form    = team's average points over its last 4 games
-proj_season  = team's season average (falls back to league average early in the year)
-
-projection = 0.60 * proj_sleeper + 0.25 * proj_form + 0.15 * proj_season
+cur   = this season's scores before this week      prev = last season's regular-season scores
+raw   = 0.45 * avg(last 3 of cur) + 0.35 * avg(cur) + 0.20 * avg(prev)   (no prev → avg(cur); no cur → avg(prev))
+k     = 0.35 through Week 6, 0.15 after             -- pull toward the league average early in the year
+projection = (1 - k) * raw + k * league_avg
 ```
-If Sleeper projections are missing: `projection = 0.6 * proj_form + 0.4 * proj_season`.
-Weeks 1–3: blend in last season's average with weight shrinking each week.
+Sleeper player projections are a possible later upgrade (their projections API isn't official).
 
 **Step 2 — Uncertainty**
 ```
-sd_team = standard deviation of that team's weekly scores (this season + last season),
-          shrunk toward the league-wide sd (default 24 points if not enough data)
+sd_team = std dev of the team's weekly scores (last season + this season), blended with 24 pts as if 6 extra games
 sd_game = sqrt(sd_A² + sd_B²)
 ```
+Spreads are capped at 20 points.
 
 **Step 3 — Fair win probability**
 ```
@@ -442,12 +446,20 @@ GET  /api/draft?season=              Draft re-grade: steals and busts by pick vs
 GET  /api/season/:season            standings, power, luck, playoff odds
 GET  /api/h2h                       matrix
 GET  /api/recap/:season/:week
-GET  /api/book/lines?week=          current lines
-POST /api/book/bets                 place bet (auth)
-GET  /api/book/me                   my bets + balance (auth)
-GET  /api/book/leaders
+GET  /api/book/status                Book state: open week, next posting time, settings (built)
+GET  /api/book/teams                 teams to pick at login, has_pin (built)
+POST /api/book/login                 { user_id, pin } → { token } (first login sets the PIN) (built)
+POST /api/book/logout                (built)
+GET  /api/book/me                    balance, in play, my bets, ledger (auth) (built)
+GET  /api/book/lines?week=           frozen lines + lock time + live/final scores (built)
+POST /api/book/bets                  { legs:[{line_id, market, pick}], stake } — 1 leg = straight, 2–4 = parlay (auth) (built)
+POST /api/book/bets/:id/cancel       before the game locks (auth) (built)
+GET  /api/book/leaderboard           every active manager's bankroll (built)
+GET  /api/book/feed?limit=           latest bets, all managers (built)
+POST /api/book/admin/post-lines      { week, force } (commish) · /admin/settle { week, force } · /admin/line/:id { spread,total,ml_a,ml_b,note | void }
+POST /api/book/admin/adjust          { user_id, amount, note } · /admin/reset-pin { user_id } · /admin/setting { key, value } · /admin/tick
+GET  /api/book/admin/log             job runs + commish actions (commish)
 GET  /api/awards/:season
-POST /api/auth/login                { user_id, pin } → session token
 POST /api/commish/*                 sync, lines, settle, awards (commish only)
 ```
 
