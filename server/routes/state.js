@@ -10,6 +10,20 @@ router.get('/health', async (_req, res) => {
   res.json({ ok: true, app: "Mahomie's Hub", db: await checkDb() });
 });
 
+// GET /api/diag — always 200, says whether the server can reach Sleeper and why not.
+router.get('/diag', async (_req, res) => {
+  const out = { node: process.version, league: LEAGUE_ID, env_league: !!process.env.SLEEPER_LEAGUE_ID };
+  try {
+    const r = await fetch('https://api.sleeper.app/v1/state/nfl');
+    out.sleeper_status = r.status;
+    out.sleeper_body = (await r.text()).slice(0, 200);
+  } catch (e) {
+    out.sleeper_error = String(e && (e.cause?.code || e.cause?.message || e.message));
+  }
+  try { const c = await leagueChain(LEAGUE_ID); out.seasons = c.map((x) => x.season); } catch (e) { out.chain_error = e.message; }
+  res.json(out);
+});
+
 // GET /api/state — current NFL week + league basics + every season on Sleeper.
 router.get('/state', async (_req, res) => {
   const leagueId = LEAGUE_ID;
