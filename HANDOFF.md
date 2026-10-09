@@ -35,6 +35,9 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
   on live bets, 30-second refresh while games are live. Logo: Jayson's gold MH + football
   is now the home-screen icon and the header logo. Test suite now 44 checks (live odds,
   stale-price refusal, ML off the board, no bets after games end).
+  "Share left to play" weights each starter by position (QB 19, RB/WR 13, TE 9, K 8, DEF 7),
+  so a Thursday kicker moves odds less than a QB. Empty / bye starter slots count as nothing
+  left and show as "N slots not playing" under the team.
 - 2026-10-09 — **Banana branding removed** (Claude), Jayson: "this isn't the Banana Bets app".
   Banana Book → **Mahomie's Sportsbook** ("the Book"), Banana Bucks → **Mahomie Bucks** (💵),
   Top Banana / Rotten Banana → **🔥 On Fire / 🧊 Ice Cold** (awards, Home "Last week" cells

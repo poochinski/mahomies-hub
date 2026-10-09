@@ -93,21 +93,26 @@ export async function lockTimes(L, week) {
  * an empty slot or a starter on bye counts as nothing left.
  * Returns { rosters: { roster_id: { pts, rem } }, starts: { matchup_id: Date }, k }
  */
+const POS_W = { QB: 19, RB: 13, WR: 13, TE: 9, K: 8, DEF: 7 }; // typical PPR points by position
 export async function weekState(L, week, maxAgeMs = 60 * 1000) {
   const [k, ms, players] = await Promise.all([kickoffs(L.season, week, { maxAgeMs }), matchups(L.leagueId, week, maxAgeMs), getPlayers().catch(() => ({}))]);
   const teamOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? pid : players[pid]?.t || null);
+  const posOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? 'DEF' : players[pid]?.p || '');
   const rosters = {}, starts = {};
   for (const m of ms) {
-    const slots = (m.starters || []).length || 1;
-    let rem = 0, first = Infinity; const out = [];
-    for (const pid of m.starters || []) {
+    // Each starter counts by how many points his position usually scores in PPR,
+    // so a kicker's game finishing moves the odds less than a quarterback's.
+    let rem = 0, all = 0, first = Infinity; const out = [];
+    for (const pid0 of m.starters || []) {
+      const pid = String(pid0 || '');
+      const w = POS_W[posOf(pid)] || 12; all += w;
       if (!pid || pid === '0') { out.push('empty'); continue; }
-      const g = k.gameOf[teamOf(String(pid))];
-      if (!g) { out.push(`${pid}:${teamOf(String(pid)) || '?'}`); continue; }
-      rem += 1 - g.progress;
+      const g = k.gameOf[teamOf(pid)];
+      if (!g) { out.push(`${pid}:${teamOf(pid) || '?'}`); continue; }
+      rem += w * (1 - g.progress);
       first = Math.min(first, g.at.getTime());
     }
-    rosters[m.roster_id] = { pts: pts(m), rem: rem / slots, first, out, slots };
+    rosters[m.roster_id] = { pts: pts(m), rem: all ? rem / all : 0, first, out, slots: (m.starters || []).length };
     if (m.matchup_id != null) starts[m.matchup_id] = Math.min(starts[m.matchup_id] ?? Infinity, first);
   }
   for (const mid of Object.keys(starts)) starts[mid] = new Date(Number.isFinite(starts[mid]) ? starts[mid] : k.first.getTime());

@@ -42,7 +42,7 @@ function picked(id,mkt,side){return S.picks.some(function(p){return p.line===id&
 function obk(l,mkt,side,label,sub,fav){if(mkt==='ml'&&(side==='a'?l.ml_a:l.ml_b)==null){label='Off';fav=false}var lk=isLk(l)||(mkt==='ml'&&(side==='a'?l.ml_a:l.ml_b)==null),dis=lk||blocked(l,mkt,side);
   return '<button type="button" class="ob'+(fav?' fav':'')+(picked(l.id,mkt,side)?' sel':'')+'" data-bk="'+l.id+'|'+mkt+'|'+side+'"'+(dis?' disabled':'')+(blocked(l,mkt,side)?' title="You can\'t bet against yourself"':'')+'>'+esc(label)+(sub!=null?'<small>'+odds(sub)+'</small>':'')+'</button>'}
 function sideRowB(l,s){var u=s==='a'?l.a:l.b,sp=s==='a'?-l.spread:l.spread,ml=s==='a'?l.ml_a:l.ml_b,sc=s==='a'?l.score_a:l.score_b;
-  return '<div class="mu-t">'+who(u,(sc!=null&&(l.live||l.status!=='open')?f2(sc)+' pts · ':'')+'proj '+f1(s==='a'?l.proj_a:l.proj_b),30)+obk(l,'spread',s,spr(sp),l.spread_price,sp<0)+obk(l,'ml',s,odds(ml),null,sp<0)+'</div>'}
+  return '<div class="mu-t">'+who(u,(sc!=null&&(l.live||l.status!=='open')?f2(sc)+' pts · ':'')+'proj '+f1(s==='a'?l.proj_a:l.proj_b)+(function(o){return o&&o.length?' · '+o.length+' slot'+(o.length>1?'s':'')+' not playing':''})(s==='a'?l.out_a:l.out_b),30)+obk(l,'spread',s,spr(sp),l.spread_price,sp<0)+obk(l,'ml',s,odds(ml),null,sp<0)+'</div>'}
 function bookHero(){
   if(AUTH&&BK.me){var open=BK.me.bets.filter(function(b){return b.status==='open'});
     return '<section class="hero bk-hero"><div class="eyebrow">Mahomie\'s Sportsbook · '+esc(team(BK.me.user_id))+'</div><div class="bank">💵 '+money2(BK.me.balance)+'</div><p class="sub" style="margin-top:6px">Mahomie Bucks to bet · '+open.length+' open bet'+(open.length===1?'':'s')+(open.length?' ('+money2(BK.me.in_play)+' in play)':'')+'</p></section>'}
