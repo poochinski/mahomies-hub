@@ -3,13 +3,14 @@
 // with name, position, NFL team and fantasy points, for both teams.
 import { Router } from 'express';
 import { sleeper, leagueChain, getPlayers } from '../sleeper/client.js';
+import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
 const router = Router();
 const HOUR = 60 * 60 * 1000;
 
 router.get('/game', async (req, res) => {
   const { season, week, users } = req.query;
-  const leagueId = process.env.SLEEPER_LEAGUE_ID;
+  const leagueId = LEAGUE_ID;
   if (!leagueId) return res.status(500).json({ error: 'SLEEPER_LEAGUE_ID is not set' });
   if (!season || !week || !users) {
     return res.status(400).json({ error: 'Need season, week and users (two user ids, comma separated)' });

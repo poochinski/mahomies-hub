@@ -4,6 +4,7 @@
 //   GET /api/draft?season=2026
 import { Router } from 'express';
 import { sleeper, leagueChain, getPlayers } from '../sleeper/client.js';
+import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
 const router = Router();
 const HOUR = 60 * 60 * 1000;
@@ -16,7 +17,7 @@ const ELIGIBLE = {
 };
 
 async function loadSeason(season) {
-  const leagueId = process.env.SLEEPER_LEAGUE_ID;
+  const leagueId = LEAGUE_ID;
   if (!leagueId) throw Object.assign(new Error('SLEEPER_LEAGUE_ID is not set'), { status: 500 });
   const chain = await leagueChain(leagueId);
   const s = chain.find((x) => x.season === String(season));

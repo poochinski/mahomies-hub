@@ -27,6 +27,9 @@ app.get('/test', (_req, res) => res.sendFile(path.join(proto, 'dist', 'night.htm
 app.get('/test/v1.0', (_req, res) => res.sendFile(path.join(proto, 'v1.0', 'night.html')));
 app.get('/test/v1.0/light', (_req, res) => res.sendFile(path.join(proto, 'v1.0', 'light.html')));
 
+// Until the React app catches up, the home address opens the test build.
+app.get('/', (_req, res) => res.redirect('/test'));
+
 // The service worker and manifest must never be cached, so app updates show up.
 app.use(
   express.static(dist, {

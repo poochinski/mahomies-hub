@@ -3,7 +3,7 @@
 **Last updated:** 2026-10-09 10:45 (Pacific) · **AI:** Claude
 **Current phase:** Going live — GitHub push + Railway deploy (v1.5 test build now reads live Sleeper data)
 **Last commit:** "Live data: /api/hub builds everything from Sleeper; test build loads it"
-**App status:** Working locally (build passes) · **Live URL:** not deployed yet
+**App status:** Deployed to Railway (first deploy showed 'SLEEPER_LEAGUE_ID is not set' — fixed with defaults) · **Live URL:** Jayson's Railway domain + /test
 
 ## What we're working toward right now
 Jayson wants to perfect the UI/UX on his phone first, using a test build with
@@ -25,6 +25,10 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — Railway fix (Claude): league ID + commish ID now default in
+  `server/config.js` (Railway variables still override), so a missing variable
+  can't break the app. Home address `/` now redirects to `/test` until the
+  React app catches up.
 - 2026-10-09 — **Live data** (Claude): `server/hub/build.js` + `GET /api/hub` rebuild
   everything the app shows (seasons, games, standings incl. median, brackets,
   records + filters, all-time, H2H, power, Book lines, playoff odds (5,000 sims),

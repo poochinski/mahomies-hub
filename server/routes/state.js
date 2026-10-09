@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { sleeper, leagueChain } from '../sleeper/client.js';
 import { checkDb } from '../db.js';
+import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ router.get('/health', async (_req, res) => {
 
 // GET /api/state — current NFL week + league basics + every season on Sleeper.
 router.get('/state', async (_req, res) => {
-  const leagueId = process.env.SLEEPER_LEAGUE_ID;
+  const leagueId = LEAGUE_ID;
   if (!leagueId) return res.status(500).json({ error: 'SLEEPER_LEAGUE_ID is not set' });
   try {
     const [nfl, league, seasons] = await Promise.all([
