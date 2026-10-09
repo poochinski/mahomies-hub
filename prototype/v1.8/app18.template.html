@@ -414,6 +414,9 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .fld{display:grid;gap:4px}.fld>span{font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .fld input{min-height:46px;border:1px solid var(--line-2);border-radius:9px;background:var(--ground-2);color:var(--ink);padding:0 12px;font-family:inherit;font-size:16px;width:100%}
 .chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.info{border:1px solid var(--line-2);background:transparent;border-radius:999px;padding:5px 10px;min-height:30px;font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);white-space:nowrap;align-self:flex-start}
+.hero .info{margin-top:10px}
+.info-row{display:flex;justify-content:center}
 </style>
 
 <header class="topbar">
@@ -575,18 +578,18 @@ function league(){
 }
 function seasonView(){
   var st=D.seasons[CUR()].standings;
-  var h='<section class="panel"><div class="ph"><div><div class="kicker">'+CUR()+' · after Week '+D.league.last_scored+'</div><h2>Standings</h2></div></div>'+
+  var h='<section class="panel"><div class="ph"><div><div class="kicker">'+CUR()+' · after Week '+D.league.last_scored+'</div><h2>Standings</h2></div>'+info('standings')+'</div>'+
    '<div class="tw"><table><thead><tr><th>Team</th><th>W-L</th><th>PF</th><th>All-play</th><th>Luck</th></tr></thead><tbody>'+
    st.map(function(x,i){return '<tr class="'+(x.uid===S.me?'me ':'')+(i===5?'cut':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+x.uid+'"><span class="rk" style="width:20px;height:20px;font-size:10px">'+x.seed+'</span><span class="tx"><b style="font-size:13px">'+esc(team(x.uid))+'</b></span></button></td><td><b>'+x.w+'-'+x.l+'</b></td><td>'+f1(x.pf)+'</td><td>'+x.ap+'</td><td class="'+(x.luck>0.4?'pos':x.luck<-0.4?'negv':'')+'">'+(x.luck>0?'+':'')+f1(x.luck)+'</td></tr>'}).join('')+
    '</tbody></table></div><p class="muted" style="font-size:11.5px;margin-top:9px;line-height:1.5">W-L includes the league-median game each week. All-play is your record if you played every team every week. Luck is head-to-head wins minus all-play expected wins. Dashed line = playoff cut (top 6).</p></section>';
-  h+='<section class="panel"><div class="ph"><div><div class="kicker">Points, all-play, form, record</div><h2>Power rankings</h2></div></div><div class="rows">'+
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">Points, all-play, form, record</div><h2>Power rankings</h2></div>'+info('power')+'</div><div class="rows">'+
    D.power.map(function(p){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(p.rank===1?' gold':'')+'">'+p.rank+'</span><div style="min-width:0">'+who(p.uid,p.rec+' · last 3: '+f1(p.last3)+' ppg',30)+'<div class="pbar"><i style="width:'+p.power+'%"></i></div></div><div style="display:grid;justify-items:end;gap:2px"><span class="val" style="font-size:16px">'+f1(p.power)+'</span>'+mv(p.move)+'</div></div>'}).join('')+
    '</div></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Browse any week</div><h2>'+CUR()+' weeks</h2></div><button class="link" data-season="'+CUR()+'">Open season ›</button></div><p class="muted" style="font-size:12.5px">Every result from this season, week by week.</p></section>';
   return h;
 }
 function oddsView(){
-  var h='<section class="hero"><div class="eyebrow">'+money(D.odds.sims)+' simulated seasons · '+D.odds.weeks_left+' weeks left</div><h1 style="font-size:28px">Playoff odds</h1><p class="sub">Each simulation plays out the rest of the schedule using every team\'s scoring level and week-to-week swing, including the median game. Top 6 make it, top 2 get a bye.</p></section>';
+  var h='<section class="hero"><div class="eyebrow">'+money(D.odds.sims)+' simulated seasons · '+D.odds.weeks_left+' weeks left</div><h1 style="font-size:28px">Playoff odds</h1>'+info('odds')+'<p class="sub">Each simulation plays out the rest of the schedule using every team\'s scoring level and week-to-week swing, including the median game. Top 6 make it, top 2 get a bye.</p></section>';
   h+='<section class="panel"><div class="tw"><table><thead><tr><th>Team</th><th>Rec</th><th>Proj W</th><th>Playoffs</th><th>Bye</th><th>#1</th><th>Last</th></tr></thead><tbody>'+
    D.odds.list.map(function(o,i){return '<tr class="'+(o.uid===S.me?'me ':'')+(i===5?'cut':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+o.uid+'">'+av(o.uid,22)+'<span class="tx"><b style="font-size:13px">'+esc(team(o.uid))+'</b></span></button></td><td>'+o.rec+'</td><td>'+f1(o.wins)+'</td><td class="'+(o.playoff>=.5?'pos':'')+'"><b>'+pct(o.playoff)+'</b></td><td>'+pct(o.bye)+'</td><td>'+pct(o.top)+'</td><td class="'+(o.last>=.2?'negv':'')+'">'+pct(o.last)+'</td></tr>'}).join('')+
    '</tbody></table></div><p class="muted" style="font-size:11.5px;margin-top:9px;line-height:1.5">Projected wins include median-game wins (28 total games). Odds update every week once the app is live.</p></section>';
@@ -609,7 +612,7 @@ function pod(c,ic,u,label,cls,s){if(s===undefined){s=cls;cls=''}var tn=D.seasons
 function atRow(x){return '<tr class="'+(x.uid===S.me?'me':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+x.uid+'">'+av(x.uid,22)+'<span class="tx"><b style="font-size:13px">'+esc(team(x.uid))+fmr(x.uid)+'</b><span>'+esc(M(x.uid).name)+'</span></span></button></td><td>'+(x.titles.length||'')+'</td><td>'+x.w+'-'+x.l+'</td><td>'+(x.pct*100).toFixed(1)+'</td><td>'+f1(x.avg)+'</td><td>'+x.playoffs.length+'</td><td>'+x.tb+'</td><td>'+x.rb+'</td></tr>'}
 function alltimeView(){
   var head='<thead><tr><th>Team</th><th>🏆</th><th>W-L</th><th>Win%</th><th>PPG</th><th>Playoffs</th><th>🔥</th><th>🧊</th></tr></thead>';
-  return '<section class="panel"><div class="ph"><div><div class="kicker">'+D.league.first+' – '+CUR()+' · regular season</div><h2>All-time table</h2></div></div><div class="tw"><table>'+head+'<tbody>'+D.alltime.map(atRow).join('')+'</tbody></table></div>'+
+  return '<section class="panel"><div class="ph"><div><div class="kicker">'+D.league.first+' – '+CUR()+' · regular season</div><h2>All-time table</h2></div>'+info('alltime')+'</div><div class="tw"><table>'+head+'<tbody>'+D.alltime.map(atRow).join('')+'</tbody></table></div>'+
    '<p class="muted" style="font-size:11.5px;margin-top:9px">🔥 On Fire = weeks as the league\'s top scorer. 🧊 Ice Cold = weeks as the lowest. W-L is head-to-head only.</p></section>';
 }
 function mgrOptions(sel){return ids.map(function(u){return '<option value="'+u+'"'+(u===sel?' selected':'')+'>'+esc(team(u))+' ('+esc(M(u).name)+')'+(M(u).active?'':' · Former')+'</option>'}).join('')}
@@ -618,7 +621,7 @@ function h2hView(){
   if(!S.h2b){var best=null;act.forEach(function(u){if(u===S.h2a)return;var r=D.h2h[S.h2a+'|'+u];if(r&&(!best||r.games.length>best.n))best={u:u,n:r.games.length}});S.h2b=best?best.u:act[1]}
   var r=D.h2h[S.h2a+'|'+S.h2b]||{w:0,l:0,pf:0,pa:0,games:[]};
   var n=r.games.length;var big=r.games.slice().sort(function(a,b){return (b.m-b.o)-(a.m-a.o)});
-  var h='<section class="panel" id="rivalTop"><div class="ph"><div><div class="kicker">Head to head · every game</div><h2>Rivalry card</h2></div></div><div class="two" style="margin-bottom:14px"><select id="h2a" aria-label="First team">'+mgrOptions(S.h2a)+'</select><select id="h2b" aria-label="Second team">'+mgrOptions(S.h2b)+'</select></div>';
+  var h='<section class="panel" id="rivalTop"><div class="ph"><div><div class="kicker">Head to head · every game</div><h2>Rivalry card</h2></div>'+info('h2h')+'</div><div class="two" style="margin-bottom:14px"><select id="h2a" aria-label="First team">'+mgrOptions(S.h2a)+'</select><select id="h2b" aria-label="Second team">'+mgrOptions(S.h2b)+'</select></div>';
   if(!n){h+='<p class="muted">These two have never played each other.</p></section>'}
   else{
   h+='<div class="vs"><div class="side">'+av(S.h2a,48)+'<b>'+esc(team(S.h2a))+'</b><strong style="color:'+(r.w>=r.l?'var(--win)':'var(--ink)')+'">'+r.w+'</strong></div><div class="mid">VS<br><span style="font-size:10px">'+n+' GAME'+(n===1?'':'S')+'</span></div><div class="side">'+av(S.h2b,48)+'<b>'+esc(team(S.h2b))+'</b><strong style="color:'+(r.l>r.w?'var(--win)':'var(--ink)')+'">'+r.l+'</strong></div></div>'+
@@ -637,7 +640,7 @@ function awardsView(){
   var s=S.aws;var A=D.awards[s]||[];
   var h='<div class="seg seg4">'+ALLS().map(function(x){return '<button type="button" class="'+(x===s?'on':'')+'" data-aws="'+x+'">'+x+'</button>'}).join('')+'</div>';
   var champ=A.find(function(a){return a.key==='champ'}),sacko=A.find(function(a){return a.key==='sacko'});
-  h+='<section class="hero aw-hero"><div class="eyebrow">'+(s===CUR()?'In progress · through Week '+D.league.last_scored:'Final')+'</div><h1>'+s+' awards</h1>';
+  h+='<section class="hero aw-hero"><div class="eyebrow">'+(s===CUR()?'In progress · through Week '+D.league.last_scored:'Final')+'</div><h1>'+s+' awards</h1>'+info('awards');
   if(champ)h+='<div class="podium2"><button type="button" class="p2 gold" data-mgr="'+champ.uid+'"><span class="p2i">🏆</span>'+av(champ.uid,44)+'<b>'+esc(tnS(s,champ.uid))+'</b><small>Champion</small></button>'+(sacko?'<button type="button" class="p2 poo" data-mgr="'+sacko.uid+'"><span class="p2i">🚽</span>'+av(sacko.uid,44)+'<b>'+esc(tnS(s,sacko.uid))+'</b><small>Sacko</small></button>':'')+'</div>';
   else h+='<p class="sub">Leaders change every week until the season ends.</p>';
   h+='</section><section class="panel tight"><div class="rows">'+A.filter(function(a){return a.key!=='champ'&&a.key!=='sacko'}).map(function(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
@@ -665,16 +668,16 @@ function loadLab(){
     el.innerHTML=S.lab==='bench'?benchHtml(d):S.lab==='trades'?tradesHtml(d):draftHtml(d)}).catch(function(){var e=document.getElementById('labOut');if(e)e.innerHTML='<p class="err">Couldn\'t reach the server.</p>'})
 }
 function benchHtml(d){
-  return '<div class="ph"><div><div class="kicker">'+d.season+' · through Week '+d.through+'</div><h2>Bench Shame</h2></div></div><div class="rows">'+
+  return '<div class="ph"><div><div class="kicker">'+d.season+' · through Week '+d.through+'</div><h2>Bench Shame</h2></div>'+info('bench')+'</div><div class="rows">'+
    d.teams.map(function(t,i){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+who(t.user_id,'Worst: '+f1(t.worst.lost)+' left in Wk '+t.worst.week,30)+'<span class="val">'+f1(t.lost)+'<small>pts benched</small></span></div>'}).join('')+'</div>'}
 function tradesHtml(d){
   if(!d.trades.length)return '<h2>Trade grader</h2><p class="muted" style="margin-top:6px">No trades in '+d.season+'.</p>';
-  return '<div class="ph"><div><div class="kicker">'+d.season+' · points scored for the new team</div><h2>Trade grader</h2></div></div>'+
+  return '<div class="ph"><div><div class="kicker">'+d.season+' · points scored for the new team</div><h2>Trade grader</h2></div>'+info('trades')+'</div>'+
    d.trades.map(function(t){return '<div class="trade"><div class="kicker">Week '+t.week+'</div>'+t.sides.map(function(sd){return '<div class="tside'+(sd.user_id===t.winner?' won':'')+'">'+whoS(sd.user_id,null,26)+'<span class="val" style="font-size:16px">'+f1(sd.points)+'</span><div class="tgot">'+sd.players.map(function(p){return esc(p.name)+' ('+f1(p.points)+')'}).join(', ')+(sd.picks?' · '+sd.picks+' pick'+(sd.picks>1?'s':''):'')+'</div></div>'}).join('')+
     '<p class="verdict">'+(t.winner?esc(team(t.winner))+' won this trade':'Too close to call')+'</p></div>'}).join('')}
 function draftHtml(d){
   var row=function(p){return '<div class="row" style="grid-template-columns:44px minmax(0,1fr) auto"><span class="yr">'+p.round+'.'+String(p.slot).padStart(2,'0')+'</span><div style="min-width:0"><b style="font-size:13.5px">'+esc(p.name)+'</b><div class="muted" style="font-size:11.5px">'+esc(p.pos)+' · '+esc(team(p.user_id))+' · pick '+p.pick_no+', ranked '+p.rank+'</div></div><span class="val" style="font-size:16px">'+f1(p.points)+'</span></div>'};
-  return '<div class="ph"><div><div class="kicker">'+d.season+' draft · points while rostered</div><h2>Biggest steals</h2></div></div><div class="rows">'+d.steals.map(row).join('')+'</div>'+
+  return '<div class="ph"><div><div class="kicker">'+d.season+' draft · points while rostered</div><h2>Biggest steals</h2></div>'+info('draft')+'</div><div class="rows">'+d.steals.map(row).join('')+'</div>'+
    '<div class="ph" style="margin-top:14px"><div><h2>Biggest busts</h2></div></div><div class="rows">'+d.busts.map(row).join('')+'</div>'}
 
 /* ---------- RECORDS ---------- */
@@ -705,7 +708,7 @@ function records(){
   var top=recVal(k,list[0]),g0=recGame(k,list[0]),b0=g0<0?byeKey(k,list[0]):null;
   h+='<section class="hero rec-hero"><div class="eyebrow">All-time #1</div><div class="big">'+esc(top.v)+'</div>'+
    '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':b0?'data-bye="'+b0+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
-   '<button type="button" class="share-btn" data-share-rec="1">Share</button></section>';
+   '<button type="button" class="share-btn" data-share-rec="1">Share</button>'+info('records')+'</section>';
   h+='<section class="panel tight"><div class="rows">'+
    list.slice(1,S.recMore?10:5).map(function(x,j){var i=j+1,r=recVal(k,x),gx=recGame(k,x),by=gx<0?byeKey(k,x):null,tap=gx>=0||by,inner='<span class="rk">'+(i+1)+'</span>'+(tap?whoS(r.u,r.sub+(by?' · playoff bye':''),28):who(r.u,r.sub,28))+'<span class="val">'+esc(r.v)+'</span>';
      return tap?'<button type="button" class="row" '+(gx>=0?'data-game="'+gx+'"':'data-bye="'+by+'"')+' style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
@@ -792,6 +795,7 @@ function book(){
          '<div class="mu-tot"><span>Total '+f1(l.total)+'</span>'+obk(l,'total','over','O '+f1(l.total),l.total_price)+obk(l,'total','under','U '+f1(l.total),l.total_price)+'</div>'+
          (l.live&&l.open?'<p class="mu-note">Opened: '+esc(team(l.a))+' '+spr(-l.open.spread)+' · total '+f1(l.open.total)+'</p>':'')+
          (l.note?'<p class="mu-note">'+esc(l.note)+'</p>':'')+'</div>'}).join('');
+      h+='<div class="info-row">'+info('book')+'</div>';
       if(!AUTH)h+='<p class="note"><b>Look around all you want.</b> Log in with your team and PIN to place bets.</p>';
     }
   }
@@ -917,6 +921,82 @@ function admGo(k,arg,btn){var v=function(id){var e=$('#'+id);return e?(e.type===
    .catch(function(e){btn.disabled=false;err(e.message)})}
 function loadLog(){api('/admin/log?limit=40').then(function(rows){var el=$('#aLog');if(!el)return;el.innerHTML=rows.length?'<div class="rows">'+rows.map(function(r){return '<div class="row" style="grid-template-columns:1fr"><div><b style="font-size:13px">'+esc(r.kind.replace(/_/g,' '))+'</b> <span class="muted" style="font-size:11.5px">'+esc(new Date(r.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+'</span><p class="muted" style="font-size:11.5px;word-break:break-word">'+esc(JSON.stringify(r.detail))+'</p></div></div>'}).join('')+'</div>':'<p class="muted">Nothing yet.</p>'}).catch(function(e){var el=$('#aLog');if(el)el.innerHTML='<p class="err">'+esc(e.message)+'</p>'})}
 
+/* ---------- HOW IT WORKS (plain-English explanations, v1.8) ---------- */
+var EXPLAIN={
+ data:{t:'Where the data comes from',b:[
+  ['Sleeper','Every score, lineup, matchup, trade and draft pick comes straight from Sleeper for all four seasons (2023–2026). The app rebuilds its stats from Sleeper every 3 minutes, so nothing is typed in by hand.'],
+  ['Live NFL games','Kickoff times and game clocks come from ESPN\'s public scoreboard. The Sportsbook uses them to know when a matchup goes live and how much of each lineup is left to play.'],
+  ['Former managers','Anyone who left the league stays in every record and table, tagged "Former", so history never changes.'],
+  ['Your bets','Logins, Mahomie Bucks and bets are stored in the app\'s own database. Every Buck that moves is written to a ledger, so balances can always be traced.']]},
+ standings:{t:'Standings',b:[
+  ['W-L','Your record, including the league-median game: each week you also get a win if you scored more than half the league, and a loss if not.'],
+  ['PF','Points for: everything your starters scored this season.'],
+  ['All-play','Your record if you played all 11 other teams every week. Beat 9 of them in a week = 9-2 for that week. It shows how good your scores really were, no matter who you drew.'],
+  ['Luck','Actual head-to-head wins minus the wins your all-play rate says you "should" have. +1.5 = 1.5 more wins than your scores earned (soft schedule). −2.0 = 2 fewer (you kept running into big weeks).'],
+  ['Playoff line','The dashed line is the cut: the top 6 make the playoffs. Ties in record are broken by points for.']]},
+ power:{t:'Power rankings',b:[
+  ['The score (0–100)','For each of four stats, the app checks what share of the other 11 teams you\'re ahead of (all 11 = 100%, none = 0%), then blends them: points per game 35%, all-play record 25%, last 3 weeks 20%, win % 20%.'],
+  ['Reading it','100 = best in the league at all four. 50 = right in the middle. 0 = last at everything.'],
+  ['Why record isn\'t everything','Scoring counts for most of the score, so a 2-3 team that puts up big numbers can rank above a lucky 4-1 team.'],
+  ['Arrow','How many spots you moved since last week.']]},
+ odds:{t:'Playoff odds',b:[
+  ['Simulations','The app plays out the rest of the regular season 5,000 times with the real remaining schedule.'],
+  ['Each team\'s score','Every simulated week, each team scores its projection plus random swing. The projection is 45% last 3 weeks, 35% season average, 20% last season. The swing is how much that team\'s score usually bounces week to week.'],
+  ['Wins','Head-to-head games plus the league-median game (beat half the league = a win).'],
+  ['The columns','Playoffs = share of simulations you finished top 6. Bye = top 2. #1 = first seed. Last = last place. Proj W = average final win total. Ties are broken by points for.']]},
+ awards:{t:'How awards are picked',b:[
+  ['🏆 Champion / 🚽 Sacko','From the playoff and Toilet Bowl brackets in Sleeper.'],
+  ['👑 Points King','Most regular-season points.'],
+  ['🔥 On Fire / 🧊 Ice Cold','Most weeks as the league\'s top scorer / lowest scorer.'],
+  ['🍀 Horseshoe / 🐍 Snakebitten','Luckiest / unluckiest team: actual wins minus the wins their scores earned (see Standings → Luck).'],
+  ['🥊 Punching Bag','Most points scored against.'],
+  ['💥 Monster Week · 🔨 Bully · 💔 Heartbreaker','Highest single score, biggest blowout win, and closest loss of the season.'],
+  ['During the season','Awards update every week and show the current leader until the season ends.']]},
+ records:{t:'Record book',b:[
+  ['What counts','Every game in league history (2023 on), pulled from Sleeper. Filter to regular season or playoffs with the switch.'],
+  ['Scores','A team\'s score is its starters\' total. Bench points never count.'],
+  ['Best player game','The most points one player scored as a starter in a single week.'],
+  ['Streaks','Most wins (or losses) in a row in regular-season head-to-head games. Streaks carry over from one season to the next.'],
+  ['Playoff byes','Byes have no opponent, so a bye-week score shows as a "Playoff bye" card.']]},
+ alltime:{t:'All-time table',b:[
+  ['Seasons','Regular-season games from every season on Sleeper.'],
+  ['W-L, Win%, PPG','Head-to-head record, win rate and points per game across all seasons.'],
+  ['🏆 / Playoffs','Titles won, and how many times you made the playoffs.'],
+  ['🔥 / 🧊','How many weeks you were the league\'s top scorer / lowest scorer.']]},
+ h2h:{t:'Rivals',b:[
+  ['Rivalry card','Every game two teams have played each other, regular season and playoffs, with the series record and points.'],
+  ['Grid','Each square is the row team\'s record against the column team. Tap a square to open that rivalry.']]},
+ preview:{t:'Matchup preview',b:[
+  ['Projection','45% of a team\'s last 3 weeks, 35% its season average and 20% last season, pulled toward the league average (harder through Week 6).'],
+  ['Win chance','The gap between the two projections compared with how much both teams swing week to week, on a bell curve. A 10-point gap between two steady teams means more than the same gap between two boom-or-bust teams.'],
+  ['Line','The same numbers the Sportsbook uses. Spreads max out at 20 before kickoff.']]},
+ bench:{t:'Bench Shame',b:[
+  ['What it measures','For every week, the app builds the best lineup you could have started from your roster (same lineup slots as the league) and compares it with what you actually scored.'],
+  ['The number','Points left on the bench across the season. Higher = more shame. Your worst week is shown too.'],
+  ['Eligibility','FLEX can take an RB, WR or TE. Every player is used at most once.']]},
+ trades:{t:'Trade grader',b:[
+  ['How it grades','For every completed trade, it adds up the points each player scored in his new team\'s starting lineup from the trade week on. Bench points don\'t count.'],
+  ['Winner','If one side got more than 15% more starter points, that side wins. Closer than that = even.'],
+  ['Limits','Draft picks are listed but given no value, and a player stops counting if he\'s later dropped or traded away. It judges with hindsight, not whether the trade made sense at the time.']]},
+ draft:{t:'Draft re-grade',b:[
+  ['How it works','Every drafted player (no kickers or defenses) is ranked by the points he has scored on league rosters this season. That rank is compared with where he was picked.'],
+  ['Steals','Players who have outscored their draft spot the most (late picks playing like early ones).'],
+  ['Busts','Early picks whose points rank is furthest below where they went.']]},
+ book:{t:'How the odds work',b:[
+  ['Pregame lines','Posted Tuesday 6 AM from each team\'s projection (45% last 3 weeks, 35% season average, 20% last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
+  ['Live odds','Once the first player in a matchup kicks off, the odds go live: expected final = points so far + projection × share of each lineup still to play (from NFL game clocks, weighted by position). The further ahead a team gets, the worse its price.'],
+  ['Off the board','If a moneyline would be shorter than -1000 (nearly a sure thing), it comes off the board. Spreads and totals stay open.'],
+  ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],
+  ['Settling','Wednesday 3 AM, after Sleeper\'s stat corrections. Exact ties on a spread or total push (stake back).']]}
+};
+var EXPLAIN_ORDER=['data','standings','power','odds','awards','records','alltime','h2h','preview','book','bench','trades','draft'];
+function info(k){return '<button type="button" class="info" data-info="'+k+'" aria-label="How '+esc(EXPLAIN[k].t)+' works">ⓘ How it works</button>'}
+function explainSheet(k){var x=EXPLAIN[k];if(!x)return '';
+  return '<div class="ph" style="margin:0"><div><div class="kicker">How it works</div><h2>'+esc(x.t)+'</h2></div></div><div class="rows">'+
+   x.b.map(function(r){return '<div class="row" style="grid-template-columns:1fr"><div><b style="font-size:14px">'+esc(r[0])+'</b><p class="muted" style="font-size:13px;line-height:1.55;margin-top:3px">'+esc(r[1])+'</p></div></div>'}).join('')+'</div>'}
+function explainPanel(){return '<section class="panel"><div class="ph"><div><div class="kicker">Plain English</div><h2>How the app works</h2></div></div><div class="rows">'+
+  EXPLAIN_ORDER.map(function(k){return '<button type="button" class="row" data-info="'+k+'" style="grid-template-columns:minmax(0,1fr) 10px"><b style="font-size:14px;text-align:left">'+esc(EXPLAIN[k].t)+'</b>'+CHEV+'</button>'}).join('')+'</div></section>'}
+
 /* ---------- ME / PROFILE ---------- */
 function profile(u,isMe){
   var a=D.alltime.find(function(x){return x.uid===u});var m=M(u);
@@ -946,6 +1026,7 @@ function me(){
   else h='<section class="panel"><label for="meSel" class="kicker" style="display:block;margin-bottom:6px">Who are you?</label><select id="meSel">'+act.map(function(u){return '<option value="'+u+'"'+(u===S.me?' selected':'')+'>'+esc(team(u))+' · '+esc(M(u).name)+'</option>'}).join('')+'</select>'+
     (LIVE?'<p class="muted" style="font-size:11.5px;margin-top:6px">Just browsing. Log in with your team PIN to bet.</p><button type="button" class="cta" data-login="1" style="margin-top:10px">Log in to the Book</button>':'<p class="muted" style="font-size:11.5px;margin-top:6px">Pick your team to see your stats.</p>')+'</section>';
   h+=profile(S.me,true);
+  h+=explainPanel();
   h+=admPanel();
   return h+foot();
 }
@@ -1044,7 +1125,7 @@ function previewSheet(id){
   var sb=function(u,live,rec){return '<div class="sb-row">'+who(u,rec+' · power #'+powOf(u).rank,40)+'<div class="sb-pts num" style="font-size:24px">'+f2(live)+'</div></div>'};
   var h='<section class="hero gs"><div class="eyebrow">Week '+D.league.week+' preview · live</div><div class="sb">'+sb(a,l.live_a,pwA.rec)+sb(b,l.live_b,pwB.rec)+'</div>'+
    '<div class="wp"><div class="wp-l"><span>'+esc(team(a))+'</span><b>'+pa+'%</b></div><div class="wp-bar"><i style="width:'+pa+'%"></i></div><div class="wp-l r"><b>'+(100-pa)+'%</b><span>'+esc(team(b))+'</span></div></div>'+
-   '<p class="margin">Win chance from the Sportsbook</p></section>';
+   '<p class="margin">Win chance from the Sportsbook</p>'+info('preview')+'</section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>The line</h2></div><button class="link" data-go="book">Bet this game →</button></div><div class="stat3">'+
    '<div class="stat"><small>Spread</small><strong>'+esc(team(l.spread>=0?a:b).split(' ')[0])+' '+spr(-Math.abs(l.spread))+'</strong><span>favorite</span></div>'+
    '<div class="stat"><small>Moneyline</small><strong style="font-size:16px">'+odds(l.ml_a)+' / '+odds(l.ml_b)+'</strong><span>'+esc(M(a).name)+' / '+esc(M(b).name)+'</span></div>'+
@@ -1135,6 +1216,7 @@ var CLOSE='<button type="button" class="ghost" id="closeP">Close</button>';
 function centerChip(sel){var t=document.querySelector(sel);if(t&&t.scrollIntoView)t.scrollIntoView({inline:'center',block:'nearest'})}
 document.addEventListener('click',function(e){
   var t=e.target.closest('button');if(!t)return;var d=t.dataset;
+  if(d.info){openSheet(explainSheet(d.info)+CLOSE);return}
   if(d.tab){go(d.tab);if(d.tab==='book'||d.tab==='me')bookLoad();return}
   if(d.go){var p=d.go.split(':');go(p[0],p[1]);return}
   if(d.lseg){S.lseg=d.lseg;render();centerChip('[data-lseg="'+S.lseg+'"]');return}

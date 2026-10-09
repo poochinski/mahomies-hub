@@ -23,6 +23,12 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **"How it works" explanations** (Claude), Jayson wants people to understand how
+  every number is made. A cyan "ⓘ How it works" button on Standings, Power rankings, Playoff
+  odds, Awards, Record book, All-time, Rivals, matchup preview, Sportsbook lines, Bench Shame,
+  Trade grader and Draft re-grade opens a plain-English sheet. Me tab has a "How the app
+  works" list with all 13 topics (incl. "Where the data comes from"). Text lives in
+  prototype/v1.8/v18_explain.js — **update it whenever a formula changes.**
 - 2026-10-09 — Header (logo + Bucks/Log in button) now scrolls away with the page instead of sticking to the top (Jayson: "looks bad"). A solid strip behind the phone's status bar keeps the clock readable. Bottom tab bar still stays put. (Claude)
 - 2026-10-09 — **Live betting + MH logo** (Claude). Jayson: "I don't want anything to be locked —
   the odds should change like betting during a game." Once a matchup's first starter

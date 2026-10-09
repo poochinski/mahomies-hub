@@ -65,6 +65,27 @@ s=s[:a]+"""function me(){
 
 """+s[b:]
 rep("D.version+' test build · ","D.version+' · ")
+# EXPLAIN pass: "How it works" buttons + sheets (Jayson 2026-10-09)
+s=s.replace("/* ---------- ME / PROFILE ---------- */",open('v18_explain.js').read()+"\n/* ---------- ME / PROFILE ---------- */",1)
+for a_,b_ in [
+  ("<h2>Standings</h2></div></div>","<h2>Standings</h2></div>'+info('standings')+'</div>"),
+  ("<h2>Power rankings</h2></div></div>","<h2>Power rankings</h2></div>'+info('power')+'</div>"),
+  ('<h1 style="font-size:28px">Playoff odds</h1>','<h1 style="font-size:28px">Playoff odds</h1>\'+info(\'odds\')+\''),
+  ("<h2>All-time table</h2></div></div>","<h2>All-time table</h2></div>'+info('alltime')+'</div>"),
+  ("<h2>Rivalry card</h2></div></div>","<h2>Rivalry card</h2></div>'+info('h2h')+'</div>"),
+  ("<h1>'+s+' awards</h1>';","<h1>'+s+' awards</h1>'+info('awards');"),
+  ("<h2>Bench Shame</h2></div></div>","<h2>Bench Shame</h2></div>'+info('bench')+'</div>"),
+  ("<h2>Trade grader</h2></div></div>","<h2>Trade grader</h2></div>'+info('trades')+'</div>"),
+  ("<h2>Biggest steals</h2></div></div>","<h2>Biggest steals</h2></div>'+info('draft')+'</div>"),
+  ('data-share-rec="1">Share</button></section>','data-share-rec="1">Share</button>\'+info(\'records\')+\'</section>'),
+  ('<p class="margin">Win chance from the Banana Book</p>','<p class="margin">Win chance from the Sportsbook</p>\'+info(\'preview\')+\''),
+  ("      if(!AUTH)h+='<p class=\"note\"><b>Look around all you want.</b>","      h+='<div class=\"info-row\">'+info('book')+'</div>';\n      if(!AUTH)h+='<p class=\"note\"><b>Look around all you want.</b>"),
+  ("  h+=admPanel();\n  return h+foot();","  h+=explainPanel();\n  h+=admPanel();\n  return h+foot();"),
+  ("  if(d.tab){go(d.tab);","  if(d.info){openSheet(explainSheet(d.info)+CLOSE);return}\n  if(d.tab){go(d.tab);"),
+  ]:
+    assert s.count(a_)==1,(s.count(a_),a_)
+    s=s.replace(a_,b_)
+
 # CSS
 css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500 10px var(--mono);letter-spacing:.12em;color:var(--faint);text-transform:uppercase}
 .mu.void{opacity:.55}
@@ -89,6 +110,9 @@ css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500
 .fld{display:grid;gap:4px}.fld>span{font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .fld input{min-height:46px;border:1px solid var(--line-2);border-radius:9px;background:var(--ground-2);color:var(--ink);padding:0 12px;font-family:inherit;font-size:16px;width:100%}
 .chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.info{border:1px solid var(--line-2);background:transparent;border-radius:999px;padding:5px 10px;min-height:30px;font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);white-space:nowrap;align-self:flex-start}
+.hero .info{margin-top:10px}
+.info-row{display:flex;justify-content:center}
 """
 # RENAME (Jayson 2026-10-09: no Banana Bets branding in this app)
 LOGO='<img class="mark" src="/brand-96.png" alt="" width="34" height="34">'
@@ -100,7 +124,7 @@ for a_,b_ in [('/* Layout: same Banana Bets shell (sticky brand bar','/* Layout:
   ("🍌 Top Banana = weeks as the league\\'s top scorer. 🤢 Rotten Banana = weeks as the lowest.","🔥 On Fire = weeks as the league\\'s top scorer. 🧊 Ice Cold = weeks as the lowest."),
   ("topb:'🍌',rotb:'🤢'","topb:'🔥',rotb:'🧊'"),
   ("<small>🍌 Top Banana</small><strong>'+a.tb","<small>🔥 On Fire</small><strong>'+a.tb"),("<small>🤢 Rotten</small><strong>'+a.rb","<small>🧊 Ice Cold</small><strong>'+a.rb"),
-  ('Win chance from the Banana Book','Win chance from the Sportsbook'),('<div class="kicker">Banana Book</div><h2>The line</h2>','<div class="kicker">Sportsbook</div><h2>The line</h2>'),
+  ('<div class="kicker">Banana Book</div><h2>The line</h2>','<div class="kicker">Sportsbook</div><h2>The line</h2>'),
   ("'Top Banana: '","'On Fire: '"),('Logged in to the Banana Book',"Logged in to the Sportsbook")]:
     assert s.count(a_)>=1,a_
     s=s.replace(a_,b_)
