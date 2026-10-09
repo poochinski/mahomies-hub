@@ -1,5 +1,9 @@
 // Mahomie's Hub server: serves /api and the built React app (dist/).
+import dns from 'node:dns';
 import express from 'express';
+
+// Some hosts can't route IPv6 out; prefer IPv4 so calls to Sleeper don't hang.
+dns.setDefaultResultOrder('ipv4first');
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import stateRoutes from './routes/state.js';
