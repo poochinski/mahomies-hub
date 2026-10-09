@@ -231,6 +231,7 @@ for m,(a,b) in sorted(pairs.items()):
 out=dict(league=dict(name="Rollin' with Mahomies",season='2026',week=5,teams=12,scoring='PPR',playoff_start=15,playoff_teams=6,median=True,first='2023'),
   managers=mgrs,seasons=seasons,records=rec,alltime=alltime,h2h=h2h,recap=recap,lines=lines,games=G,
   power=[dict(uid=x['uid'],power=x['power'],rank=x['prank'],move=x['pmove'],rec=f"{x['w']}-{x['l']}",avg=x['avg'],ap=x['ap'],luck=x['luck'],last3=x['last3'],scores=x['scores']) for x in pr],
+  tw={f"{t['s']}|{t['w']}|{t['uid']}":[t['p'],t['pid'],t['pp']] for t in tw},names=names,
   me='862901935416655872',updated='2026-10-08T22:50:00-07:00')
 json.dump(out,open('/home/claude/data/app.json','w'),ensure_ascii=False,separators=(',',':'))
 import os;print(os.path.getsize('/home/claude/data/app.json'))

@@ -1,0 +1,18 @@
+/* game detail + tappable rows */
+button.row,button.res{width:100%;border:0;border-top:1px solid #e3e3e6;background:none;text-align:left;color:inherit;font:inherit}
+button.row:first-child,button.res:first-child{border-top:0}
+button.row:active,button.res:active{background:rgba(231,185,47,.10)}
+.chev{color:var(--text-faint);font-size:22px;font-weight:700;line-height:1;text-align:right}
+.sb{display:grid;gap:8px;margin-top:12px}
+.sb-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--slate-line);border-radius:12px;background:rgba(255,255,255,.04)}
+.sb-row .who .tx>b{color:#fff}.sb-row .who .tx>span{color:#b9bcc3}
+.sb-pts{font-size:28px;font-weight:900;color:#9ea1a8;letter-spacing:-.8px}
+.sb-row.won{border-color:var(--yellow)}.sb-row.won .sb-pts{color:var(--yellow-light)}
+.margin{color:#c3c5ca;font-size:13px;margin-top:10px}.margin b{color:#fff}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.badge{font-size:11px;font-weight:900;padding:4px 8px;border-radius:8px;background:rgba(231,185,47,.2);color:var(--yellow-light)}
+.wk{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;font-size:12.5px}
+.wk b{font-weight:700;color:var(--text-soft);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk .bar{height:5px;border-radius:4px;background:#e4e5e8;margin-top:4px;overflow:hidden}.wk .bar i{display:block;height:100%;background:#b8bbc2}
+.wk.hl b{color:var(--text)}.wk.hl .bar i{background:var(--yellow)}
+.wk .p{font-weight:900;font-variant-numeric:tabular-nums}

@@ -256,6 +256,9 @@ function initials(u){var n=M(u).name;var p=n.replace(/[^A-Za-z0-9 ]/g,'').match(
 function color(u){return PAL[ids.indexOf(u)%PAL.length]}
 function av(u,sz){sz=sz||32;return '<span class="av" style="width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*.38)+'px;background:'+color(u)+'">'+esc(initials(u))+'</span>'}
 function who(u,sub,sz){return '<button class="who" type="button" data-mgr="'+u+'">'+av(u,sz)+'<span class="tx"><b>'+esc(team(u))+'</b><span>'+esc(sub!=null?sub:M(u).name)+'</span></span></button>'}
+function whoS(u,sub,sz){return '<span class="who">'+av(u,sz)+'<span class="tx"><b>'+esc(team(u))+'</b><span>'+esc(sub!=null?sub:M(u).name)+'</span></span></span>'}
+function gi(s,w,u){for(var i=0;i<D.games.length;i++){var g=D.games[i];if(g.s===s&&g.w===w&&(g.win===u||g.lose===u))return i}return -1}
+var CHEV='<span class="chev" aria-hidden="true">›</span>';
 function f2(n){return Number(n).toFixed(2)}
 function f1(n){return Number(n).toFixed(1)}
 function odds(o){return o>0?'+'+o:String(o)}
@@ -284,9 +287,9 @@ function home(){
   var unbeaten=pw.filter(function(p){return /-0$/.test(p.rec)})[0];
   var h='<section class="hero"><div class="eyebrow">2026 season · Week '+L.week+'</div><h1>Week '+L.week+'</h1><p class="sub">Thursday night is underway. Week '+r.week+' is final.</p>'+
    '<div class="tiles">'+
-   tile('t-y','Top Banana · Wk '+r.week,f2(r.top.p),team(r.top.uid),r.top.uid)+
-   tile('t-r','Rotten Banana · Wk '+r.week,f2(r.rot.p),team(r.rot.uid),r.rot.uid)+
-   tile('t-b','Player of the week',f1(r.pow.pp),r.pow.name+' · '+team(r.pow.uid),r.pow.uid)+
+   tile('t-y','Top Banana · Wk '+r.week,f2(r.top.p),team(r.top.uid),r.top.uid,gi('2026',r.week,r.top.uid))+
+   tile('t-r','Rotten Banana · Wk '+r.week,f2(r.rot.p),team(r.rot.uid),r.rot.uid,gi('2026',r.week,r.rot.uid))+
+   tile('t-b','Player of the week',f1(r.pow.pp),r.pow.name+' · '+team(r.pow.uid),r.pow.uid,gi('2026',r.week,r.pow.uid))+
    (unbeaten?tile('t-g','Still unbeaten',unbeaten.rec,team(unbeaten.uid),unbeaten.uid):'')+
    '</div></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">This week · Banana Book</div><h2>Week '+L.week+' matchups</h2></div><button class="link" data-go="book">Bet these →</button></div><div class="rows">'+
@@ -298,12 +301,12 @@ function home(){
    pw.slice(0,5).map(function(p){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto auto"><span class="rk'+(p.rank===1?' gold':'')+'">'+p.rank+'</span>'+who(p.uid,p.rec+' · '+f1(p.avg)+' ppg',30)+mv(p.move)+'<span class="val" style="font-size:14px">'+f1(p.power)+'</span></div>'}).join('')+
    '</div></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Final</div><h2>Week '+r.week+' results</h2></div></div><div>'+
-   r.games.map(function(g){return '<div class="res"><div>'+who(g.win,null,26)+'</div><span class="s">'+f2(g.wp)+'</span><div class="lose">'+who(g.lose,null,26)+'</div><span class="s" style="color:var(--text-faint)">'+f2(g.lp)+'</span></div>'}).join('')+
+   r.games.map(function(g){return '<button type="button" class="res" data-game="'+gi(g.s,g.w,g.win)+'"><div>'+whoS(g.win,null,26)+'</div><span class="s">'+f2(g.wp)+'</span><div class="lose">'+whoS(g.lose,null,26)+'</div><span class="s" style="color:var(--text-faint)">'+f2(g.lp)+'</span></button>'}).join('')+
    '</div></section>';
   h+=foot();
   return h;
 }
-function tile(c,k,v,s,u){return '<button class="tile '+c+'" type="button" data-mgr="'+u+'"><small>'+esc(k)+'</small><strong class="num">'+esc(v)+'</strong><span>'+esc(s)+'</span></button>'}
+function tile(c,k,v,s,u,gix){return '<button class="tile '+c+'" type="button" '+(gix!=null&&gix>=0?'data-game="'+gix+'"':'data-mgr="'+u+'"')+'><small>'+esc(k)+'</small><strong class="num">'+esc(v)+'</strong><span>'+esc(s)+'</span></button>'}
 function mv(m){return '<span class="mv '+(m>0?'up':m<0?'dn':'eq')+'">'+(m>0?'▲'+m:m<0?'▼'+(-m):'–')+'</span>'}
 function foot(){return '<p class="foot"><span class="dots"><i style="background:var(--blue)"></i><i style="background:var(--green)"></i><i style="background:var(--red)"></i><i style="background:var(--yellow)"></i></span>Test build · data from Sleeper, Oct 8 2026</p>'}
 
@@ -356,7 +359,7 @@ function h2hView(){
   if(!n){h+='<p class="muted">These two have never played each other.</p></section>';return h}
   h+='<div class="vs"><div class="side">'+av(S.h2a,48)+'<b>'+esc(M(S.h2a).name)+'</b><strong style="color:'+(r.w>=r.l?'var(--green)':'var(--text)')+'">'+r.w+'</strong></div><div class="mid">VS<br><span style="font-size:10px">'+n+' GAMES</span></div><div class="side">'+av(S.h2b,48)+'<b>'+esc(M(S.h2b).name)+'</b><strong style="color:'+(r.l>r.w?'var(--green)':'var(--text)')+'">'+r.l+'</strong></div></div>'+
    '<div class="stat3" style="margin-top:14px"><div class="stat"><small>Avg score</small><strong>'+f1(r.pf/n)+'</strong><span>vs '+f1(r.pa/n)+'</span></div><div class="stat"><small>Biggest win</small><strong>'+f1(big[0].m-big[0].o)+'</strong><span>'+sw(big[0].s,big[0].w)+'</span></div><div class="stat"><small>Worst loss</small><strong>'+f1(big[n-1].o-big[n-1].m)+'</strong><span>'+sw(big[n-1].s,big[n-1].w)+'</span></div></div>'+
-   '<div style="margin-top:12px">'+r.games.slice().reverse().map(function(g){var won=g.m>g.o;return '<div class="row"><div><b style="font-size:13px">'+sw(g.s,g.w)+'</b><div class="muted" style="font-size:11.5px">'+esc(g.k)+'</div></div><div class="val" style="font-size:14px;color:'+(won?'var(--green)':'var(--red)')+'">'+(won?'W ':'L ')+f2(g.m)+'–'+f2(g.o)+'</div></div>'}).join('')+'</div></section>';
+   '<div style="margin-top:12px">'+r.games.slice().reverse().map(function(g){var won=g.m>g.o;return '<button type="button" class="row" style="grid-template-columns:minmax(0,1fr) auto 10px" data-game="'+gi(g.s,g.w,S.h2a)+'"><div><b style="font-size:13px">'+sw(g.s,g.w)+'</b><div class="muted" style="font-size:11.5px">'+esc(g.k)+'</div></div><div class="val" style="font-size:14px;color:'+(won?'var(--green)':'var(--red)')+'">'+(won?'W ':'L ')+f2(g.m)+'–'+f2(g.o)+'</div>'+CHEV+'</button>'}).join('')+'</div></section>';
   return h;
 }
 
@@ -374,13 +377,17 @@ function recVal(k,x){var t=RECS.find(function(r){return r[0]===k})[2];
   var v=k==='blowout'||k==='close'?f2(g.m):k==='hiloss'?f2(g.lp):f2(g.wp);
   return {u:u,v:v,sub:(k==='hiloss'?'lost to ':'beat ')+M(k==='hiloss'?g.win:g.lose).name+' '+f2(k==='hiloss'?g.wp:g.wp)+'–'+f2(g.lp)+' · '+sw(g.s,g.w)+(g.k!=='Regular season'?' · '+g.k:'')};
 }
+function recGame(k,x){var t=RECS.find(function(r){return r[0]===k})[2];
+  if(t==='team'||t==='player')return gi(x.s,x.w,x.uid);
+  if(t==='game')return gi(x.s,x.w,x.win);return -1}
 function records(){
   var k=S.rec,list=D.records[k],top=recVal(k,list[0]),name=RECS.find(function(r){return r[0]===k})[1];
   var h='<div class="chips" role="tablist">'+RECS.map(function(r){return '<button type="button" class="chip'+(r[0]===k?' on':'')+'" data-rec="'+r[0]+'">'+r[1]+'</button>'}).join('')+'</div>';
   h+='<section class="hero rec-hero"><div class="eyebrow">Record book · all-time</div><h1 style="font-size:24px;letter-spacing:-.6px">'+name+'</h1><div class="big">'+esc(top.v)+'</div>'+
-   '<button class="holder who" type="button" data-mgr="'+top.u+'">'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s==='2026'?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button></section>';
+   '<button class="holder who" type="button" '+(recGame(k,list[0])>=0?'data-game="'+recGame(k,list[0])+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s==='2026'?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Top 10</div><h2>'+name+'</h2></div></div><div class="rows">'+
-   list.map(function(x,i){var r=recVal(k,x);return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+who(r.u,r.sub,30)+'<span class="val">'+esc(r.v)+(x.s==='2026'?'<small style="color:var(--green)">2026</small>':'')+'</span></div>'}).join('')+
+   list.map(function(x,i){var r=recVal(k,x),gx=recGame(k,x),inner='<span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+(gx>=0?whoS(r.u,r.sub,30):who(r.u,r.sub,30))+'<span class="val">'+esc(r.v)+(x.s==='2026'?'<small style="color:var(--green)">2026</small>':'')+'</span>';
+     return gx>=0?'<button type="button" class="row" data-game="'+gx+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div></section>'+foot();
   return h;
 }
@@ -426,8 +433,8 @@ function profile(u,isMe){
   var h='<section class="hero"><div style="display:flex;gap:12px;align-items:center">'+av(u,56)+'<div style="min-width:0"><div class="eyebrow">'+(isMe?'Playing as':'Manager')+(m.active?'':' · former')+'</div><h1 style="font-size:24px;letter-spacing:-.7px;margin:4px 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(team(u))+'</h1><p class="sub">'+esc(m.name)+'</p></div></div>'+
    '<div class="tiles"><div class="tile t-y"><small>Titles</small><strong>'+a.titles.length+'</strong><span>'+(a.titles.join(', ')||'Not yet')+'</span></div>'+
    '<div class="tile t-b"><small>Career W-L</small><strong class="num">'+a.w+'-'+a.l+'</strong><span>'+(a.pct*100).toFixed(1)+'% · '+f1(a.avg)+' ppg</span></div>'+
-   '<div class="tile t-g"><small>Best week</small><strong class="num">'+f2(a.best.v)+'</strong><span>'+sw(a.best.s,a.best.w)+'</span></div>'+
-   '<div class="tile t-r"><small>Worst week</small><strong class="num">'+f2(a.worst.v)+'</strong><span>'+sw(a.worst.s,a.worst.w)+'</span></div></div></section>';
+   '<button type="button" class="tile t-g" data-game="'+gi(a.best.s,a.best.w,u)+'"><small>Best week ›</small><strong class="num">'+f2(a.best.v)+'</strong><span>'+sw(a.best.s,a.best.w)+'</span></button>'+
+   '<button type="button" class="tile t-r" data-game="'+gi(a.worst.s,a.worst.w,u)+'"><small>Worst week ›</small><strong class="num">'+f2(a.worst.v)+'</strong><span>'+sw(a.worst.s,a.worst.w)+'</span></button></div></section>';
   var tr=[];a.titles.forEach(function(s){tr.push('<span class="tr c">🏆 Champion '+s+'</span>')});a.runner.forEach(function(s){tr.push('<span class="tr r">🥈 Runner-up '+s+'</span>')});a.third.forEach(function(s){tr.push('<span class="tr r">🥉 Third '+s+'</span>')});a.sacko.forEach(function(s){tr.push('<span class="tr s">🚽 Sacko '+s+'</span>')});
   a.playoffs.forEach(function(s){tr.push('<span class="tr p">Playoffs '+s+'</span>')});
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Trophy case</div><h2>Hardware</h2></div></div><div class="trophies">'+(tr.join('')||'<span class="muted">Empty for now.</span>')+'</div>'+
@@ -452,6 +459,40 @@ function me(){
      [['Start / Sit helper','Projection, last-4 average, matchup and boom/bust range for every slot.'],['Line control','Override or void any line before kickoff.'],['Settle a week','Grade bets by hand if Sleeper is late.'],['Awards','Add commissioner awards for the banquet.']].map(function(x){return '<div class="row" style="grid-template-columns:1fr"><div><b style="font-size:14px">'+x[0]+'</b><p class="muted" style="font-size:12.5px;margin-top:2px">'+x[1]+'</p></div></div>'}).join('')+'</div></section>';
   }
   return h+foot();
+}
+
+/* ---------- GAME DETAIL ---------- */
+var RN={high:'Highest score',low:'Lowest score',blowout:'Biggest blowout',close:'Closest game',hiloss:'Most points in a loss',lowin:'Fewest points in a win',player:'Best player game'};
+function tnS(s,u){return ((D.seasons[s]&&D.seasons[s].team_names[u])||M(u).name).trim()}
+function gameRecs(g){var out=[];
+  ['high','low','player'].forEach(function(k){D.records[k].forEach(function(x,i){if(x.s===g.s&&x.w===g.w&&(x.uid===g.win||x.uid===g.lose))out.push({k:k,n:i+1})})});
+  ['blowout','close','hiloss','lowin'].forEach(function(k){D.records[k].forEach(function(x,i){if(x.s===g.s&&x.w===g.w&&x.win===g.win&&x.lose===g.lose)out.push({k:k,n:i+1})})});
+  return out.sort(function(a,b){return a.n-b.n})}
+function entering(g,u){var w=0,l=0;D.games.forEach(function(x){if(x.s!==g.s||x.w>=g.w||x.k!=='Regular season')return;if(x.win===u)w++;else if(x.lose===u)l++});return w+'-'+l}
+function series(g){var a=0,b=0;D.games.forEach(function(x){if(x.s>g.s||(x.s===g.s&&x.w>g.w))return;if(x.win===g.win&&x.lose===g.lose)a++;else if(x.win===g.lose&&x.lose===g.win)b++});return [a,b]}
+function weekScores(s,w){var out=[];Object.keys(D.tw).forEach(function(k){var p=k.split('|');if(p[0]===s&&+p[1]===w&&D.tw[k][0]>0)out.push({u:p[2],p:D.tw[k][0]})});return out.sort(function(a,b){return b.p-a.p})}
+function topP(s,w,u){var t=D.tw[s+'|'+w+'|'+u];if(!t)return null;var pid=t[1];return {name:D.names[pid]||(/^[A-Z]+$/.test(pid)?pid+' defense':null),pts:t[2]}}
+function ord(n){var s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0])}
+function gameSheet(i){
+  var g=D.games[i];if(!g)return '<p class="muted">Game not found.</p>';
+  var ws=weekScores(g.s,g.w),rank=function(u){for(var j=0;j<ws.length;j++)if(ws[j].u===u)return j+1;return '–'},avg=ws.reduce(function(a,x){return a+x.p},0)/Math.max(1,ws.length),sr=series(g),recs=gameRecs(g);
+  var side=function(u,p,won){return '<div class="sb-row'+(won?' won':'')+'">'+who(u,tnS(g.s,u)===team(u)?M(u).name:'as '+tnS(g.s,u),40)+'<div class="sb-pts num">'+f2(p)+'</div></div>'};
+  var h='<section class="hero gs"><div class="eyebrow">'+g.s+' · Week '+g.w+' · '+esc(g.k)+'</div><div class="sb">'+side(g.win,g.wp,true)+side(g.lose,g.lp,false)+'</div>'+
+   '<p class="margin">'+esc(tnS(g.s,g.win))+' won by <b class="num">'+f2(g.m)+'</b></p>'+
+   (recs.length?'<div class="badges">'+recs.map(function(r){return '<span class="badge">#'+r.n+' '+RN[r.k]+'</span>'}).join('')+'</div>':'')+'</section>';
+  var pa=topP(g.s,g.w,g.win),pb=topP(g.s,g.w,g.lose);
+  var pr=function(u,p){return '<div class="row"><div><b style="font-size:14px">'+esc(p&&p.name?p.name:'Top scorer')+'</b><div class="muted" style="font-size:11.5px">for '+esc(tnS(g.s,u))+'</div></div><span class="val">'+(p?f1(p.pts):'–')+'</span></div>'};
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">Best player on each side</div><h2>Top performers</h2></div></div><div class="rows">'+pr(g.win,pa)+pr(g.lose,pb)+'</div></section>';
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">The matchup</div><h2>By the numbers</h2></div></div><div class="stat3">'+
+   '<div class="stat"><small>Came in</small><strong>'+entering(g,g.win)+'</strong><span>'+esc(M(g.win).name)+'</span></div>'+
+   '<div class="stat"><small>All-time series</small><strong>'+sr[0]+'-'+sr[1]+'</strong><span>after this game</span></div>'+
+   '<div class="stat"><small>Came in</small><strong>'+entering(g,g.lose)+'</strong><span>'+esc(M(g.lose).name)+'</span></div></div>'+
+   '<div class="stat3" style="margin-top:8px"><div class="stat"><small>Week rank</small><strong>'+ord(rank(g.win))+'</strong><span>of '+ws.length+'</span></div><div class="stat"><small>League avg</small><strong>'+f1(avg)+'</strong><span>that week</span></div><div class="stat"><small>Week rank</small><strong>'+ord(rank(g.lose))+'</strong><span>of '+ws.length+'</span></div></div></section>';
+  var mx=ws.length?ws[0].p:1;
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">'+g.s+' · Week '+g.w+'</div><h2>Every score that week</h2></div></div>'+
+   ws.map(function(x,j){var hl=x.u===g.win||x.u===g.lose;return '<div class="wk'+(hl?' hl':'')+'"><span class="rk'+(j===0?' gold':'')+'" style="width:22px;height:22px;font-size:10px">'+(j+1)+'</span><div style="min-width:0"><b>'+esc(tnS(g.s,x.u))+'</b><div class="bar"><i style="width:'+(x.p/mx*100).toFixed(1)+'%"></i></div></div><span class="p">'+f2(x.p)+'</span></div>'}).join('')+'</section>';
+  h+='<p class="note"><b>Full lineups coming.</b> Every starter and bench player with their points loads straight from Sleeper once the app is live.</p>';
+  return h;
 }
 
 /* ---------- sheets ---------- */
@@ -488,6 +529,7 @@ document.addEventListener('click',function(e){
   if(t.id==='cancelSlip'){closeSheet();return}
   if(t.dataset.cancel!=null&&t.dataset.cancel!==undefined&&t.classList.contains('x')){S.bets.splice(+t.dataset.cancel,1);store('bets',S.bets);render();toast('Bet cancelled, Bucks returned');return}
   if(t.id==='bucksBtn'){go('book');return}
+  if(t.dataset.game!==undefined){var gx=+t.dataset.game;if(gx>=0){openSheet(gameSheet(gx)+'<button type="button" class="ghost" id="closeP">Close</button>');return}}
   if(t.dataset.mgr){openSheet(profile(t.dataset.mgr,false)+'<button type="button" class="ghost" id="closeP">Close</button>');return}
   if(t.id==='closeP'){closeSheet();return}
 });

@@ -1,0 +1,17 @@
+/* game detail + tappable rows */
+button.row,button.res{width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;color:inherit;font:inherit}
+button.row:first-child,button.res:first-child{border-top:0}
+button.row:active,button.res:active{background:rgba(246,207,76,.07)}
+.chev{color:var(--pink);font:600 20px var(--mono);line-height:1;text-align:right}
+.sb{display:grid;gap:8px;margin-top:12px}
+.sb-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(13,10,21,.55)}
+.sb-pts{font:700 32px var(--display);color:var(--faint)}
+.sb-row.won{border-color:var(--banana);box-shadow:0 0 18px rgba(246,207,76,.12)}.sb-row.won .sb-pts{color:var(--banana)}
+.margin{color:var(--muted);font:12.5px var(--mono);margin-top:10px}.margin b{color:var(--ink)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.badge{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border-radius:4px;border:1px solid var(--pink);color:var(--pink)}
+.wk{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;font-size:12.5px}
+.wk b{font-weight:500;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk .bar{height:4px;border-radius:2px;background:var(--line);margin-top:5px;overflow:hidden}.wk .bar i{display:block;height:100%;background:var(--line-2)}
+.wk.hl b{color:var(--ink);font-weight:600}.wk.hl .bar i{background:var(--rule)}
+.wk .p{font:600 13px var(--mono);font-variant-numeric:tabular-nums}
