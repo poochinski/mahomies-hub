@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-08 23:45 (Pacific) · **AI:** Claude
 **Current phase:** UI prototype (perfecting look + UX before Railway); Phase 0 code done
-**Last commit:** "Phase 0: PWA shell, Express server, Sleeper state endpoint"
+**Last commit:** "Game box scores: /api/game endpoint, live lineups + avatars in test build" (local only — not pushed yet)
 **App status:** Working locally (build passes) · **Live URL:** not deployed yet
 
 ## What we're working toward right now
