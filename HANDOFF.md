@@ -1,7 +1,7 @@
 # HANDOFF — where we left off
 
 **Last updated:** 2026-10-09 10:45 (Pacific) · **AI:** Claude
-**Current phase:** Live on Railway; next = Jayson tests live app, then v1.6 features + Phase 1 (Postgres)
+**Current phase:** v1.6 live on Railway (less scrolling, tile navigation, new Awards page); next = Jayson feedback, then v1.7 features + Phase 1 (Postgres)
 **Last commit:** "Live data: /api/hub builds everything from Sleeper; test build loads it"
 **App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (opens v1.5, pulls Sleeper live via /api/hub)
 
@@ -10,7 +10,7 @@ Jayson wants to perfect the UI/UX on his phone first, using a test build with
 real league data, then bring it to Railway. Two looks are being compared:
 "Night" (Banana Bets layout + the neon night-street palette from his dinner
 plan page — currently favored) and the original light Banana Bets look.
-VERSIONS: v1.5 is current (night theme only). v1.0 is saved in prototype/v1.0/
+VERSIONS: **v1.6 is current** (source prototype/v1.6/, built into prototype/dist/night.html). v1.5 saved at prototype/v1.5/night.html (/test/v1.5) and branch release-v1.5. Older: v1.5 (night theme only). v1.0 is saved in prototype/v1.0/
 and on GitHub branch `release-v1.0` (git tags are blocked from Claude's push) — go back to it if v1.5 ever needs to be undone.
 On Railway: every address = v1.5; /test/v1.0 and /test/v1.0/light = the old builds.
 v1.5 source: prototype/v1.5/ (app15.template.html + v15_main.js, v15_extra.js,
@@ -25,6 +25,14 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **v1.6** (Claude), after Jayson said there was too much scrolling
+  and he couldn't find Awards: Home hero tiles swipe sideways; Week matchups are
+  swipeable cards (tap = preview); "Explore the league" tile grid (Awards, Playoff
+  odds, Record book, History, Rivals, Lab); Awards race swipe row; results show 3
+  games + "Show all"; power rankings as swipe cards. League tab uses a 4×2 icon
+  tile menu instead of a sideways chip row (Awards was hidden off-screen).
+  Awards page redesigned: season cards (with each year's champ), champion +
+  Sacko spotlight, award grid, "Share awards" card. Records show top 5 + "Show all".
 - 2026-10-09 — Bye-week scores in records (e.g. 193.02, 2025 Wk 15) are now tappable: "Playoff bye" card with week rank, every score that week, and the lineup (live). (Claude)
 - 2026-10-09 — Fixed "old placeholder app showing" (Claude): the Phase 0 React
   build had installed a service worker on phones that kept serving the old

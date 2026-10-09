@@ -383,6 +383,6 @@ export async function buildHub(leagueId, me) {
       scoring: cur.league.scoring_settings?.rec === 1 ? 'PPR' : cur.league.scoring_settings?.rec === 0.5 ? 'Half PPR' : 'Standard',
       playoff_start: cur.P, playoff_teams: Number(st.playoff_teams) || 6, median: cur.median, first: SE[0].s, last_scored: cur.last, live: !!cur.liveWeek },
     managers, seasons, records, recf, alltime, h2h, games, power, lines, odds, awards, backtest,
-    tw: twMap, names, avatars, me, version: '1.5', updated_label, updated: now.toISOString()
+    tw: twMap, names, avatars, me, version: '1.6', updated_label, updated: now.toISOString()
   };
 }
