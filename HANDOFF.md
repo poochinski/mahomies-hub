@@ -25,6 +25,7 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — Bye-week scores in records (e.g. 193.02, 2025 Wk 15) are now tappable: "Playoff bye" card with week rank, every score that week, and the lineup (live). (Claude)
 - 2026-10-09 — Fixed "old placeholder app showing" (Claude): the Phase 0 React
   build had installed a service worker on phones that kept serving the old
   page. Server now serves v1.5 at every address, replaces /sw.js with a
@@ -127,7 +128,6 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 - Test build data is a snapshot (Oct 8, 2026 night). Live sync = Phase 1.
 - 2026 uses a league-median game (records include median W/L); 2023–2025 did not.
 - Player names in the snapshot only for 16 players; full names come from /api/game on Railway.
-- One record (193.02, 2025 Wk 15) was a playoff bye score — no game to open.
 
 ## Files changed in the latest push
 - Everything (first commit): package.json, vite.config.js, index.html,

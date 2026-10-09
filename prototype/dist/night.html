@@ -566,6 +566,7 @@ function recVal(k,x){var t=recType(k);
   var v=k==='blowout'||k==='close'?f2(g.m):k==='hiloss'?f2(g.lp):f2(g.wp);
   return {u:u,v:v,sub:(k==='hiloss'?'lost to ':'beat ')+teamF(k==='hiloss'?g.win:g.lose)+' '+f2(g.wp)+'–'+f2(g.lp)+' · '+sw(g.s,g.w)+(g.k!=='Regular season'?' · '+g.k:'')};
 }
+function byeKey(k,x){var t=recType(k);if((t==='team'||t==='player')&&D.tw[x.s+'|'+x.w+'|'+x.uid])return x.s+'|'+x.w+'|'+x.uid;return null}
 function recGame(k,x){var t=recType(k);
   if(t==='team'||t==='player')return gi(x.s,x.w,x.uid);
   if(t==='game')return gi(x.s,x.w,x.win);return -1}
@@ -576,11 +577,11 @@ function records(){
   if(!list.length)return h+'<p class="muted">No games yet.</p>'+foot();
   var top=recVal(k,list[0]),g0=recGame(k,list[0]);
   h+='<section class="hero rec-hero"><div class="eyebrow">Record book · '+(t==='season'||t==='streak'?'regular season':{all:'all games',reg:'regular season',post:'playoffs'}[S.rf])+'</div><h1 style="font-size:24px">'+name+'</h1><div class="big">'+esc(top.v)+'</div>'+
-   '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
+   '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':byeKey(k,list[0])?'data-bye="'+byeKey(k,list[0])+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
    '<button type="button" class="share-btn" data-share-rec="1">Share this record</button></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Top '+list.length+'</div><h2>'+name+'</h2></div></div><div class="rows">'+
-   list.map(function(x,i){var r=recVal(k,x),gx=recGame(k,x),inner='<span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+(gx>=0?whoS(r.u,r.sub,30):who(r.u,r.sub,30))+'<span class="val">'+esc(r.v)+(x.s===CUR()?'<small style="color:var(--pink)">'+CUR()+'</small>':'')+'</span>';
-     return gx>=0?'<button type="button" class="row" data-game="'+gx+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
+   list.map(function(x,i){var r=recVal(k,x),gx=recGame(k,x),by=gx<0?byeKey(k,x):null,tap=gx>=0||by,inner='<span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+(tap?whoS(r.u,r.sub+(by?' · playoff bye':''),30):who(r.u,r.sub,30))+'<span class="val">'+esc(r.v)+(x.s===CUR()?'<small style="color:var(--pink)">'+CUR()+'</small>':'')+'</span>';
+     return tap?'<button type="button" class="row" '+(gx>=0?'data-game="'+gx+'"':'data-bye="'+by+'"')+' style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div></section>'+foot();
   return h;
 }
@@ -720,6 +721,30 @@ function lineupHtml(g,d){
   return h+bench(A,g.win)+bench(B,g.lose);
 }
 
+/* ---------- BYE WEEK ---------- */
+function byeSheet(key){
+  var p=key.split('|'),s=p[0],w=+p[1],u=p[2],t=D.tw[key],ws=weekScores(s,w),rk=0;
+  ws.forEach(function(x,j){if(x.u===u)rk=j+1});
+  var tp=topP(s,w,u),avg=ws.reduce(function(a,x){return a+x.p},0)/Math.max(1,ws.length),mx=ws.length?ws[0].p:1;
+  var h='<section class="hero gs"><div class="eyebrow">'+s+' · Week '+w+' · Playoff bye</div><div class="sb"><div class="sb-row won">'+who(u,tnS(s,u)===team(u)?M(u).name:'as '+tnS(s,u),40)+'<div class="sb-pts num">'+f2(t[0])+'</div></div></div>'+
+   '<p class="margin">Earned a first-round bye, so there was no opponent. Sleeper still scored the lineup.</p></section>';
+  h+='<section class="panel"><div class="stat3"><div class="stat"><small>Week rank</small><strong>'+ord(rk)+'</strong><span>of '+ws.length+'</span></div><div class="stat"><small>League avg</small><strong>'+f1(avg)+'</strong><span>that week</span></div><div class="stat"><small>Top scorer</small><strong>'+(tp?f1(tp.pts):'–')+'</strong><span>'+esc(tp&&tp.name||'player')+'</span></div></div></section>';
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">'+s+' · Week '+w+'</div><h2>Every score that week</h2></div></div>'+
+   ws.map(function(x,j){var hl=x.u===u;return '<div class="wk'+(hl?' hl':'')+'"><span class="rk'+(j===0?' gold':'')+'" style="width:22px;height:22px;font-size:10px">'+(j+1)+'</span><div style="min-width:0"><b>'+esc(tnS(s,x.u))+'</b><div class="bar"><i style="width:'+(x.p/mx*100).toFixed(1)+'%"></i></div></div><span class="p">'+f2(x.p)+'</span></div>'}).join('')+'</section>';
+  h+=LIVE?'<section class="panel"><div class="ph"><div><div class="kicker">Box score</div><h2>Lineup</h2></div></div><div id="lineups"><p class="muted">Loading lineup from Sleeper…</p></div></section>':
+    '<p class="note"><b>Full lineup</b> loads from Sleeper in the live app.</p>';
+  return h;
+}
+function loadByeLineup(key){
+  if(!LIVE)return;var p=key.split('|');
+  fetch('/api/game?season='+p[0]+'&week='+p[1]+'&users='+p[2]).then(function(r){return r.json()}).then(function(d){
+    var el=document.getElementById('lineups');if(!el)return;var T=d&&d.teams&&d.teams[0];
+    if(!T||!T.starters.length){el.innerHTML='<p class="err">Couldn\'t load the lineup.</p>';return}
+    var row=function(x){return '<div class="bn"><div class="pl a"><b>'+esc(x.name)+'</b><span>'+esc((x.slot?x.slot.replace('FLEX','FLX')+' · ':'')+[x.pos,x.team].filter(Boolean).join(' · '))+'</span></div><span class="pp hi">'+f1(x.pts)+'</span></div>'};
+    el.innerHTML=T.starters.map(row).join('')+'<details class="bench"><summary>Bench · '+f1(T.bench.reduce(function(a,x){return a+x.pts},0))+' pts</summary>'+T.bench.map(row).join('')+'</details>';
+  }).catch(function(){var el=document.getElementById('lineups');if(el)el.innerHTML='<p class="err">Couldn\'t reach the server.</p>'});
+}
+
 /* ---------- MATCHUP PREVIEW ---------- */
 function sdOf(arr){if(arr.length<2)return 0;var m=arr.reduce(function(a,b){return a+b},0)/arr.length;return Math.sqrt(arr.reduce(function(a,b){return a+(b-m)*(b-m)},0)/arr.length)}
 function scores26(u){var o=[];for(var w=1;w<=D.league.last_scored;w++){var p=P26(w,u);if(p!=null)o.push({w:w,p:p})}return o}
@@ -856,6 +881,7 @@ document.addEventListener('click',function(e){
   if(t.id==='cancelSlip'){closeSheet();return}
   if(d.cancel!==undefined&&t.classList.contains('x')){S.bets.splice(+d.cancel,1);store('bets',S.bets);render();toast('Bet cancelled, Bucks returned');return}
   if(t.id==='bucksBtn'){go('book');return}
+  if(d.bye){openSheet(byeSheet(d.bye)+CLOSE);loadByeLineup(d.bye);return}
   if(d.game!==undefined){var gx=+d.game;if(gx>=0){openSheet(gameSheet(gx)+'<button type="button" class="share-btn wide" data-share-game="'+gx+'">Share this game</button>'+CLOSE);loadLineups(gx);return}}
   if(d.mgr){openSheet(profile(d.mgr,false)+CLOSE);return}
   if(t.id==='closeP'){closeSheet();return}
