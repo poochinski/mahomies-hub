@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-09 12:10 (Pacific) · **AI:** Claude
 **Current phase:** v1.8 — Sportsbook is live in the app (login, bets, parlays, leaders, commish tools); Week 6 lines post Tue Oct 13 6 AM; next = specials + futures
-**Last commit:** "Remove all banana branding: Sportsbook, Mahomie Bucks, On Fire / Ice Cold, new football icon"
+**Last commit:** "Live betting (nothing locks, odds move with the score) + MH logo"
 **App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v1.7; old builds at /test/v1.6, /test/v1.5, /test/v1.0)
 
 ## What we're working toward right now
@@ -23,6 +23,18 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Live betting + MH logo** (Claude). Jayson: "I don't want anything to be locked —
+  the odds should change like betting during a game." Once a matchup's first starter
+  kicks off, its odds go live (engine.js `livePrice`: points so far + projection × share of
+  lineup left, from ESPN period/clock; data.js `weekState`). Betting only stops when every
+  starter is done. Server re-prices at placement and refuses if the price got worse
+  ("Odds moved", 409) — the app then shows the new price. Cancel only before kickoff.
+  Lopsided games: favorite's moneyline comes off the board past -1000. New columns
+  lines.sd_a/sd_b (filled in automatically for lines posted earlier) and bet_legs.live.
+  App: "Live odds · 63% left to play" header, opening line shown under live games, LIVE tag
+  on live bets, 30-second refresh while games are live. Logo: Jayson's gold MH + football
+  is now the home-screen icon and the header logo. Test suite now 44 checks (live odds,
+  stale-price refusal, ML off the board, no bets after games end).
 - 2026-10-09 — **Banana branding removed** (Claude), Jayson: "this isn't the Banana Bets app".
   Banana Book → **Mahomie's Sportsbook** ("the Book"), Banana Bucks → **Mahomie Bucks** (💵),
   Top Banana / Rotten Banana → **🔥 On Fire / 🧊 Ice Cold** (awards, Home "Last week" cells
@@ -144,7 +156,7 @@ E. Verify Lab endpoints with real data on Railway.
 
 ## Decisions made (and why)
 - **Book details decided while building (Claude, 2026-10-09):** you can bet the over on your own game but not the under; bets can be cancelled until their game locks; 5 wrong PINs = 15-minute lock; phones stay logged in 180 days; parlays pay at most 10,000 back; lines keep the v1.5 projection formula (BIBLE §7) instead of Sleeper player projections; if ESPN kickoff times can't be read, betting pauses rather than guessing.
-- **Lock rule detail:** a game's lock time = earliest kickoff among both lineups' current starters, rechecked every few minutes; once locked it never reopens (Sleeper locks a player once his game starts, so the time can't move earlier after that).
+- **Live betting replaces locks (Jayson, 2026-10-09):** a matchup goes live at its first starter's kickoff; odds then move with the score; betting stops only when every starter is done. (DB column `lines.locked` now means "started".)
 - **Sportsbook rules (Jayson, 2026-10-09):** per-game lock (first starter's kickoff), 1,000 Bucks once per season with NO allowance, launch with spread/ML/total + weekly specials + parlays + futures, team + 4-digit PIN login. Full rules in BIBLE §7. Book opens for real in Week 6.
 - Former managers (rpkid426, nstynate85) stay in every list and stat, tagged "Former" wherever shown — Jayson's call (he didn't want them hidden or separated).
 - App name: Mahomie's Hub, repo `poochinski/mahomies-hub` — Jayson's pick.

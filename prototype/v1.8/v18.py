@@ -91,7 +91,7 @@ css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500
 .chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 """
 # RENAME (Jayson 2026-10-09: no Banana Bets branding in this app)
-LOGO=open('/home/claude/data/logo.svg').read().replace('<svg ','<svg class="mark" aria-hidden="true" ',1)
+LOGO='<img class="mark" src="/brand-96.png" alt="" width="34" height="34">'
 a=s.index('<svg class="mark"'); b=s.index('</svg>',a)+6; s=s[:a]+LOGO+s[b:]
 for a_,b_ in [('/* Layout: same Banana Bets shell (sticky brand bar','/* Layout: sticky brand bar'),('banana yellow lead','gold lead'),
   ('aria-label="Open the Banana Book"><span>🍌</span>','aria-label="Open the Sportsbook"><span>💵</span>'),

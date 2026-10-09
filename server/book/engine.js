@@ -71,8 +71,42 @@ export function priceMatchup(pa, pb, sda, sdb, hold = HOLD) {
     proj_a: r1(mid + diff / 2), proj_b: r1(mid - diff / 2),
     spread: half(diff), total: half(pa + pb),
     ml_a: american(Math.min(0.995, p * (1 + hold))), ml_b: american(Math.min(0.995, (1 - p) * (1 + hold))),
-    wp_a: Math.round(p * 1000) / 1000
+    wp_a: Math.round(p * 1000) / 1000, sd_a: Math.round(sda * 100) / 100, sd_b: Math.round(sdb * 100) / 100
   };
+}
+
+/**
+ * Live odds once a matchup's games have started (Jayson, 2026-10-09: nothing locks;
+ * the price moves with the score, like in-game betting).
+ *   st = { pts_a, pts_b, rem_a, rem_b }  points so far + share of each lineup's games still to play (0–1)
+ * Expected final = points so far + projection × share left. Swing shrinks with √(share left).
+ * Spread/total keep -110 and move freely (no 20-point cap live).
+ * A moneyline side comes off the board when it would be shorter than -1000.
+ * Returns null when every starter's game is over (result is known).
+ */
+export function livePrice(line, st, hold = HOLD) {
+  const ra = Math.max(0, Math.min(1, st.rem_a)), rb = Math.max(0, Math.min(1, st.rem_b));
+  const ea = st.pts_a + Number(line.proj_a) * ra, eb = st.pts_b + Number(line.proj_b) * rb;
+  const sd = Math.hypot(Number(line.sd_a || DEFAULT_SD) * Math.sqrt(ra), Number(line.sd_b || DEFAULT_SD) * Math.sqrt(rb));
+  if (ra + rb < 0.005 || sd < 0.5) return null;
+  const p = phi((ea - eb) / sd);
+  const ml = (q) => { q = Math.min(0.995, q); return q >= 0.5 && -100 * q / (1 - q) < -1000 ? null : american(q); };
+  return {
+    exp_a: r1(ea), exp_b: r1(eb), spread: half(ea - eb), total: half(ea + eb),
+    ml_a: ml(p * (1 + hold)), ml_b: ml((1 - p) * (1 + hold)), wp_a: Math.round(p * 1000) / 1000,
+    rem_a: Math.round(ra * 1000) / 1000, rem_b: Math.round(rb * 1000) / 1000
+  };
+}
+
+// Is the new price worse for the bettor than the one they saw? (protects against odds that moved)
+export function worseThan(market, pick, seen, now_) {
+  if (seen.odds != null && decimal(now_.odds) < decimal(Number(seen.odds)) - 1e-9) return true;
+  if (seen.point != null && now_.point != null) {
+    const a = Number(seen.point), b = Number(now_.point);
+    if (market === 'spread' && b < a) return true;
+    if (market === 'total' && (pick === 'over' ? b > a : b < a)) return true;
+  }
+  return false;
 }
 
 /**
@@ -97,7 +131,8 @@ export function priceWeek(week, pairs, cur, prev) {
 export function legTerms(line, market, pick) {
   if (market === 'ml') {
     if (pick !== 'a' && pick !== 'b') return null;
-    return { point: null, odds: pick === 'a' ? line.ml_a : line.ml_b };
+    const o = pick === 'a' ? line.ml_a : line.ml_b;
+    return o == null ? { off: true } : { point: null, odds: Number(o) };
   }
   if (market === 'spread') {
     if (pick !== 'a' && pick !== 'b') return null;

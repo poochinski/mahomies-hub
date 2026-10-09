@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../db.js';
 import { COMMISH_USER_ID } from '../config.js';
-import { priceWeek, legTerms, gradeLeg, gradeBet, betOdds, money } from './engine.js';
+import { priceWeek, legTerms, gradeLeg, gradeBet, betOdds, money, livePrice, worseThan, swing } from './engine.js';
 import { kickoffs, postTime, settleTime, fmtPT } from './kickoffs.js';
 import * as sl from './data.js';
 
@@ -163,9 +163,9 @@ export async function postLines(week, { force = false, by = null } = {}) {
     await c.query('INSERT INTO book_weeks(season, week, first_kick, last_kick, settle_at) VALUES ($1,$2,$3,$4,$5)',
       [season, week, k?.first || null, k?.last || null, k ? settleTime(k) : null]);
     for (const m of priced) {
-      await c.query(`INSERT INTO lines(id, season, week, matchup_id, team_a, team_b, roster_a, roster_b, proj_a, proj_b, spread, total, ml_a, ml_b, wp_a)
-                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-        [`${season}-w${week}-m${m.matchup_id}`, season, week, m.matchup_id, m.a, m.b, m.roster_a, m.roster_b, m.proj_a, m.proj_b, m.spread, m.total, m.ml_a, m.ml_b, m.wp_a]);
+      await c.query(`INSERT INTO lines(id, season, week, matchup_id, team_a, team_b, roster_a, roster_b, proj_a, proj_b, spread, total, ml_a, ml_b, wp_a, sd_a, sd_b)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        [`${season}-w${week}-m${m.matchup_id}`, season, week, m.matchup_id, m.a, m.b, m.roster_a, m.roster_b, m.proj_a, m.proj_b, m.spread, m.total, m.ml_a, m.ml_b, m.wp_a, m.sd_a, m.sd_b]);
     }
   });
   await log('post_lines', { season, week, lines: priced.length, force }, by);
@@ -173,27 +173,50 @@ export async function postLines(week, { force = false, by = null } = {}) {
   return linesFor(week);
 }
 
-// Recompute each matchup's lock time from current starters + kickoffs.
-// Once a line is locked it never unlocks.
-const lockChecked = new Map(); // "season|week" -> ms
-export async function refreshLocks(season, week, { fresh = false } = {}) {
-  const key = `${season}|${week}`;
-  if (!fresh && Date.now() - (lockChecked.get(key) || 0) < MIN) return;
+// Live state of a week: when each matchup started (its first starter's kickoff),
+// points so far and how much of each lineup is left. Nothing locks: once a game
+// starts, betting continues at live odds (Jayson, 2026-10-09).
+// `locked` in the database now means "started"; once started it stays started.
+const stateCache = new Map(); // "season|week" -> { at, data }
+export async function liveWeek(season, week, { fresh = false } = {}) {
+  const key = `${season}|${week}`; const hit = stateCache.get(key);
+  if (!fresh && hit && Date.now() - hit.at < 30 * 1000) return hit.data;
   const L = await sl.league();
-  if (L.season !== season) return;
-  const { locks, k } = await sl.lockTimes(L, week);
+  if (L.season !== season) return null;
+  const st = await sl.weekState(L, week, fresh ? 20 * 1000 : 60 * 1000);
   const t = now();
-  for (const [mid, at] of Object.entries(locks)) {
-    await q(`UPDATE lines SET lock_at = CASE WHEN locked THEN lock_at ELSE $3 END,
-                              locked = locked OR $4, updated_at = now()
+  for (const [mid, at] of Object.entries(st.starts)) {
+    await q(`UPDATE lines SET lock_at = CASE WHEN locked THEN lock_at ELSE $3 END, locked = locked OR $4, updated_at = now()
              WHERE season=$1 AND week=$2 AND matchup_id=$5`, [season, week, at, at <= t, Number(mid)]);
   }
   await q('UPDATE book_weeks SET first_kick=$3, last_kick=$4, settle_at=COALESCE(settle_at,$5) WHERE season=$1 AND week=$2 AND settled_at IS NULL',
-    [season, week, k.first, k.last, settleTime(k)]);
-  lockChecked.set(key, Date.now());
+    [season, week, st.k.first, st.k.last, settleTime(st.k)]);
+  // Lines posted before live betting existed have no swing saved; fill it in once.
+  const noSd = await q('SELECT id, team_a, team_b FROM lines WHERE season=$1 AND week=$2 AND sd_a IS NULL', [season, week]);
+  if (noSd.length) {
+    const { cur, prev } = await sl.scoresBefore(L, week);
+    for (const l of noSd) await q('UPDATE lines SET sd_a=$2, sd_b=$3 WHERE id=$1', [l.id, swing(cur[l.team_a] || [], prev[l.team_a] || []), swing(cur[l.team_b] || [], prev[l.team_b] || [])]);
+  }
+  stateCache.set(key, { at: Date.now(), data: st });
+  return st;
 }
+export const _resetCaches = () => stateCache.clear(); // tests only
+export const refreshLocks = (season, week, opt) => liveWeek(season, week, opt);
 
-const isLocked = (line) => line.locked || (line.lock_at && new Date(line.lock_at) <= now());
+const isStarted = (line) => line.locked || (line.lock_at && new Date(line.lock_at) <= now());
+
+// The price right now: the frozen line before kickoff, live odds after.
+// Returns { ...line numbers, started, finished, live, rem_a, rem_b }.
+function priceNow(row, st) {
+  const base = { spread: Number(row.spread), total: Number(row.total), ml_a: row.ml_a, ml_b: row.ml_b, wp_a: Number(row.wp_a),
+    spread_price: row.spread_price, total_price: row.total_price, started: !!isStarted(row), finished: row.status !== 'open', live: false };
+  if (row.status !== 'open' || !base.started) return base;
+  const A = st?.rosters?.[row.roster_a], B = st?.rosters?.[row.roster_b];
+  if (!A || !B) return { ...base, live: true, unpriced: true };
+  const lp = livePrice(row, { pts_a: A.pts, pts_b: B.pts, rem_a: A.rem, rem_b: B.rem });
+  if (!lp) return { ...base, live: true, finished: true, rem_a: 0, rem_b: 0 };
+  return { ...base, ...lp, live: true };
+}
 
 export async function currentWeek() {
   const [w] = await q('SELECT season, week FROM book_weeks ORDER BY season DESC, week DESC LIMIT 1');
@@ -204,26 +227,29 @@ export async function linesFor(week, { season = null } = {}) {
   const L = await sl.league();
   season = season || L.season;
   if (!week) { const w = await currentWeek(); if (!w) return { season, week: null, lines: [] }; week = w.week; season = w.season; }
-  await refreshLocks(season, week).catch(() => {});
   const [bw] = await q('SELECT * FROM book_weeks WHERE season=$1 AND week=$2', [season, week]);
+  const st = bw && !bw.settled_at ? await liveWeek(season, week).catch(() => null) : null;
   const rows = await q('SELECT * FROM lines WHERE season=$1 AND week=$2 ORDER BY matchup_id', [season, week]);
-  const live = rows.length && !bw?.settled_at ? await sl.pointsFor(L, week).catch(() => ({})) : {};
+  const live = Object.fromEntries(Object.entries(st?.rosters || {}).map(([r, x]) => [r, x.pts]));
   const handle = await q(`SELECT l.line_id, COUNT(*)::int AS n, COALESCE(SUM(b.stake),0)::float AS bucks FROM bet_legs l JOIN bets b ON b.id=l.bet_id
                           WHERE b.season=$1 AND b.week=$2 AND b.status <> 'cancelled' GROUP BY l.line_id`, [season, week]);
   const H = Object.fromEntries(handle.map((h) => [h.line_id, h]));
   return {
     season, week: Number(week),
     posted_at: bw?.posted_at || null, first_kick: bw?.first_kick || null, settle_at: bw?.settle_at || null, settled_at: bw?.settled_at || null,
-    lines: rows.map((r) => ({
+    lines: rows.map((r) => { const p = priceNow(r, st); return {
       id: r.id, matchup_id: r.matchup_id, a: r.team_a, b: r.team_b,
       team_a: L.teams[r.team_a]?.team || '?', team_b: L.teams[r.team_b]?.team || '?',
-      proj_a: Number(r.proj_a), proj_b: Number(r.proj_b), spread: Number(r.spread), total: Number(r.total),
-      ml_a: r.ml_a, ml_b: r.ml_b, spread_price: r.spread_price, total_price: r.total_price, wp_a: Number(r.wp_a),
-      lock_at: r.lock_at, locked: !!isLocked(r), status: r.status, note: r.note,
+      proj_a: Number(r.proj_a), proj_b: Number(r.proj_b), spread: p.spread, total: p.total,
+      ml_a: p.ml_a, ml_b: p.ml_b, spread_price: r.spread_price, total_price: r.total_price, wp_a: p.wp_a,
+      open: { spread: Number(r.spread), total: Number(r.total), ml_a: r.ml_a, ml_b: r.ml_b },
+      live: p.live, finished: p.finished, unpriced: !!p.unpriced, exp_a: p.exp_a ?? null, exp_b: p.exp_b ?? null,
+      left: p.live && p.rem_a != null ? Math.round(50 * (p.rem_a + p.rem_b)) : null,
+      lock_at: r.lock_at, started: p.started, locked: p.started, status: r.status, note: r.note,
       score_a: r.final_a != null ? Number(r.final_a) : live[r.roster_a] ?? null,
       score_b: r.final_b != null ? Number(r.final_b) : live[r.roster_b] ?? null,
       bets: H[r.id]?.n || 0
-    }))
+    }; })
   };
 }
 
@@ -244,7 +270,7 @@ export async function editLine(id, body, by) {
     for (const b of bets) await gradeOne(b.id);
     return;
   }
-  if (isLocked(line)) throw new BookError('That game is locked; only voiding is allowed now');
+  if (isStarted(line)) throw new BookError('That game has started, so live odds run on their own now. You can only void it.');
   const f = {};
   for (const k of ['spread', 'total', 'ml_a', 'ml_b', 'spread_price', 'total_price']) if (body[k] != null) {
     const v = Number(body[k]); if (!Number.isFinite(v)) throw new BookError(`${k} must be a number`);
@@ -289,16 +315,23 @@ export async function placeBet(userId, legsIn, stakeIn) {
   if (weeks.size > 1) throw new BookError('All picks must be from the same week');
   const { season, week } = lines[0];
   if (season !== L.season) throw new BookError('That season is over');
-  await refreshLocks(season, week, { fresh: true }).catch(() => {});
+  let st = null;
+  try { st = await liveWeek(season, week, { fresh: true }); } catch { throw new BookError("Can't load live scores right now. Try again in a minute.", 503); }
 
   const legs = [];
   for (const li of legsIn) {
     const [fresh] = await q('SELECT * FROM lines WHERE id=$1', [String(li.line_id)]);
+    const vs = `${L.teams[fresh.team_a]?.team} vs ${L.teams[fresh.team_b]?.team}`;
     if (fresh.status !== 'open') throw new BookError('That game is off the board');
     if (!fresh.lock_at) throw new BookError("Can't confirm kickoff times right now. Try again in a minute.", 503);
-    if (isLocked(fresh)) throw new BookError(`${L.teams[fresh.team_a]?.team} vs ${L.teams[fresh.team_b]?.team} is locked`);
-    const terms = legTerms(fresh, li.market, li.pick);
+    const p = priceNow(fresh, st);
+    if (p.finished) throw new BookError(`${vs} is over. Waiting on the final score.`);
+    if (p.unpriced) throw new BookError(`Can't price ${vs} live right now. Try again in a minute.`, 503);
+    const terms = legTerms({ ...fresh, ...p }, li.market, li.pick);
     if (!terms) throw new BookError('Unknown bet type');
+    if (terms.off) throw new BookError(`The moneyline on ${vs} is off the board (it's too lopsided). Try the spread.`);
+    if (worseThan(li.market, li.pick, { odds: li.odds, point: li.point }, terms)) throw new BookError('Odds moved. Check the new price and place it again.', 409);
+    terms.live = p.live;
     const mine = fresh.team_a === userId ? 'a' : fresh.team_b === userId ? 'b' : null;
     if (mine) {
       if ((li.market === 'ml' || li.market === 'spread') && li.pick !== mine) throw new BookError("You can't bet against yourself");
@@ -318,7 +351,7 @@ export async function placeBet(userId, legsIn, stakeIn) {
     if (stake > bal) throw new BookError(`Not enough Bucks (you have ${bal})`);
     const { rows: [b] } = await c.query(`INSERT INTO bets(user_id, season, week, kind, stake, dec_odds, odds, to_win, lock_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [userId, season, week, parlay ? 'parlay' : 'single', stake, dec, odds, toWin, lockAt]);
-    for (const l of legs) await c.query('INSERT INTO bet_legs(bet_id, line_id, market, pick, point, odds) VALUES ($1,$2,$3,$4,$5,$6)', [b.id, l.line.id, l.market, l.pick, l.point, l.odds]);
+    for (const l of legs) await c.query('INSERT INTO bet_legs(bet_id, line_id, market, pick, point, odds, live) VALUES ($1,$2,$3,$4,$5,$6,$7)', [b.id, l.line.id, l.market, l.pick, l.point, l.odds, !!l.live]);
     await c.query("INSERT INTO bankroll_ledger(user_id, season, amount, kind, bet_id, note) VALUES ($1,$2,$3,'stake',$4,$5)", [userId, season, -stake, b.id, `Bet #${b.id}`]);
     return b;
   });
@@ -331,7 +364,7 @@ export async function cancelBet(userId, betId) {
     if (!b || b.user_id !== userId) throw new BookError('No such bet', 404);
     if (b.status !== 'open') throw new BookError(`That bet is already ${b.status}`);
     const { rows: legs } = await c.query('SELECT l.* FROM lines l JOIN bet_legs g ON g.line_id=l.id WHERE g.bet_id=$1', [betId]);
-    if (legs.some(isLocked)) throw new BookError('Too late: a game in this bet has started');
+    if (legs.some(isStarted)) throw new BookError('Too late: a game in this bet has started (bets can be cancelled only before kickoff)');
     await c.query("UPDATE bets SET status='cancelled', settled_at=now() WHERE id=$1", [betId]);
     await c.query("INSERT INTO bankroll_ledger(user_id, season, amount, kind, bet_id, note) VALUES ($1,$2,$3,'refund',$4,$5)", [userId, b.season, b.stake, betId, `Cancelled bet #${betId}`]);
     return b;
@@ -353,7 +386,7 @@ async function betsWhere(where, params, limit = 200) {
     payout: b.payout != null ? Number(b.payout) : null, placed_at: b.placed_at, settled_at: b.settled_at, lock_at: b.lock_at,
     legs: legs.filter((g) => String(g.bet_id) === String(b.id)).map((g) => ({
       line_id: g.line_id, market: g.market, pick: g.pick, point: g.point != null ? Number(g.point) : null, odds: g.odds, result: g.result,
-      a: g.team_a, b: g.team_b, label: label(g, g, L.teams), locked: !!isLocked(g)
+      a: g.team_a, b: g.team_b, label: label(g, g, L.teams), locked: !!isStarted(g), started: !!isStarted(g), live: !!g.live
     }))
   }));
 }

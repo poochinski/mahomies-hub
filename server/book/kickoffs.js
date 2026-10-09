@@ -6,6 +6,7 @@ const ESPN = (process.env.ESPN_BASE || 'https://site.api.espn.com/apis/site/v2/s
 const FIX = { WSH: 'WAS', JAC: 'JAX', LA: 'LAR' };
 
 const cache = new Map(); // "season|week" -> { at, data }
+export const clearKickoffCache = () => cache.clear(); // tests only
 
 /**
  * Kickoffs for one NFL week.
@@ -24,13 +25,21 @@ export async function kickoffs(season, week, { maxAgeMs = 30 * 60 * 1000 } = {})
     const games = (json.events || []).map((e) => ({
       at: new Date(e.date),
       teams: (e.competitions?.[0]?.competitors || []).map((c) => { const t = c.team?.abbreviation || ''; return FIX[t] || t; }),
-      state: e.status?.type?.state || 'pre' // pre | in | post
+      state: e.status?.type?.state || 'pre', // pre | in | post
+      period: Number(e.status?.period) || 0,
+      clock: Number(e.status?.clock ?? 900)
     })).filter((g) => !Number.isNaN(g.at.getTime()));
+    // How much of each game has been played (0 = not started, 1 = final).
+    for (const g of games) {
+      g.progress = g.state === 'post' ? 1 : g.state === 'pre' ? 0
+        : g.period > 4 ? 0.98 : Math.max(0, Math.min(0.98, ((g.period - 1) * 900 + (900 - g.clock)) / 3600));
+    }
     if (!games.length) throw new Error('ESPN returned no games');
     const byTeam = {};
-    for (const g of games) for (const t of g.teams) byTeam[t] = g.at;
+    const gameOf = {};
+    for (const g of games) for (const t of g.teams) { byTeam[t] = g.at; gameOf[t] = g; }
     const times = games.map((g) => g.at.getTime());
-    const data = { games, byTeam, first: new Date(Math.min(...times)), last: new Date(Math.max(...times)) };
+    const data = { games, byTeam, gameOf, first: new Date(Math.min(...times)), last: new Date(Math.max(...times)) };
     cache.set(key, { at: Date.now(), data });
     return data;
   } catch (err) {

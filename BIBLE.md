@@ -129,7 +129,7 @@ Display type **Chakra Petch**, body **IBM Plex Sans**, labels and numbers **IBM 
 - Design at **390px wide first**. Bottom tab bar: Home · League · Records · Book · Me.
 - Tap targets at least 44px. Respect safe areas. **No sideways scrolling** (Jayson's call in v1.7): no carousels or chip rows that run off-screen.
 - Every game/score is tappable for details. Former managers stay in every list, tagged "Former".
-- Standalone PWA, `theme_color #130f1d`. App icon: neon football (public/favicon.svg, source prototype/v1.8/logo.svg).
+- Standalone PWA, `theme_color #130f1d`. **Logo: Jayson's gold "MH" with football** (source prototype/v1.8/logo-mh.png → public/icon-*.png, apple-touch-icon.png, brand-96.png for the header, favicon.svg).
 
 ### Names (decided 2026-10-09)
 - App: **MAHOMIE'S HUB** · subtitle **ROLLIN' WITH MAHOMIES**
@@ -211,7 +211,7 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 - **Login:** pick your team + set a **4-digit PIN** the first time. PIN stored hashed. Commish can reset anyone's PIN.
 - **Bets:** min 10, max 250 per bet (commish can change). Every bet is a ledger entry; a bankroll is never stored as one number.
 - **Own game:** you may bet on yourself to win/cover (and the over), never against yourself or the under on your own game (blocks tanking).
-- **Cancel:** a bet can be cancelled for a full refund until its game locks.
+- **Cancel:** a bet can be cancelled for a full refund until its game kicks off.
 - **Login safety:** 5 wrong PINs locks that team for 15 minutes; a phone stays logged in 180 days.
 - **Parlay cap:** a parlay pays at most 10,000 Bucks back (commish setting).
 - **Ties:** exact tie on a spread or total = push (stake back). A parlay with a pushed leg drops that leg.
@@ -225,7 +225,7 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 
 ### Weekly timeline (Pacific)
 - **Tuesday ~6 AM:** settle anything still open; post new lines (lines are frozen into the `lines` table so everyone bets the same numbers); reprice futures.
-- **Per-game lock:** each matchup locks when the **first starter in either lineup kicks off** (NFL kickoff times from ESPN's public scoreboard, `site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?week=N`; starters from Sleeper matchups at that moment). Weekly specials + futures lock at the **first kickoff of the week**. A parlay locks when its earliest leg locks.
+- **Live betting, nothing locks (Jayson, 2026-10-09):** before a matchup's first starter kicks off you bet the frozen Tuesday line. After that the odds go **live**: expected final = points so far + projection × share of the lineup still to play (from ESPN game clocks), swing shrinks with √(share left), spread/total keep -110 and move freely, moneyline keeps the 4.5% hold and a side comes off the board when it would be shorter than -1000. Betting stops only when every starter in the matchup is done. Live prices refresh about every 30–60 s; if the price got worse between seeing it and tapping Place bet, the bet is refused and the new price shown. Cancel only before the game's first kickoff (live bets can't be cancelled). Weekly specials + futures still close at the first kickoff of the week; a parlay can mix pregame and live legs.
 - **Sun–Mon:** live bet tracking (winning/losing) from live scores.
 - **Wednesday 3 AM:** final settlement after Sleeper stat corrections; payouts written to the ledger; bet feed + leaderboard update.
 - Launch: **Week 6 of 2026** (lines post Tue Oct 13).

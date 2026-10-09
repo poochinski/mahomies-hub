@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Live betting: nothing locks, odds move with the score once a game starts; new MH logo for the app icon + header. (Claude)
 - 2026-10-09 — Removed all banana branding: Mahomie's Sportsbook, Mahomie Bucks 💵, On Fire / Ice Cold, new football icon. (Claude)
 - 2026-10-09 — **v1.8**: Book tab wired to the real Book: PIN login, live lines + lock countdowns, straight bets + parlays, My bets, Leaders + feed, commish Book controls. v1.7 kept at /test/v1.7. (Claude)
 - 2026-10-09 — **Sportsbook backend**: tables, team + PIN login, 1,000-Buck season grant, frozen Tuesday lines, per-game locks from ESPN kickoffs, straight bets + parlays, cancel, Wednesday settlement, leaderboard, feed, commish tools. (Claude)

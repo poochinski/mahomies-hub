@@ -86,3 +86,30 @@ export async function lockTimes(L, week) {
   }
   return { locks: out, k };
 }
+
+/**
+ * Live state of a week for in-game odds: points so far and how much of each
+ * lineup is still to play. rem = average over starter slots of (1 - game progress);
+ * an empty slot or a starter on bye counts as nothing left.
+ * Returns { rosters: { roster_id: { pts, rem } }, starts: { matchup_id: Date }, k }
+ */
+export async function weekState(L, week, maxAgeMs = 60 * 1000) {
+  const [k, ms, players] = await Promise.all([kickoffs(L.season, week, { maxAgeMs }), matchups(L.leagueId, week, maxAgeMs), getPlayers().catch(() => ({}))]);
+  const teamOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? pid : players[pid]?.t || null);
+  const rosters = {}, starts = {};
+  for (const m of ms) {
+    const slots = (m.starters || []).length || 1;
+    let rem = 0, first = Infinity;
+    for (const pid of m.starters || []) {
+      if (!pid || pid === '0') continue;
+      const g = k.gameOf[teamOf(String(pid))];
+      if (!g) continue;
+      rem += 1 - g.progress;
+      first = Math.min(first, g.at.getTime());
+    }
+    rosters[m.roster_id] = { pts: pts(m), rem: rem / slots, first };
+    if (m.matchup_id != null) starts[m.matchup_id] = Math.min(starts[m.matchup_id] ?? Infinity, first);
+  }
+  for (const mid of Object.keys(starts)) starts[mid] = new Date(Number.isFinite(starts[mid]) ? starts[mid] : k.first.getTime());
+  return { rosters, starts, k };
+}

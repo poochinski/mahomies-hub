@@ -3,6 +3,7 @@
 
 const BASE = process.env.SLEEPER_BASE || 'https://api.sleeper.app/v1'; // override only for local testing
 const cache = new Map(); // path -> { at, data }
+export const clearSleeperCache = () => cache.clear(); // tests only
 
 export async function sleeper(path, { maxAgeMs = 5 * 60 * 1000 } = {}) {
   const hit = cache.get(path);

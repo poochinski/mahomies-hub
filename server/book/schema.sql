@@ -123,3 +123,9 @@ CREATE TABLE IF NOT EXISTS book_log (
   by_user TEXT,
   detail  JSONB
 );
+
+-- 2026-10-09: live betting. Each team's weekly swing is kept with the line for live odds;
+-- "locked" now means "the first starter has kicked off" (betting continues at live odds).
+ALTER TABLE lines ADD COLUMN IF NOT EXISTS sd_a NUMERIC(6,2);
+ALTER TABLE lines ADD COLUMN IF NOT EXISTS sd_b NUMERIC(6,2);
+ALTER TABLE bet_legs ADD COLUMN IF NOT EXISTS live BOOLEAN NOT NULL DEFAULT false;
