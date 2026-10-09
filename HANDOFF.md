@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-09 00:30 (Pacific) · **AI:** Claude
-**Current phase:** UI prototype **v1.5** (night theme) — perfecting look + UX before Railway; Phase 0 code done
-**Last commit:** "v1.5: full feature update" (local only — GitHub push blocked until the Claude GitHub App has repo access)
+**Last updated:** 2026-10-09 10:45 (Pacific) · **AI:** Claude
+**Current phase:** Going live — GitHub push + Railway deploy (v1.5 test build now reads live Sleeper data)
+**Last commit:** "Live data: /api/hub builds everything from Sleeper; test build loads it"
 **App status:** Working locally (build passes) · **Live URL:** not deployed yet
 
 ## What we're working toward right now
@@ -25,6 +25,14 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Live data** (Claude): `server/hub/build.js` + `GET /api/hub` rebuild
+  everything the app shows (seasons, games, standings incl. median, brackets,
+  records + filters, all-time, H2H, power, Book lines, playoff odds (5,000 sims),
+  awards, backtest) straight from Sleeper, cached 3 min. Verified against the
+  snapshot using a stand-in Sleeper built from real league data: every
+  standing, champion, Sacko, record, power rank, line and award matched.
+  The /test page loads /api/hub automatically when served by our server and
+  refreshes every 3 minutes; seasons/weeks are no longer hard-coded.
 - 2026-10-09 — **v1.5** (Claude):
   Home: week picker (Wk 1–4) with auto-written recap, tappable Week 5 matchup
   previews (win chance, line, form bars, keys to the game, last meeting),
@@ -65,7 +73,6 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 - Railway deploy (Jayson's steps below)
 
 ## Next steps (in order)
-0. Jayson tests v1.5 on his phone and lists changes.
 1. Jayson: Railway → New Project → Deploy from GitHub repo → `poochinski/mahomies-hub`.
 2. Jayson: in the same Railway project, add a PostgreSQL database.
 3. Jayson: on the app service → Variables, add:

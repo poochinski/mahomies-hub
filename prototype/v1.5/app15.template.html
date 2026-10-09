@@ -344,6 +344,10 @@ function fmr(u){return M(u).active?'':'<span class="fmr">Former</span>'}
 function who(u,sub,sz){return '<button class="who" type="button" data-mgr="'+u+'">'+av(u,sz)+'<span class="tx"><b>'+esc(team(u))+fmr(u)+'</b><span>'+esc(sub!=null?sub:M(u).name)+'</span></span></button>'}
 function whoS(u,sub,sz){return '<span class="who">'+av(u,sz)+'<span class="tx"><b>'+esc(team(u))+fmr(u)+'</b><span>'+esc(sub!=null?sub:M(u).name)+'</span></span></span>'}
 function gi(s,w,u){for(var i=0;i<D.games.length;i++){var g=D.games[i];if(g.s===s&&g.w===w&&(g.win===u||g.lose===u))return i}return -1}
+function CUR(){return D.league.season}
+function ALLS(){return Object.keys(D.seasons).sort().reverse()}
+function PAST(){return ALLS().filter(function(s){return s!==CUR()&&D.seasons[s].champ})}
+function DONE(){var o=[];for(var w=1;w<=D.league.last_scored;w++)o.push(w);return o}
 var CHEV='<span class="chev" aria-hidden="true">›</span>';
 function f2(n){return Number(n).toFixed(2)}
 function f1(n){return Number(n).toFixed(1)}
@@ -353,12 +357,22 @@ function money(n){return Math.round(n).toLocaleString('en-US')}
 function sw(s,w){return s+' · Wk '+w}
 function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('mh-'+k));localStorage.setItem('mh-'+k,JSON.stringify(v))}catch(e){return null}}
 
-var S={tab:'home',lseg:'season',rec:'high',rf:'all',hw:4,aws:'2026',lab:'bench',labs:'2026',sw:null,ss:null,h2a:null,h2b:null,me:store('me')||D.me,bets:store('bets')||[],bseg:'lines',slip:null,stake:25};
+var S={tab:'home',lseg:'season',rec:'high',rf:'all',hw:D.league.last_scored,aws:D.league.season,lab:'bench',labs:D.league.season,sw:null,ss:null,h2a:null,h2b:null,me:store('me')||D.me,bets:store('bets')||[],bseg:'lines',slip:null,stake:25};
 S.h2a=S.me;
 /* On Railway the page sits next to our server: turn on live lineups + real avatars. */
 var LIVE=false;
-try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render()}}).catch(function(){})}catch(e){}
+try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render();loadHub()}}).catch(function(){})}catch(e){}
 
+function loadHub(){
+  fetch('/api/hub',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
+    if(!j||!j.league||!j.seasons)return;
+    D=j;ids=Object.keys(D.managers);
+    S.hw=D.league.last_scored||1;S.aws=CUR();S.labs=CUR();S.h2b=null;
+    S.bets=S.bets.filter(function(b){return D.lines.some(function(l){return l.id===b.line})});store('bets',S.bets);
+    render();
+  }).catch(function(){});
+}
+setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&!$('#sheet').classList.contains('open'))loadHub()},3*60*1000);
 /* ---------- Book math ---------- */
 function profit(stake,o){return o>0?stake*o/100:stake*100/Math.abs(o)}
 function pending(){return S.bets.reduce(function(a,b){return a+b.stake},0)}
@@ -374,14 +388,14 @@ function pickOdds(p){var l=line(p.line);return p.mkt==='ml'?(p.side==='a'?l.ml_a
 function weekGames(s,w){return D.games.map(function(g,i){return {g:g,i:i}}).filter(function(x){return x.g.s===s&&x.g.w===w})}
 function home(){
   var L=D.league,pw=D.power,hw=S.hw;
-  var wk=weekScores('2026',hw),top=wk[0],rot=wk[wk.length-1];
-  var potw=null;wk.forEach(function(x){var t=topP('2026',hw,x.u);if(t&&t.name&&(!potw||t.pts>potw.pts))potw={u:x.u,name:t.name,pts:t.pts}});
+  var wk=weekScores(CUR(),hw),top=wk[0],rot=wk[wk.length-1];
+  var potw=null;wk.forEach(function(x){var t=topP(CUR(),hw,x.u);if(t&&t.name&&(!potw||t.pts>potw.pts))potw={u:x.u,name:t.name,pts:t.pts}});
   var unbeaten=pw.filter(function(p){return /-0$/.test(p.rec)})[0];
-  var h='<section class="hero"><div class="eyebrow">2026 season · Week '+L.week+'</div><h1>Week '+L.week+'</h1><p class="sub">Thursday night is underway. Data as of '+esc(D.updated_label)+'.</p>'+
+  var h='<section class="hero"><div class="eyebrow">'+CUR()+' season · Week '+L.week+'</div><h1>Week '+L.week+'</h1><p class="sub">'+(LIVE?'Live from Sleeper · updated '+esc(D.updated_label)+'.':'Snapshot · data as of '+esc(D.updated_label)+'.')+'</p>'+
    '<div class="tiles">'+
-   tile('t-y','Top Banana · Wk '+hw,f2(top.p),team(top.u),top.u,gi('2026',hw,top.u))+
-   tile('t-r','Rotten Banana · Wk '+hw,f2(rot.p),team(rot.u),rot.u,gi('2026',hw,rot.u))+
-   (potw?tile('t-b','Player of the week',f1(potw.pts),potw.name+' · '+team(potw.u),potw.u,gi('2026',hw,potw.u)):'')+
+   tile('t-y','Top Banana · Wk '+hw,f2(top.p),team(top.u),top.u,gi(CUR(),hw,top.u))+
+   tile('t-r','Rotten Banana · Wk '+hw,f2(rot.p),team(rot.u),rot.u,gi(CUR(),hw,rot.u))+
+   (potw?tile('t-b','Player of the week',f1(potw.pts),potw.name+' · '+team(potw.u),potw.u,gi(CUR(),hw,potw.u)):'')+
    (unbeaten?tile('t-g','Still unbeaten',unbeaten.rec,team(unbeaten.uid),unbeaten.uid):'')+
    '</div></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Live now · tap for a preview</div><h2>Week '+L.week+' matchups</h2></div><button class="link" data-go="book">Bet these →</button></div><div class="rows">'+
@@ -390,8 +404,8 @@ function home(){
      '<div class="val" style="font-size:15px">'+f2(l.live_a)+'<br>'+f2(l.live_b)+'<small>live</small></div>'+CHEV+'</button>'}).join('')+
    '</div></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Final scores</div><h2>Results</h2></div></div>'+
-   '<div class="chips" style="margin-bottom:10px">'+[1,2,3,4].map(function(w){return '<button type="button" class="chip'+(w===hw?' on':'')+'" data-hw="'+w+'">Week '+w+'</button>'}).join('')+'</div>'+
-   recapHtml('2026',hw)+resultsHtml('2026',hw)+'</section>';
+   '<div class="chips" style="margin-bottom:10px">'+DONE().map(function(w){return '<button type="button" class="chip'+(w===hw?' on':'')+'" data-hw="'+w+'">Week '+w+'</button>'}).join('')+'</div>'+
+   recapHtml(CUR(),hw)+resultsHtml(CUR(),hw)+'</section>';
   var od=D.odds.list;
   h+='<section class="panel"><div class="ph"><div><div class="kicker">'+money(D.odds.sims)+' simulated seasons</div><h2>Playoff race</h2></div><button class="link" data-go="league:odds">All odds →</button></div><div class="rows">'+
    od.slice(0,8).map(function(o,i){return '<div class="row'+(i===6?' cutrow':'')+'" style="grid-template-columns:minmax(0,1fr) 92px">'+who(o.uid,o.rec+' · proj '+f1(o.wins)+' W',28)+oddsBar(o.playoff)+'</div>'}).join('')+
@@ -419,7 +433,7 @@ function recapHtml(s,w){
   if(broke.length)t+='Record book: '+broke.slice(0,2).join('; ')+'.';
   return '<div class="recap"><div class="kicker" style="color:var(--pink)">Week '+w+' recap</div><p>'+t+'</p></div>'}
 function historyCard(w){
-  var items=[];['2025','2024','2023'].forEach(function(s){var gs=weekGames(s,w);if(!gs.length)return;
+  var items=[];PAST().forEach(function(s){var gs=weekGames(s,w);if(!gs.length)return;
     var ws=weekScores(s,w),hi=ws[0],b=gs.slice().sort(function(a,c){return c.g.m-a.g.m})[0];
     items.push('<button type="button" class="row" data-game="'+gi(s,w,hi.u)+'" style="grid-template-columns:52px minmax(0,1fr) auto 10px"><span class="yr">'+s+'</span><div style="min-width:0"><b style="font-size:13.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tnS(s,hi.u))+' dropped '+f2(hi.p)+'</b><span class="muted" style="font-size:11.5px">Biggest win: '+esc(tnS(s,b.g.win))+' by '+f1(b.g.m)+'</span></div><span></span>'+CHEV+'</button>')});
   return '<section class="panel"><div class="ph"><div><div class="kicker">Week '+w+' in past seasons</div><h2>This week in history</h2></div></div><div class="rows">'+items.join('')+'</div></section>'}
@@ -428,22 +442,22 @@ function mv(m){return '<span class="mv '+(m>0?'up':m<0?'dn':'eq')+'">'+(m>0?'▲
 function foot(){return '<p class="foot"><span class="dots"><i style="background:var(--banana)"></i><i style="background:var(--pink)"></i><i style="background:var(--cyan)"></i><i style="background:var(--win)"></i></span>v'+D.version+' test build · Sleeper data as of '+esc(D.updated_label)+'</p>'}
 
 /* ---------- LEAGUE ---------- */
-var LSEGS=[['season','2026'],['odds','Playoff odds'],['history','History'],['alltime','All-time'],['h2h','Rivals'],['awards','Awards'],['lab','Lab']];
+var LSEGS=[['season','This season'],['odds','Playoff odds'],['history','History'],['alltime','All-time'],['h2h','Rivals'],['awards','Awards'],['lab','Lab']];
 function league(){
   var h='<div class="chips" role="tablist">'+LSEGS.map(function(x){return '<button type="button" class="chip'+(S.lseg===x[0]?' on':'')+'" data-lseg="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
   h+=({season:seasonView,odds:oddsView,history:historyView,alltime:alltimeView,h2h:h2hView,awards:awardsView,lab:labView}[S.lseg]||seasonView)();
   return h+foot();
 }
 function seasonView(){
-  var st=D.seasons['2026'].standings;
-  var h='<section class="panel"><div class="ph"><div><div class="kicker">2026 · after Week '+D.league.last_scored+'</div><h2>Standings</h2></div></div>'+
+  var st=D.seasons[CUR()].standings;
+  var h='<section class="panel"><div class="ph"><div><div class="kicker">'+CUR()+' · after Week '+D.league.last_scored+'</div><h2>Standings</h2></div></div>'+
    '<div class="tw"><table><thead><tr><th>Team</th><th>W-L</th><th>PF</th><th>All-play</th><th>Luck</th></tr></thead><tbody>'+
    st.map(function(x,i){return '<tr class="'+(x.uid===S.me?'me ':'')+(i===5?'cut':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+x.uid+'"><span class="rk" style="width:20px;height:20px;font-size:10px">'+x.seed+'</span><span class="tx"><b style="font-size:13px">'+esc(team(x.uid))+'</b></span></button></td><td><b>'+x.w+'-'+x.l+'</b></td><td>'+f1(x.pf)+'</td><td>'+x.ap+'</td><td class="'+(x.luck>0.4?'pos':x.luck<-0.4?'negv':'')+'">'+(x.luck>0?'+':'')+f1(x.luck)+'</td></tr>'}).join('')+
    '</tbody></table></div><p class="muted" style="font-size:11.5px;margin-top:9px;line-height:1.5">W-L includes the league-median game each week. All-play is your record if you played every team every week. Luck is head-to-head wins minus all-play expected wins. Dashed line = playoff cut (top 6).</p></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Points, all-play, form, record</div><h2>Power rankings</h2></div></div><div class="rows">'+
    D.power.map(function(p){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(p.rank===1?' gold':'')+'">'+p.rank+'</span><div style="min-width:0">'+who(p.uid,p.rec+' · last 3: '+f1(p.last3)+' ppg',30)+'<div class="pbar"><i style="width:'+p.power+'%"></i></div></div><div style="display:grid;justify-items:end;gap:2px"><span class="val" style="font-size:16px">'+f1(p.power)+'</span>'+mv(p.move)+'</div></div>'}).join('')+
    '</div></section>';
-  h+='<section class="panel"><div class="ph"><div><div class="kicker">Browse any week</div><h2>2026 weeks</h2></div><button class="link" data-season="2026">Open season ›</button></div><p class="muted" style="font-size:12.5px">Every result from this season, week by week.</p></section>';
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">Browse any week</div><h2>'+CUR()+' weeks</h2></div><button class="link" data-season="'+CUR()+'">Open season ›</button></div><p class="muted" style="font-size:12.5px">Every result from this season, week by week.</p></section>';
   return h;
 }
 function oddsView(){
@@ -456,9 +470,9 @@ function oddsView(){
 function pct(p){var v=p*100;return v>=99.95?'>99.9%':v<0.05?'–':v.toFixed(v<10?1:0)+'%'}
 function historyView(){
   var h='';
-  ['2025','2024','2023'].forEach(function(s){
+  PAST().forEach(function(s){
     var x=D.seasons[s];var reg=x.standings[0];var ts=x.standings.slice().sort(function(a,b){return b.pf-a.pf})[0];
-    h+='<section class="season"><div class="season-h"><b>'+s+'</b><span>'+(s==='2023'?'FIRST SEASON ON SLEEPER':'SEASON')+'</span></div><div class="podium">'+
+    h+='<section class="season"><div class="season-h"><b>'+s+'</b><span>'+(s===D.league.first?'FIRST SEASON ON SLEEPER':'SEASON')+'</span></div><div class="podium">'+
      pod('m-1','🏆',x.champ,'Champion',s)+pod('m-2','🥈',x.runner,'Runner-up',s)+pod('m-3','🥉',x.third,'Third',s)+pod('m-s','🚽',x.sacko,'Sacko','r',s)+
      '</div><div class="season-f"><span class="pill">#1 seed <b>'+esc(x.team_names[reg.uid]||M(reg.uid).name)+'</b> '+reg.w+'-'+reg.l+'</span><span class="pill">Most points <b>'+esc(x.team_names[ts.uid]||M(ts.uid).name)+'</b> '+f1(ts.pf)+'</span>'+
      '<button type="button" class="open-season" data-season="'+s+'">Standings, bracket &amp; every week ›</button></div></section>';
@@ -470,7 +484,7 @@ function pod(c,ic,u,label,cls,s){if(s===undefined){s=cls;cls=''}var tn=D.seasons
 function atRow(x){return '<tr class="'+(x.uid===S.me?'me':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+x.uid+'">'+av(x.uid,22)+'<span class="tx"><b style="font-size:13px">'+esc(team(x.uid))+fmr(x.uid)+'</b><span>'+esc(M(x.uid).name)+'</span></span></button></td><td>'+(x.titles.length||'')+'</td><td>'+x.w+'-'+x.l+'</td><td>'+(x.pct*100).toFixed(1)+'</td><td>'+f1(x.avg)+'</td><td>'+x.playoffs.length+'</td><td>'+x.tb+'</td><td>'+x.rb+'</td></tr>'}
 function alltimeView(){
   var head='<thead><tr><th>Team</th><th>🏆</th><th>W-L</th><th>Win%</th><th>PPG</th><th>Playoffs</th><th>🍌</th><th>🤢</th></tr></thead>';
-  return '<section class="panel"><div class="ph"><div><div class="kicker">2023 – 2026 · regular season</div><h2>All-time table</h2></div></div><div class="tw"><table>'+head+'<tbody>'+D.alltime.map(atRow).join('')+'</tbody></table></div>'+
+  return '<section class="panel"><div class="ph"><div><div class="kicker">'+D.league.first+' – '+CUR()+' · regular season</div><h2>All-time table</h2></div></div><div class="tw"><table>'+head+'<tbody>'+D.alltime.map(atRow).join('')+'</tbody></table></div>'+
    '<p class="muted" style="font-size:11.5px;margin-top:9px">🍌 Top Banana = weeks as the league\'s top scorer. 🤢 Rotten Banana = weeks as the lowest. W-L is head-to-head only.</p></section>';
 }
 function mgrOptions(sel){return ids.map(function(u){return '<option value="'+u+'"'+(u===sel?' selected':'')+'>'+esc(team(u))+' ('+esc(M(u).name)+')'+(M(u).active?'':' · Former')+'</option>'}).join('')}
@@ -496,8 +510,8 @@ function h2hView(){
 var AW_ICON={champ:'🏆',sacko:'🚽',points:'👑',topb:'🍌',rotb:'🤢',lucky:'🍀',unlucky:'🐍',pa:'🥊',high:'💥',blow:'🔨',heart:'💔'};
 function awardsView(){
   var s=S.aws;var A=D.awards[s];
-  var h='<div class="chips">'+['2026','2025','2024','2023'].map(function(x){return '<button type="button" class="chip'+(x===s?' on':'')+'" data-aws="'+x+'">'+x+(x==='2026'?' so far':'')+'</button>'}).join('')+'</div>';
-  h+='<section class="hero"><div class="eyebrow">'+(s==='2026'?'Season in progress · through Week '+D.league.last_scored:'Final')+'</div><h1 style="font-size:30px">'+s+' awards</h1><p class="sub">Handed out automatically from the league\'s scores. Tap any award for the game or the manager.</p></section>';
+  var h='<div class="chips">'+ALLS().map(function(x){return '<button type="button" class="chip'+(x===s?' on':'')+'" data-aws="'+x+'">'+x+(x===CUR()?' so far':'')+'</button>'}).join('')+'</div>';
+  h+='<section class="hero"><div class="eyebrow">'+(s===CUR()?'Season in progress · through Week '+D.league.last_scored:'Final')+'</div><h1 style="font-size:30px">'+s+' awards</h1><p class="sub">Handed out automatically from the league\'s scores. Tap any award for the game or the manager.</p></section>';
   h+='<div class="awards">'+A.map(function(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
     return '<button type="button" class="award a-'+a.key+'" '+(gx>=0?'data-game="'+gx+'"':'data-mgr="'+a.uid+'"')+'><span class="aw-ic">'+(AW_ICON[a.key]||'⭐')+'</span><span class="aw-t">'+esc(a.title)+'</span><span class="aw-v num">'+esc(a.val)+'</span><span class="aw-w">'+av(a.uid,22)+'<b>'+esc(tnS(s,a.uid))+'</b></span><span class="aw-n">'+esc(a.note)+'</span></button>'}).join('')+'</div>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Need full Sleeper history</div><h2>Coming with live sync</h2></div></div><div class="rows">'+
@@ -511,7 +525,7 @@ function labView(){
   var h='<section class="hero"><div class="eyebrow">League Lab</div><h1 style="font-size:28px">Deep stats</h1><p class="sub">These read full lineups, transactions and drafts straight from Sleeper.</p></section>';
   if(!LIVE){h+=cards.map(function(c){return '<section class="panel"><h2 style="font-size:19px">'+c[1]+'</h2><p class="muted" style="font-size:13px;margin-top:6px;line-height:1.5">'+c[2]+'</p><p class="lab-off">Turns on when the app is live on Railway</p></section>'}).join('');return h}
   h+='<div class="chips">'+cards.map(function(c){return '<button type="button" class="chip'+(S.lab===c[0]?' on':'')+'" data-lab="'+c[0]+'">'+c[1]+'</button>'}).join('')+'</div>';
-  h+='<div class="chips">'+['2026','2025','2024','2023'].map(function(x){return '<button type="button" class="chip'+(x===S.labs?' on':'')+'" data-labs="'+x+'">'+x+'</button>'}).join('')+'</div>';
+  h+='<div class="chips">'+ALLS().map(function(x){return '<button type="button" class="chip'+(x===S.labs?' on':'')+'" data-labs="'+x+'">'+x+'</button>'}).join('')+'</div>';
   h+='<section class="panel" id="labOut"><p class="muted">Loading from Sleeper…</p></section>';
   setTimeout(loadLab,0);
   return h;
@@ -562,10 +576,10 @@ function records(){
   if(!list.length)return h+'<p class="muted">No games yet.</p>'+foot();
   var top=recVal(k,list[0]),g0=recGame(k,list[0]);
   h+='<section class="hero rec-hero"><div class="eyebrow">Record book · '+(t==='season'||t==='streak'?'regular season':{all:'all games',reg:'regular season',post:'playoffs'}[S.rf])+'</div><h1 style="font-size:24px">'+name+'</h1><div class="big">'+esc(top.v)+'</div>'+
-   '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s==='2026'?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
+   '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
    '<button type="button" class="share-btn" data-share-rec="1">Share this record</button></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Top '+list.length+'</div><h2>'+name+'</h2></div></div><div class="rows">'+
-   list.map(function(x,i){var r=recVal(k,x),gx=recGame(k,x),inner='<span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+(gx>=0?whoS(r.u,r.sub,30):who(r.u,r.sub,30))+'<span class="val">'+esc(r.v)+(x.s==='2026'?'<small style="color:var(--pink)">2026</small>':'')+'</span>';
+   list.map(function(x,i){var r=recVal(k,x),gx=recGame(k,x),inner='<span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+(gx>=0?whoS(r.u,r.sub,30):who(r.u,r.sub,30))+'<span class="val">'+esc(r.v)+(x.s===CUR()?'<small style="color:var(--pink)">'+CUR()+'</small>':'')+'</span>';
      return gx>=0?'<button type="button" class="row" data-game="'+gx+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div></section>'+foot();
   return h;
@@ -630,7 +644,7 @@ function profile(u,isMe){
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Trophy case</div><h2>Hardware</h2></div></div><div class="trophies">'+(tr.join('')||'<span class="muted">Empty for now.</span>')+'</div>'+
    '<div class="stat3" style="margin-top:12px"><div class="stat"><small>🍌 Top Banana</small><strong>'+a.tb+'</strong><span>weeks</span></div><div class="stat"><small>🤢 Rotten</small><strong>'+a.rb+'</strong><span>weeks</span></div><div class="stat"><small>Playoff W-L</small><strong>'+a.pw+'-'+a.pl+'</strong><span>bracket games</span></div></div></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Season by season</div><h2>Career line</h2></div></div><div class="rows">'+
-   a.seasons.slice().reverse().map(function(x){var fin=D.seasons[x.s];var tag=fin.champ===u?'🏆 Champion':fin.runner===u?'🥈 Runner-up':fin.sacko===u?'🚽 Sacko':x.s==='2026'?'In progress':'Seed '+x.seed;
+   a.seasons.slice().reverse().map(function(x){var fin=D.seasons[x.s];var tag=fin.champ===u?'🏆 Champion':fin.runner===u?'🥈 Runner-up':fin.sacko===u?'🚽 Sacko':x.s===CUR()?'In progress':'Seed '+x.seed;
      return '<div class="row"><div><b style="font-size:14px">'+x.s+' · '+esc(x.team)+'</b><div class="muted" style="font-size:11.5px">'+tag+'</div></div><div class="val" style="font-size:14px">'+x.rec+'<small>'+f1(x.pf)+' PF</small></div></div>'}).join('')+'</div></section>';
   var opp=ids.filter(function(o){return o!==u&&D.h2h[u+'|'+o]}).map(function(o){var r=D.h2h[u+'|'+o];return {o:o,w:r.w,l:r.l,n:r.games.length}});
   opp.sort(function(a,b){return (b.w-b.l)-(a.w-a.l)||b.n-a.n});
@@ -709,7 +723,7 @@ function lineupHtml(g,d){
 /* ---------- MATCHUP PREVIEW ---------- */
 function sdOf(arr){if(arr.length<2)return 0;var m=arr.reduce(function(a,b){return a+b},0)/arr.length;return Math.sqrt(arr.reduce(function(a,b){return a+(b-m)*(b-m)},0)/arr.length)}
 function scores26(u){var o=[];for(var w=1;w<=D.league.last_scored;w++){var p=P26(w,u);if(p!=null)o.push({w:w,p:p})}return o}
-function P26(w,u){var t=D.tw['2026|'+w+'|'+u];return t?t[0]:null}
+function P26(w,u){var t=D.tw[CUR()+'|'+w+'|'+u];return t?t[0]:null}
 function oddsOf(u){return D.odds.list.find(function(o){return o.uid===u})}
 function powOf(u){return D.power.find(function(p){return p.uid===u})}
 function previewSheet(id){
@@ -726,8 +740,8 @@ function previewSheet(id){
    '<div class="stat"><small>Spread</small><strong>'+esc(team(l.spread>=0?a:b).split(' ')[0])+' '+spr(-Math.abs(l.spread))+'</strong><span>favorite</span></div>'+
    '<div class="stat"><small>Moneyline</small><strong style="font-size:16px">'+odds(l.ml_a)+' / '+odds(l.ml_b)+'</strong><span>'+esc(M(a).name)+' / '+esc(M(b).name)+'</span></div>'+
    '<div class="stat"><small>Total</small><strong>'+f1(l.total)+'</strong><span>points</span></div></div></section>';
-  var formRow=function(u,X){var mx=200;return '<div class="form"><div class="form-h">'+whoS(u,'avg '+f1(avg(X))+' · swing ±'+f1(sdOf(X.map(function(x){return x.p})))+'',26)+'</div><div class="form-bars">'+X.map(function(x){return '<button type="button" class="fb" data-game="'+gi('2026',x.w,u)+'"><i style="height:'+Math.max(8,x.p/mx*100)+'%"></i><span>'+Math.round(x.p)+'</span><small>W'+x.w+'</small></button>'}).join('')+'</div></div>'};
-  h+='<section class="panel"><div class="ph"><div><div class="kicker">2026 weekly scores · tap a bar</div><h2>Form</h2></div></div>'+formRow(a,A)+formRow(b,B)+'</section>';
+  var formRow=function(u,X){var mx=200;return '<div class="form"><div class="form-h">'+whoS(u,'avg '+f1(avg(X))+' · swing ±'+f1(sdOf(X.map(function(x){return x.p})))+'',26)+'</div><div class="form-bars">'+X.map(function(x){return '<button type="button" class="fb" data-game="'+gi(CUR(),x.w,u)+'"><i style="height:'+Math.max(8,x.p/mx*100)+'%"></i><span>'+Math.round(x.p)+'</span><small>W'+x.w+'</small></button>'}).join('')+'</div></div>'};
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">'+CUR()+' weekly scores · tap a bar</div><h2>Form</h2></div></div>'+formRow(a,A)+formRow(b,B)+'</section>';
   var keys=[],dAvg=avg(A)-avg(B);
   keys.push(esc(team(dAvg>=0?a:b))+' has scored '+f1(Math.abs(dAvg))+' more points per week this season.');
   if(Math.abs(sA-sB)>4)keys.push(esc(team(sA<sB?a:b))+' is the steadier team. '+esc(team(sA<sB?b:a))+' swings more week to week, which makes it the boom-or-bust side.');
@@ -749,8 +763,8 @@ function bracketHtml(s,list,isToilet){
       return '<button type="button" class="br-m" data-game="'+gx+'">'+(lbl?'<span class="br-l">'+lbl+'</span>':'')+
        '<span class="br-t'+(aw?' w':'')+'"><b>'+esc(tnS(s,m.a))+'</b><i>'+(m.pa!=null?f2(m.pa):'–')+'</i></span><span class="br-t'+(!aw?' w':'')+'"><b>'+esc(tnS(s,m.b))+'</b><i>'+(m.pb!=null?f2(m.pb):'–')+'</i></span></button>'}).join('')+'</div>'}).join('')}
 function seasonSheet(s){
-  var x=D.seasons[s],last=s==='2026'?D.league.last_scored:17;if(!S.sw||S.sw>last)S.sw=s==='2026'?last:1;
-  var h='<section class="hero"><div class="eyebrow">'+(s==='2026'?'In progress':'Final')+'</div><h1>'+s+' season</h1>'+(x.champ?'<p class="sub">🏆 '+esc(tnS(s,x.champ))+' won it all. 🚽 '+esc(tnS(s,x.sacko))+' took the Sacko.</p>':'<p class="sub">Through Week '+last+'.</p>')+
+  var x=D.seasons[s],last=s===CUR()?D.league.last_scored:(x.last||17);if(!S.sw||S.sw>last)S.sw=s===CUR()?last:1;
+  var h='<section class="hero"><div class="eyebrow">'+(s===CUR()?'In progress':'Final')+'</div><h1>'+s+' season</h1>'+(x.champ?'<p class="sub">🏆 '+esc(tnS(s,x.champ))+' won it all. 🚽 '+esc(tnS(s,x.sacko))+' took the Sacko.</p>':'<p class="sub">Through Week '+last+'.</p>')+
    '<button type="button" class="share-btn" data-share-season="'+s+'">Share season card</button></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Regular season</div><h2>Final standings</h2></div></div><div class="tw"><table><thead><tr><th>Team</th><th>W-L</th><th>PF</th><th>PA</th><th>Luck</th></tr></thead><tbody>'+
    x.standings.map(function(t,i){return '<tr class="'+(t.uid===S.me?'me ':'')+(i===5?'cut':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+t.uid+'"><span class="rk" style="width:20px;height:20px;font-size:10px">'+t.seed+'</span><span class="tx"><b style="font-size:13px">'+esc(tnS(s,t.uid))+'</b></span></button></td><td><b>'+t.w+'-'+t.l+'</b></td><td>'+f1(t.pf)+'</td><td>'+f1(t.pa)+'</td><td class="'+(t.luck>0.4?'pos':t.luck<-0.4?'negv':'')+'">'+(t.luck>0?'+':'')+f1(t.luck)+'</td></tr>'}).join('')+'</tbody></table></div></section>';

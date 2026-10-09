@@ -423,6 +423,7 @@ Ties broken by points for.
 ### API routes (server)
 ```
 GET  /api/state                     current season/week + last sync time
+GET  /api/hub                       EVERYTHING the app shows, built live from Sleeper, cached 3 min (built)
 GET  /api/history                   all seasons, champions, all-time table
 GET  /api/records                   record book
 GET  /api/managers/:id              profile
