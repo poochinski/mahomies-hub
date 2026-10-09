@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
 **Last updated:** 2026-10-09 12:10 (Pacific) · **AI:** Claude
-**Current phase:** Banana Book backend built (part 1 + parlays); next = Book screens in the app, then specials + futures
-**Last commit:** "Banana Book backend: PIN login, frozen lines, per-game locks, bets, parlays, settlement"
+**Current phase:** v1.8 — Banana Book is live in the app (login, bets, parlays, leaders, commish tools); Week 6 lines post Tue Oct 13 6 AM; next = specials + futures
+**Last commit:** "v1.8: Banana Book screens wired to the real Book"
 **App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v1.7; old builds at /test/v1.6, /test/v1.5, /test/v1.0)
 
 ## What we're working toward right now
@@ -10,7 +10,7 @@ Jayson wants to perfect the UI/UX on his phone first, using a test build with
 real league data, then bring it to Railway. Two looks are being compared:
 "Night" (Banana Bets layout + the neon night-street palette from his dinner
 plan page — currently favored) and the original light Banana Bets look.
-VERSIONS: **v1.7 is current** (source prototype/v1.7/, built into prototype/dist/night.html). v1.6 saved at prototype/v1.6/night.html (/test/v1.6) and branch release-v1.6. v1.5 saved at prototype/v1.5/night.html (/test/v1.5) and branch release-v1.5. Older: v1.5 (night theme only). v1.0 is saved in prototype/v1.0/
+VERSIONS: **v1.8 is current** (source prototype/v1.8/: app18.template.html is built by v18.py from the v1.7 template + v18_book.js; output prototype/dist/night.html). v1.7 saved at prototype/v1.7/night.html (/test/v1.7). v1.6 saved at prototype/v1.6/night.html (/test/v1.6) and branch release-v1.6. v1.5 saved at prototype/v1.5/night.html (/test/v1.5) and branch release-v1.5. Older: v1.5 (night theme only). v1.0 is saved in prototype/v1.0/
 and on GitHub branch `release-v1.0` (git tags are blocked from Claude's push) — go back to it if v1.5 ever needs to be undone.
 On Railway: every address = v1.5; /test/v1.0 and /test/v1.0/light = the old builds.
 v1.5 source: prototype/v1.5/ (app15.template.html + v15_main.js, v15_extra.js,
@@ -25,6 +25,16 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **v1.8: Book screens** (Claude). Book tab now talks to `/api/book`:
+  log in (pick team → PIN pad; first time sets + confirms the PIN), lines with
+  lock countdowns + live scores, tap prices to build a slip (1 pick = straight,
+  2–4 from different games = parlay, sticky "Bet slip" bar), place/cancel,
+  My bets (record, profit, in play, open + settled), Leaders (all 12 bankrolls)
+  + Bet feed, Rules. Header shows your Bucks. Me tab: log out; commish sees
+  Book controls (post lines, move/void a line, settle, add/remove Bucks, reset
+  PIN, Book log). Old practice bets saved on the phone are gone. Click-tested
+  in a phone-size browser against local Postgres (screenshots looked right,
+  no page errors, no sideways scroll).
 - 2026-10-09 — **Banana Book backend** (Claude). New folder `server/book/`:
   `schema.sql` (tables, created automatically on every start), `engine.js` (odds
   math + grading, pure functions), `kickoffs.js` (ESPN kickoff times, Pacific
@@ -116,16 +126,12 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
   confirmed, relay workflow decided. (Claude)
 
 ## In progress (not finished)
-- Nothing half-done in code. The app's Book tab still shows the old test slip;
-  it is NOT wired to the real Book yet (next step A).
+- Nothing half-done. Needs a real-phone check by Jayson once Railway has the database.
 
 ## Next steps (in order)
-A. **Book screens in the app** (v1.8): login sheet (pick team → 4-digit PIN pad),
-   lines from `/api/book/lines` with lock countdowns and live scores, bet slip
-   that posts to `/api/book/bets` (straight + parlay), My bets (cancel before
-   lock), Leaders from `/api/book/leaderboard`, feed from `/api/book/feed`,
-   commish tools (post/settle/move/void line, adjust Bucks, reset PIN).
-   Must be live before Tue Oct 13 6 AM when Week 6 lines post.
+A. Jayson: confirm `/api/health` shows the database connected, log in to the Book
+   as The Water Boyz to claim the commish team + PIN, and tell the league to log in.
+   Tue Oct 13 6 AM: check Week 6 lines posted (if not: Me → Book controls → Post lines).
 B. Weekly specials (Top Banana / Rotten Banana / low-score O-U), priced by simulation.
 C. Futures (Champion / Sacko) repriced Tuesdays.
 D. Playoff weeks (15–17) lines: only bracket games; not built yet (Book stops after Wk 14 for now).
@@ -166,6 +172,5 @@ E. Verify Lab endpoints with real data on Railway.
 - Player names in the snapshot only for 16 players; full names come from /api/game on Railway.
 
 ## Files changed in the latest push
-- New: server/book/schema.sql, engine.js, kickoffs.js, data.js, book.js; server/routes/book.js
-- Changed: server/index.js (Book routes, trust proxy, clock job), server/db.js (no SSL for local test DBs),
-  BIBLE.md (§6 tables, §7 rules + engine, §10 routes), HANDOFF.md, CHANGELOG.md
+- New: prototype/v1.8/ (app18.template.html, v18_book.js, v18.py), prototype/v1.7/night.html (saved build)
+- Changed: prototype/dist/night.html (v1.8), server/index.js (/test/v1.7), server/hub/build.js (version 1.8), HANDOFF.md, CHANGELOG.md
