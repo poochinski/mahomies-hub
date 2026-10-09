@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-08 23:45 (Pacific) · **AI:** Claude
-**Current phase:** UI prototype (perfecting look + UX before Railway); Phase 0 code done
-**Last commit:** "Game box scores: /api/game endpoint, live lineups + avatars in test build" (local only — not pushed yet)
+**Last updated:** 2026-10-09 00:30 (Pacific) · **AI:** Claude
+**Current phase:** UI prototype **v1.5** (night theme) — perfecting look + UX before Railway; Phase 0 code done
+**Last commit:** "v1.5: full feature update" (local only — GitHub push blocked until the Claude GitHub App has repo access)
 **App status:** Working locally (build passes) · **Live URL:** not deployed yet
 
 ## What we're working toward right now
@@ -10,11 +10,13 @@ Jayson wants to perfect the UI/UX on his phone first, using a test build with
 real league data, then bring it to Railway. Two looks are being compared:
 "Night" (Banana Bets layout + the neon night-street palette from his dinner
 plan page — currently favored) and the original light Banana Bets look.
-Test builds: prototype/dist/night.html and light.html (served at /test and
-/test/light once on Railway). Source: prototype/app.template.html + night.css
-+ game_*.css, data from prototype/compute.py → prototype/data/app.json,
-rebuilt with prototype/build_all.py (paths inside are absolute to Claude's
-workspace — adjust if rebuilding elsewhere).
+VERSIONS: v1.5 is current (night theme only). v1.0 is saved in prototype/v1.0/
+and git tag `v1.0` — go back to it if v1.5 ever needs to be undone.
+On Railway: /test = v1.5, /test/v1.0 and /test/v1.0/light = the old builds.
+v1.5 source: prototype/v1.5/ (app15.template.html + v15_main.js, v15_extra.js,
+v15_events.js, v15.css; data from compute15.py → prototype/data/app15.json).
+Built file: prototype/dist/night.html. Build paths are absolute to Claude's
+workspace — adjust if rebuilding elsewhere. The light theme was NOT carried to v1.5.
 
 Earlier goal (still next after the UI): 
 Get Mahomie's Hub live on Railway and installed on Jayson's phone. The app
@@ -23,6 +25,25 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **v1.5** (Claude):
+  Home: week picker (Wk 1–4) with auto-written recap, tappable Week 5 matchup
+  previews (win chance, line, form bars, keys to the game, last meeting),
+  playoff race card, "This week in history".
+  League (chips): 2026 standings/power, Playoff odds (10,000 sims incl. median
+  game, using the real remaining schedule Wks 6–14), History cards that open a
+  full season page (standings, winners bracket + Toilet Bowl with scores,
+  every week with recaps), All-time table with former managers tucked away,
+  Rivals with Current/Former groups + 12×12 head-to-head grid, Awards per
+  season (11 auto awards; 5 more listed for live sync), Lab (Bench Shame,
+  Trade grader, Draft re-grade — live on Railway only).
+  Records: All / Regular season / Playoffs filter; share cards (PNG via canvas,
+  press-and-hold to save) for records, games and seasons.
+  Book: spreads capped at 20 and pulled harder to league avg in Wks 1–6;
+  Leaders tab (leaderboard + bet feed, test mode = only your bets); settled
+  bets section; "How sharp is the Book" backtest (90 past games, favorites
+  won 61.8%, avg miss 25.1 pts). Team name first, username second everywhere.
+  "Data as of" stamp + version in footer.
+  Server: /api/bench, /api/trades, /api/draft (tested against fake Sleeper data).
 - 2026-10-08 — Game detail sheet: every game is tappable (records, home results,
   rivalry history, best/worst week). Shows score, record badges, top scorers,
   records coming in, series, week ranks, every score that week. (Claude)
@@ -44,6 +65,7 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 - Railway deploy (Jayson's steps below)
 
 ## Next steps (in order)
+0. Jayson tests v1.5 on his phone and lists changes.
 1. Jayson: Railway → New Project → Deploy from GitHub repo → `poochinski/mahomies-hub`.
 2. Jayson: in the same Railway project, add a PostgreSQL database.
 3. Jayson: on the app service → Variables, add:
@@ -76,6 +98,8 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
   Sleeper); expect it to work on Railway and in Codespaces.
 
 ## Known bugs / open questions
+- Lab endpoints only tested with fake data; verify on Railway with real Sleeper data.
+- Playoff odds tiebreak = points for (check league's real tiebreaker setting).
 - GitHub push from Claude is blocked until the Claude GitHub App is given
   access to poochinski/mahomies-hub.
 - Test build data is a snapshot (Oct 8, 2026 night). Live sync = Phase 1.

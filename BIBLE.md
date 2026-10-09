@@ -9,6 +9,7 @@
 - **Owner / commissioner:** Jayson
 - **App name:** Mahomie's Hub (repo `poochinski/mahomies-hub`). The Banana Bets look, Banana Bucks and the Banana Book carry over from the Banana Bets family.
 - **Sister projects:** Banana Bets (`poochinski/banana-bets`) and Jaypardy. This is a **separate repo and separate Railway service**. Never mix code between them.
+- **Prototype version:** v1.5 (v1.0 saved at git tag `v1.0`)
 - **Bible version:** 1.1 · 2026-10-07 (relay workflow: unlimited work per session, handoff on every push)
 
 ---
@@ -236,6 +237,7 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 - Every manager starts each season with **1,000 Banana Bucks**.
 - **+100 weekly allowance** every Tuesday so nobody is knocked out for the season.
 - Min bet 10, max bet 250 per wager (commissioner can change).
+- Spreads are capped at 20 points; in Weeks 1–6 projections are pulled harder (35%) toward the league average.
 - Markets per matchup: **moneyline, spread, total (over/under)**. Parlays come in Phase 7.
 - You **can** bet on your own matchup, but only on yourself to win (no betting against yourself).
 - All lines **lock at the first NFL kickoff of the week** (usually Thursday night). After that, no bets.
@@ -425,6 +427,9 @@ GET  /api/history                   all seasons, champions, all-time table
 GET  /api/records                   record book
 GET  /api/managers/:id              profile
 GET  /api/game?season=&week=&users=a,b   box score: starters by slot + bench, names, positions, points (built)
+GET  /api/bench?season=              Bench Shame: optimal minus actual, per team + worst week (built)
+GET  /api/trades?season=             Trade grader: starter points each side got after the trade (built)
+GET  /api/draft?season=              Draft re-grade: steals and busts by pick vs points rank (built)
 GET  /api/season/:season            standings, power, luck, playoff odds
 GET  /api/h2h                       matrix
 GET  /api/recap/:season/:week
