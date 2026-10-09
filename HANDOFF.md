@@ -23,6 +23,7 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — Record book: full game details wrap instead of "..." (regular font so they take fewer lines), and every number has a label (won by, points, pts in a loss/win, season pts, wins/losses in a row); streaks show "8 · wins in a row" instead of "8 W". "How it works" button no longer stretches full width. (Claude)
 - 2026-10-09 — Draft re-grade rows: "Rd 12 · #137" pick badge, team with avatar, "Drafted #137 → finished #14 ▲123 spots", "season pts" label under the number, a one-line explainer under each heading, short header. Source prototype/v1.8/v18_draft.js. (Claude)
 - 2026-10-09 — Awards list: each row now shows the award name, the team (with avatar) on its own line, the full description (wraps, no more "...") and a label under every number (points, weeks on top, extra wins, wins lost, points against, won by, lost by). (Claude)
 - 2026-10-09 — **Trade grader v2** (Claude), from Jayson's feedback (who got what was unclear,

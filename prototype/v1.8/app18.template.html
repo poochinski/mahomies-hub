@@ -463,6 +463,10 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .dr-pk{display:grid;justify-items:center;font:700 14px var(--mono);color:var(--cyan);border:1px solid var(--line-2);border-radius:7px;padding:4px 0;line-height:1.15}.dr-pk small{font:500 9px var(--mono);color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
 .dr-team{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-top:2px}
 .dr-mv{font-size:11.5px;color:var(--muted);margin-top:2px}.dr-mv b{color:var(--ink);font-family:var(--mono);font-weight:600}.dr-mv .up,.dr-mv .dn{font-family:var(--mono);white-space:nowrap}
+.rec-list .who .tx>span,.rec-hero .who .tx>span{white-space:normal;overflow:visible;line-height:1.4;font-family:var(--sans,"IBM Plex Sans",system-ui,sans-serif);font-size:12.5px}
+.rec-hero .rec-unit{font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:-2px}
+.rec-hero .info{justify-self:start}
+.rec-list .row{align-items:center}
 </style>
 
 <header class="topbar">
@@ -855,6 +859,10 @@ var RECS=[
  ['seasonhi','Most points · season','season'],['seasonlo','Fewest points · season','season'],['wstreak','Longest win streak','streak'],['lstreak','Longest losing streak','streak']];
 function recType(k){return RECS.find(function(r){return r[0]===k})[2]}
 function recList(k){var t=recType(k);if(t==='season'||t==='streak'||S.rf==='all')return D.records[k];return D.recf[S.rf][k]}
+function recNum(k,r){return k==='wstreak'||k==='lstreak'?String(r.v).replace(/\s*[WL]$/,''):r.v}
+function recUnit(k,r,x){if(k==='wstreak')return 'wins in a row';if(k==='lstreak')return 'losses in a row';
+  if(k==='blowout'||k==='close')return 'won by';if(k==='hiloss')return 'pts in a loss';if(k==='lowin')return 'pts in a win';
+  if(k==='seasonhi'||k==='seasonlo')return 'season pts';return 'points'}
 function recVal(k,x){var t=recType(k);
   if(t==='team')return {u:x.uid,v:f2(x.v),sub:sw(x.s,x.w)};
   if(t==='player')return {u:x.uid,v:f1(x.v),sub:(x.name?x.name+(x.pos?' ('+x.pos+')':''):'Top scorer')+' · '+sw(x.s,x.w)};
@@ -874,11 +882,11 @@ function records(){
   if(t!=='season'&&t!=='streak')h+='<div class="seg">'+[['all','All games'],['reg','Regular'],['post','Playoffs']].map(function(x){return '<button type="button" class="'+(S.rf===x[0]?'on':'')+'" data-rf="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
   if(!list.length)return h+'<p class="muted">No games yet.</p>'+foot();
   var top=recVal(k,list[0]),g0=recGame(k,list[0]),b0=g0<0?byeKey(k,list[0]):null;
-  h+='<section class="hero rec-hero"><div class="eyebrow">All-time #1</div><div class="big">'+esc(top.v)+'</div>'+
+  h+='<section class="hero rec-hero"><div class="eyebrow">All-time #1</div><div class="big">'+esc(recNum(k,top))+'</div><div class="rec-unit">'+esc(recUnit(k,top,list[0]))+'</div>'+
    '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':b0?'data-bye="'+b0+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
    '<button type="button" class="share-btn" data-share-rec="1">Share</button>'+info('records')+'</section>';
-  h+='<section class="panel tight"><div class="rows">'+
-   list.slice(1,S.recMore?10:5).map(function(x,j){var i=j+1,r=recVal(k,x),gx=recGame(k,x),by=gx<0?byeKey(k,x):null,tap=gx>=0||by,inner='<span class="rk">'+(i+1)+'</span>'+(tap?whoS(r.u,r.sub+(by?' · playoff bye':''),28):who(r.u,r.sub,28))+'<span class="val">'+esc(r.v)+'</span>';
+  h+='<section class="panel tight rec-list"><div class="rows">'+
+   list.slice(1,S.recMore?10:5).map(function(x,j){var i=j+1,r=recVal(k,x),gx=recGame(k,x),by=gx<0?byeKey(k,x):null,tap=gx>=0||by,inner='<span class="rk">'+(i+1)+'</span>'+(tap?whoS(r.u,r.sub+(by?' · playoff bye':''),28):who(r.u,r.sub,28))+'<span class="aw-vb"><span class="val">'+esc(recNum(k,r))+'</span><small>'+esc(recUnit(k,r,x))+'</small></span>';
      return tap?'<button type="button" class="row" '+(gx>=0?'data-game="'+gx+'"':'data-bye="'+by+'"')+' style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div>'+(list.length>5?'<button type="button" class="more" data-more="rec">'+(S.recMore?'Show top 5':'Show top '+list.length)+'</button>':'')+'</section>'+foot();
   return h;

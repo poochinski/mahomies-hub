@@ -95,6 +95,25 @@ AW_CSS+=""".dr-row{grid-template-columns:52px minmax(0,1fr) auto!important;align
 .dr-mv{font-size:11.5px;color:var(--muted);margin-top:2px}.dr-mv b{color:var(--ink);font-family:var(--mono);font-weight:600}.dr-mv .up,.dr-mv .dn{font-family:var(--mono);white-space:nowrap}
 """
 
+# RECORDS pass: full descriptions + a unit under each record number (Jayson 2026-10-09)
+for a_,b_ in [
+  ("""<div class="big">'+esc(top.v)+'</div>'+""","""<div class="big">'+esc(recNum(k,top))+'</div><div class="rec-unit">'+esc(recUnit(k,top,list[0]))+'</div>'+"""),
+  ("""<span class="val">'+esc(r.v)+'</span>'""","""<span class="aw-vb"><span class="val">'+esc(recNum(k,r))+'</span><small>'+esc(recUnit(k,r,x))+'</small></span>'"""),
+  ("""h+='<section class="panel tight"><div class="rows">'+\n   list.slice(1""","""h+='<section class="panel tight rec-list"><div class="rows">'+\n   list.slice(1"""),
+  ("function recVal(k,x){","""function recNum(k,r){return k==='wstreak'||k==='lstreak'?String(r.v).replace(/\\s*[WL]$/,''):r.v}
+function recUnit(k,r,x){if(k==='wstreak')return 'wins in a row';if(k==='lstreak')return 'losses in a row';
+  if(k==='blowout'||k==='close')return 'won by';if(k==='hiloss')return 'pts in a loss';if(k==='lowin')return 'pts in a win';
+  if(k==='seasonhi'||k==='seasonlo')return 'season pts';return 'points'}
+function recVal(k,x){"""),
+  ]:
+    assert s.count(a_)==1,(s.count(a_),a_[:60])
+    s=s.replace(a_,b_)
+AW_CSS+=""".rec-list .who .tx>span,.rec-hero .who .tx>span{white-space:normal;overflow:visible;line-height:1.4;font-family:var(--sans,"IBM Plex Sans",system-ui,sans-serif);font-size:12.5px}
+.rec-hero .rec-unit{font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:-2px}
+.rec-hero .info{justify-self:start}
+.rec-list .row{align-items:center}
+"""
+
 # TRADES pass: trade grader v2 (Jayson 2026-10-09)
 a_=s.index('function tradesHtml(d){'); b_=s.index('function draftHtml(d){')
 s=s[:a_]+open('v18_trades.js').read()+'\n'+s[b_:]
