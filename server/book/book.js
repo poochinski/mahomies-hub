@@ -245,6 +245,7 @@ export async function linesFor(week, { season = null } = {}) {
       open: { spread: Number(r.spread), total: Number(r.total), ml_a: r.ml_a, ml_b: r.ml_b },
       live: p.live, finished: p.finished, unpriced: !!p.unpriced, exp_a: p.exp_a ?? null, exp_b: p.exp_b ?? null,
       left: p.live && p.rem_a != null ? Math.round(50 * (p.rem_a + p.rem_b)) : null,
+      out_a: st?.rosters?.[r.roster_a]?.out || [], out_b: st?.rosters?.[r.roster_b]?.out || [], rem_a: p.rem_a ?? null, rem_b: p.rem_b ?? null,
       lock_at: r.lock_at, started: p.started, locked: p.started, status: r.status, note: r.note,
       score_a: r.final_a != null ? Number(r.final_a) : live[r.roster_a] ?? null,
       score_b: r.final_b != null ? Number(r.final_b) : live[r.roster_b] ?? null,

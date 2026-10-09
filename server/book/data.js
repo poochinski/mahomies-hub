@@ -99,15 +99,15 @@ export async function weekState(L, week, maxAgeMs = 60 * 1000) {
   const rosters = {}, starts = {};
   for (const m of ms) {
     const slots = (m.starters || []).length || 1;
-    let rem = 0, first = Infinity;
+    let rem = 0, first = Infinity; const out = [];
     for (const pid of m.starters || []) {
-      if (!pid || pid === '0') continue;
+      if (!pid || pid === '0') { out.push('empty'); continue; }
       const g = k.gameOf[teamOf(String(pid))];
-      if (!g) continue;
+      if (!g) { out.push(`${pid}:${teamOf(String(pid)) || '?'}`); continue; }
       rem += 1 - g.progress;
       first = Math.min(first, g.at.getTime());
     }
-    rosters[m.roster_id] = { pts: pts(m), rem: rem / slots, first };
+    rosters[m.roster_id] = { pts: pts(m), rem: rem / slots, first, out, slots };
     if (m.matchup_id != null) starts[m.matchup_id] = Math.min(starts[m.matchup_id] ?? Infinity, first);
   }
   for (const mid of Object.keys(starts)) starts[mid] = new Date(Number.isFinite(starts[mid]) ? starts[mid] : k.first.getTime());
