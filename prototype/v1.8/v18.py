@@ -189,6 +189,20 @@ a_='.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;'
 assert a_ in s
 s=s.replace(a_,'.topbar{position:relative;z-index:30;padding-top:calc(10px + env(safe-area-inset-top,0px)) !important;')
 s=s.replace('.topbar::after{','body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--ground);z-index:80;pointer-events:none}\n.topbar::after{',1)
+# HOME pass: no Sportsbook numbers outside the Book (Jayson 2026-10-09: fantasy/history app first, betting is a side game)
+for a_,b_ in [
+  ("<span>'+wp+'% to win</span>","<span>'+esc(recOf(me))+'</span>"),
+  ("<span>'+(100-wp)+'% to win</span>","<span>'+esc(recOf(opp))+'</span>"),
+  ("""'<div class="wp-bar"><i style="width:'+wp+'%"></i></div></button>'""","""'</button>'"""),
+  ("""<button class="link" data-go="book">Bet →</button>""",""),
+  ("function previewSheet(id){","function recOf(u){var st=(D.seasons[CUR()].standings||[]).find(function(x){return x.uid===u});return st?st.w+'-'+st.l+' · '+ord(st.seed)+' place':''}\nfunction previewSheet(id,fromBook){"),
+  ("""'<div class="wp"><div class="wp-l">""","""(fromBook?'<div class="wp"><div class="wp-l">"""),
+  ("""'<p class="margin">Win chance from the Sportsbook</p>'+info('preview')+'</section>';""","""'<p class="margin">Win chance from the Sportsbook</p>':'')+info('preview')+'</section>';"""),
+  ("""  h+='<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>The line</h2>""","""  if(fromBook)h+='<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>The line</h2>"""),
+  ("if(d.prev){openSheet(previewSheet(d.prev)+CLOSE);return}","if(d.prev){openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE);return}"),
+  ]:
+    assert s.count(a_)==1,(s.count(a_),a_[:70])
+    s=s.replace(a_,b_)
 left=[l.strip()[:120] for l in s.split('\n') if re.search('anana|🍌',l)]
 assert not left,left
 i=s.index("</style>")

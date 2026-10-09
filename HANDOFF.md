@@ -23,6 +23,7 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Betting stays in the Book** (Jayson: "a fantasy companion/history/stats/hall of fame app first; betting is a fun side game"). Home "Your game" now shows each team's record + standing (e.g. 4-4 · 7th place) instead of a Sportsbook win %, no win bar, no "Bet →" link. Matchup previews opened anywhere except the Book tab drop the win chance and betting line (form, keys, history stay). Open question parked: switch Book projections to Sleeper's player projections (Jayson hasn't decided). (Claude)
 - 2026-10-09 — Record book: full game details wrap instead of "..." (regular font so they take fewer lines), and every number has a label (won by, points, pts in a loss/win, season pts, wins/losses in a row); streaks show "8 · wins in a row" instead of "8 W". "How it works" button no longer stretches full width. (Claude)
 - 2026-10-09 — Draft re-grade rows: "Rd 12 · #137" pick badge, team with avatar, "Drafted #137 → finished #14 ▲123 spots", "season pts" label under the number, a one-line explainer under each heading, short header. Source prototype/v1.8/v18_draft.js. (Claude)
 - 2026-10-09 — Awards list: each row now shows the award name, the team (with avatar) on its own line, the full description (wraps, no more "...") and a label under every number (points, weeks on top, extra wins, wins lost, points against, won by, lost by). (Claude)
@@ -185,6 +186,7 @@ D. Playoff weeks (15–17) lines: only bracket games; not built yet (Book stops 
 E. Verify Lab endpoints with real data on Railway.
 
 ## Decisions made (and why)
+- **App identity (Jayson, 2026-10-09):** fantasy companion / history / stats / hall of fame first. Sportsbook numbers (win %, lines, odds) only appear inside the Book tab.
 - **Book details decided while building (Claude, 2026-10-09):** you can bet the over on your own game but not the under; bets can be cancelled until their game locks; 5 wrong PINs = 15-minute lock; phones stay logged in 180 days; parlays pay at most 10,000 back; lines keep the v1.5 projection formula (BIBLE §7) instead of Sleeper player projections; if ESPN kickoff times can't be read, betting pauses rather than guessing.
 - **Live betting replaces locks (Jayson, 2026-10-09):** a matchup goes live at its first starter's kickoff; odds then move with the score; betting stops only when every starter is done. (DB column `lines.locked` now means "started".)
 - **Sportsbook rules (Jayson, 2026-10-09):** per-game lock (first starter's kickoff), 1,000 Bucks once per season with NO allowance, launch with spread/ML/total + weekly specials + parlays + futures, team + 4-digit PIN login. Full rules in BIBLE §7. Book opens for real in Week 6.

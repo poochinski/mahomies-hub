@@ -549,16 +549,16 @@ function home(){
   if(my){
     var mineA=my.a===me,opp=mineA?my.b:my.a,myPts=mineA?my.live_a:my.live_b,opPts=mineA?my.live_b:my.live_a,wp=Math.round((mineA?my.wp:1-my.wp)*100);
     h+='<button type="button" class="yourgame" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+
-     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+wp+'% to win</span></div><b class="yg-s num">'+f2(myPts)+'</b></div>'+
-     '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+(100-wp)+'% to win</span></div><b class="yg-s num dim">'+f2(opPts)+'</b></div>'+
-     '<div class="wp-bar"><i style="width:'+wp+'%"></i></div></button>';
+     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span></div><b class="yg-s num">'+f2(myPts)+'</b></div>'+
+     '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span></div><b class="yg-s num dim">'+f2(opPts)+'</b></div>'+
+     '</button>';
   } else {
     var o=(D.odds.list||[]).find(function(x){return x.uid===me});var st=(D.seasons[CUR()].standings||[]).find(function(x){return x.uid===me});
     if(st)h+='<button type="button" class="yourgame" data-go="league:odds"><div class="yg-k">Your season</div><div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+st.w+'-'+st.l+' · seed '+st.seed+(o?' · '+pct(o.playoff)+' playoff odds':'')+'</span></div></div></button>';
   }
   h+='</section>';
   if(D.lines.length){
-    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Live scores · tap a game</div><h2>This week</h2></div><button class="link" data-go="book">Bet →</button></div><div class="games">'+
+    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Live scores · tap a game</div><h2>This week</h2></div></div><div class="games">'+
      D.lines.map(function(l){var aw=l.live_a>=l.live_b;return '<button type="button" class="gl" data-prev="'+l.id+'">'+
        '<span class="gl-t'+(aw&&l.live_a>0?' w':'')+'">'+av(l.a,22)+'<b>'+esc(team(l.a))+'</b><i class="num">'+f1(l.live_a)+'</i></span>'+
        '<span class="gl-t'+(!aw&&l.live_b>0?' w':'')+'">'+av(l.b,22)+'<b>'+esc(team(l.b))+'</b><i class="num">'+f1(l.live_b)+'</i></span></button>'}).join('')+'</div></section>';
@@ -1145,7 +1145,7 @@ var EXPLAIN={
  preview:{t:'Matchup preview',b:[
   ['Projection','45% of a team\'s last 3 weeks, 35% its season average and 20% last season, pulled toward the league average (harder through Week 6).'],
   ['Win chance','The gap between the two projections compared with how much both teams swing week to week, on a bell curve. A 10-point gap between two steady teams means more than the same gap between two boom-or-bust teams.'],
-  ['Line','The same numbers the Sportsbook uses. Spreads max out at 20 before kickoff.']]},
+  ['Where it shows','The win chance and betting line only appear when you open a preview from the Sportsbook. Everywhere else the app sticks to scores, form and history.']]},
  bench:{t:'Bench Shame',b:[
   ['What it measures','For every week, the app builds the best lineup you could have started from your roster (same lineup slots as the league) and compares it with what you actually scored.'],
   ['The number','Points left on the bench across the season. Higher = more shame. Your worst week is shown too.'],
@@ -1296,7 +1296,8 @@ function scores26(u){var o=[];for(var w=1;w<=D.league.last_scored;w++){var p=P26
 function P26(w,u){var t=D.tw[CUR()+'|'+w+'|'+u];return t?t[0]:null}
 function oddsOf(u){return D.odds.list.find(function(o){return o.uid===u})}
 function powOf(u){return D.power.find(function(p){return p.uid===u})}
-function previewSheet(id){
+function recOf(u){var st=(D.seasons[CUR()].standings||[]).find(function(x){return x.uid===u});return st?st.w+'-'+st.l+' · '+ord(st.seed)+' place':''}
+function previewSheet(id,fromBook){
   var l=line(id),a=l.a,b=l.b,pa=Math.round(l.wp*100),A=scores26(a),B=scores26(b);
   var avg=function(x){return x.reduce(function(s,y){return s+y.p},0)/Math.max(1,x.length)};
   var sA=sdOf(A.map(function(x){return x.p})),sB=sdOf(B.map(function(x){return x.p}));
@@ -1304,9 +1305,9 @@ function previewSheet(id){
   var pwA=powOf(a),pwB=powOf(b),oA=oddsOf(a),oB=oddsOf(b);
   var sb=function(u,live,rec){return '<div class="sb-row">'+who(u,rec+' · power #'+powOf(u).rank,40)+'<div class="sb-pts num" style="font-size:24px">'+f2(live)+'</div></div>'};
   var h='<section class="hero gs"><div class="eyebrow">Week '+D.league.week+' preview · live</div><div class="sb">'+sb(a,l.live_a,pwA.rec)+sb(b,l.live_b,pwB.rec)+'</div>'+
-   '<div class="wp"><div class="wp-l"><span>'+esc(team(a))+'</span><b>'+pa+'%</b></div><div class="wp-bar"><i style="width:'+pa+'%"></i></div><div class="wp-l r"><b>'+(100-pa)+'%</b><span>'+esc(team(b))+'</span></div></div>'+
-   '<p class="margin">Win chance from the Sportsbook</p>'+info('preview')+'</section>';
-  h+='<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>The line</h2></div><button class="link" data-go="book">Bet this game →</button></div><div class="stat3">'+
+   (fromBook?'<div class="wp"><div class="wp-l"><span>'+esc(team(a))+'</span><b>'+pa+'%</b></div><div class="wp-bar"><i style="width:'+pa+'%"></i></div><div class="wp-l r"><b>'+(100-pa)+'%</b><span>'+esc(team(b))+'</span></div></div>'+
+   '<p class="margin">Win chance from the Sportsbook</p>':'')+info('preview')+'</section>';
+  if(fromBook)h+='<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>The line</h2></div><button class="link" data-go="book">Bet this game →</button></div><div class="stat3">'+
    '<div class="stat"><small>Spread</small><strong>'+esc(team(l.spread>=0?a:b).split(' ')[0])+' '+spr(-Math.abs(l.spread))+'</strong><span>favorite</span></div>'+
    '<div class="stat"><small>Moneyline</small><strong style="font-size:16px">'+odds(l.ml_a)+' / '+odds(l.ml_b)+'</strong><span>'+esc(M(a).name)+' / '+esc(M(b).name)+'</span></div>'+
    '<div class="stat"><small>Total</small><strong>'+f1(l.total)+'</strong><span>points</span></div></div></section>';
@@ -1414,7 +1415,7 @@ document.addEventListener('click',function(e){
   if(d.twih){openSheet(twihSheet()+CLOSE);return}
   if(d.rec){closeSheetQuiet();S.rec=d.rec;S.recMore=false;render();centerChip('[data-rec="'+S.rec+'"]');return}
   if(d.pair){var pp=d.pair.split('|');S.h2a=pp[0];S.h2b=pp[1];render();var el=document.getElementById('rivalTop');if(el)el.scrollIntoView({block:'start'});return}
-  if(d.prev){openSheet(previewSheet(d.prev)+CLOSE);return}
+  if(d.prev){openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE);return}
   if(d.season){S.ss=d.season;S.sw=null;openSheet(seasonSheet(d.season)+CLOSE);return}
   if(d.sweek){var sp=d.sweek.split('|');S.sw=+sp[1];var keep=$('#sheet').scrollTop;openSheet(seasonSheet(sp[0])+CLOSE);$('#sheet').scrollTop=keep;return}
   if(d.shareRec){shareRecord();return}

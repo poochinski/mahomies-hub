@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Home + non-Book previews no longer show win % or betting lines; Your game shows record + place. (Claude)
 - 2026-10-09 — Record book: full details + unit labels under every number. (Claude)
 - 2026-10-09 — Draft re-grade: clearer rows (drafted → finished, spots gained/lost, labeled points). (Claude)
 - 2026-10-09 — Awards rows: full descriptions and a unit label under each number. (Claude)

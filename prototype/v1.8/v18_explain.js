@@ -46,7 +46,7 @@ var EXPLAIN={
  preview:{t:'Matchup preview',b:[
   ['Projection','45% of a team\'s last 3 weeks, 35% its season average and 20% last season, pulled toward the league average (harder through Week 6).'],
   ['Win chance','The gap between the two projections compared with how much both teams swing week to week, on a bell curve. A 10-point gap between two steady teams means more than the same gap between two boom-or-bust teams.'],
-  ['Line','The same numbers the Sportsbook uses. Spreads max out at 20 before kickoff.']]},
+  ['Where it shows','The win chance and betting line only appear when you open a preview from the Sportsbook. Everywhere else the app sticks to scores, form and history.']]},
  bench:{t:'Bench Shame',b:[
   ['What it measures','For every week, the app builds the best lineup you could have started from your roster (same lineup slots as the league) and compares it with what you actually scored.'],
   ['The number','Points left on the bench across the season. Higher = more shame. Your worst week is shown too.'],

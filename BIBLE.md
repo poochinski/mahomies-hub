@@ -132,6 +132,9 @@ Display type **Chakra Petch**, body **IBM Plex Sans**, labels and numbers **IBM 
 - Every game/score is tappable for details. Former managers stay in every list, tagged "Former".
 - Standalone PWA, `theme_color #130f1d`. **Logo: Jayson's gold "MH" with football** (source prototype/v1.8/logo-mh.png → public/icon-*.png, apple-touch-icon.png, brand-96.png for the header, favicon.svg).
 
+### App first, betting second (Jayson, 2026-10-09)
+This is a fantasy companion / history / stats / hall of fame app. Sportsbook numbers (win %, spreads, odds, Bucks) live only in the Book tab; Home and stat screens stick to scores, form and history.
+
 ### Names (decided 2026-10-09)
 - App: **MAHOMIE'S HUB** · subtitle **ROLLIN' WITH MAHOMIES**
 - Sportsbook: **Mahomie's Sportsbook** ("the Book" for short) · currency **Mahomie Bucks** ("Bucks", icon 💵)
