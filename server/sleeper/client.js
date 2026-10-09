@@ -8,7 +8,7 @@ export async function sleeper(path, { maxAgeMs = 5 * 60 * 1000 } = {}) {
   const hit = cache.get(path);
   if (hit && Date.now() - hit.at < maxAgeMs) return hit.data;
 
-  const res = await fetch(BASE + path, { headers: { accept: 'application/json' } });
+  const res = await fetch(BASE + path, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Sleeper ${path} → ${res.status}`);
   const data = await res.json();
   cache.set(path, { at: Date.now(), data });
@@ -26,7 +26,7 @@ export async function getPlayers() {
   if (players && Date.now() - playersAt < DAY) return players;
   if (playersLoading) return playersLoading;
   playersLoading = (async () => {
-    const res = await fetch(BASE + '/players/nfl', { headers: { accept: 'application/json' } });
+    const res = await fetch(BASE + '/players/nfl', { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(60000) });
     if (!res.ok) throw new Error(`Sleeper /players/nfl → ${res.status}`);
     const raw = await res.json();
     const slim = {};

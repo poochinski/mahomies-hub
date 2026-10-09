@@ -14,13 +14,15 @@ router.get('/health', async (_req, res) => {
 router.get('/diag', async (_req, res) => {
   const out = { node: process.version, league: LEAGUE_ID, env_league: !!process.env.SLEEPER_LEAGUE_ID };
   try {
-    const r = await fetch('https://api.sleeper.app/v1/state/nfl');
+    const t0 = Date.now();
+    const r = await fetch('https://api.sleeper.app/v1/state/nfl', { signal: AbortSignal.timeout(8000), headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' } });
+    out.ms = Date.now() - t0;
     out.sleeper_status = r.status;
     out.sleeper_body = (await r.text()).slice(0, 200);
   } catch (e) {
     out.sleeper_error = String(e && (e.cause?.code || e.cause?.message || e.message));
   }
-  try { const c = await leagueChain(LEAGUE_ID); out.seasons = c.map((x) => x.season); } catch (e) { out.chain_error = e.message; }
+  try { const c = await Promise.race([leagueChain(LEAGUE_ID), new Promise((_, j) => setTimeout(() => j(new Error('chain timed out after 10s')), 10000))]); out.seasons = c.map((x) => x.season); } catch (e) { out.chain_error = String(e.cause?.code || e.message); }
   res.json(out);
 });
 
