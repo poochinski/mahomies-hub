@@ -72,10 +72,18 @@ function packSide(R) {
   const started = now + done > 0;
   const finished = players.length > 0 && now === 0 && left === 0;
   const proj = started ? R && R.proj_live : R && R.proj_pre;
+  // Lineup warnings for starters who haven't played yet: OUT-type injury tags, bye/no team, empty slots.
+  const warn = [];
+  for (const p of players) {
+    if (p.state !== 'pre' && p.state !== 'bye') continue;
+    if (p.state === 'bye') warn.push({ name: p.name, pos: p.pos, why: p.nfl ? 'bye' : 'no team' });
+    else if (/^(out|ir|doubtful|sus|pup|na|dnr)/i.test(p.inj || '')) warn.push({ name: p.name, pos: p.pos, why: p.inj });
+  }
+  const empty = ((R && R.out) || []).filter((x) => x === 'empty').length;
   return {
     pts: Math.round(((R && R.pts) || 0) * 100) / 100,
     proj: proj == null ? null : proj,
-    now, left, started, finished
+    now, left, started, finished, warn, empty
   };
 }
 
@@ -91,7 +99,8 @@ export async function homeCard(week) {
       id: `w${w}m${p.matchup_id}`, a: p.a, b: p.b,
       pts_a: A.pts, pts_b: B.pts, proj_a: A.proj, proj_b: B.proj,
       now_a: A.now, now_b: B.now, left_a: A.left, left_b: B.left,
-      on_a: A.started, on_b: B.started, fin_a: A.finished, fin_b: B.finished
+      on_a: A.started, on_b: B.started, fin_a: A.finished, fin_b: B.finished,
+      warn_a: A.warn, warn_b: B.warn, empty_a: A.empty, empty_b: B.empty
     };
   });
   return { week: w, games };
@@ -155,7 +164,7 @@ export async function weekState(L, week, maxAgeMs = 60 * 1000) {
       if (pj != null) have++;
       const g = k.gameOf[teamOf(pid)];
       plist.push({ pid, pos: posOf(pid), nfl: teamOf(pid) || '', name: players[pid]?.n || pid, pts: got, proj: pj ?? null,
-        progress: g ? g.progress : 1, kick: g ? g.at : null, state: g ? g.state : 'bye' });
+        progress: g ? g.progress : 1, kick: g ? g.at : null, state: g ? g.state : 'bye', inj: players[pid]?.i || null });
       if (!g) { out.push(`${pid}:${teamOf(pid) || '?'}`); live += got; continue; }
       pre += pj || 0;
       live += g.progress >= 1 ? got : got + (pj || 0) * (1 - g.progress);

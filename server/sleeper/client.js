@@ -37,6 +37,7 @@ export async function getPlayers() {
         [p.first_name, p.last_name].filter(Boolean).join(' ') ||
         id;
       slim[id] = { n: name, p: p.position || (p.fantasy_positions || [])[0] || '', t: p.team || '' };
+      if (p.injury_status) slim[id].i = p.injury_status; // Out, IR, Doubtful, Questionable… (as of the daily pull)
     }
     players = slim;
     playersAt = Date.now();

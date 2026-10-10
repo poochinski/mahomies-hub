@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-09 22:30 (Pacific) · **AI:** Grok
-**Current phase:** v2.0 Home rework — items 1–3 are on main for Jayson to look at. Item 3 (your game card) can be reverted if he doesn't like the look.
-**Last commit:** "v2.0 Home: your game card shows projected score instead of 0.00"
+**Last updated:** 2026-10-09 23:30 (Pacific) · **AI:** Claude
+**Current phase:** v2.0 Home rework — parts 1–3 live; part 4 (This week list, recap, Explore) next
+**Last commit:** "v2.0 Home part 3 + box score fix"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -13,20 +13,24 @@ This push changes **your game card** only. Before a team has played, the big num
 Jayson wants to see it on his phone and may ask to put the old card back. Revert commit message: "v2.0 Home: your game card shows projected score instead of 0.00".
 
 ## Done (newest first)
+- 2026-10-09 — **Home part 3 + box score fix** (Claude). Jayson kept the new game card (no revert).
+  - Inside Your game: **Lineup check** (orange) for my starters who haven't played and are Out / Doubtful / IR / suspended, on bye, or have no NFL team, plus empty slots ("Fix it in Sleeper"). Injury tags = Sleeper `injury_status` from the daily players pull (`server/sleeper/client.js` slim field `i`; `weekState` players carry `inj`; `homeCard` sends `warn_a/b`, `empty_a/b` on /api/pulse).
+  - **Median game line** (only when `D.league.median`): every team's projected final (final pts if done, else live/pregame projection) ranked; "projected 4th of 12 · on track for the extra win" or "2.0 pts short of the top 6 (top-6 line ≈ 123.4)"; after the week "finished 4th · extra win ✓". Tap → new "Median game" How-it-works topic.
+  - **Standings strip** under the card (tap → standings): place, playoff line ("2 games back of 6th" / "1.5 games up on 7th", standard games-back math, W-L incl. median), playoff odds.
+  - **Box score bug**: the slot machine's root class `.slot` (position:fixed, hidden) collided with the lineup's slot-label `.slot`, so the middle column vanished and the right team got squashed (Jayson's screenshot). Slot root renamed `.ggslot`. Team names in the box-score header now wrap. (/test/v1.8 still has the old bug; it's frozen.)
 - 2026-10-09 — **Home part 2** (Grok): game card uses `weekState` projections on `/api/pulse` `games`. Pregame number is the projection. In progress: points so far, proj underneath, "N playing · N left".
 - 2026-10-09 — **Home part 1** (Grok): Live badge follows ESPN. Phase line replaces the giant week title.
 - 2026-10-09 — **v2.0 start** (Claude): v1.8 frozen. Live page split into prototype/v2.0. docs/V2-HANDOFF.md. BIBLE §17.
 - 2026-10-09 — Sportsbook batch 1, live odds, player props, tickets, commish Bucks, Gridiron Gold slot (secret: Book tab, 2nd footer dot, the pink one). Payback 92.51%. See CHANGELOG.md for the rest of Oct 9.
 
 ## In progress (not finished)
-- Nothing half-done. Waiting on Jayson: keep the new game card, or put the old 0.00 card back.
+- Nothing half-done.
 
 ## Next steps (in order)
-1. Jayson looks at the new game card on his phone. If he doesn't like it, revert the part-2 commit. The Live badge and phase line stay.
-2. **Home part 3.** Median tracker, lineup alert (OUT / bye / empty slot), standings strip. No betting numbers outside the Book.
-3. **Home part 4.** This week: one game per row, drop your own game, closest first, tags. Recap on Home. Explore shrinks to one row.
-4. **2.1 Live Game Center**, then **2.2 Sportsbook batch 2** around **Tue Oct 13, 6 AM PT**. First real settlement **Wed Oct 21, 3 AM PT**.
-5. Jayson: confirm Gridiron Gold sound on a real iPhone (volume slider and the silent switch).
+1. **Home part 4.** This week: one game per row, drop your own game, closest first, show projections like the card (not 0.00), small tags ("6–0 all-time", "Final", "Upset brewing" = lower record leading). One-sentence recap on Home. Explore shrinks to one row; keep This week in history.
+2. **2.1 Live Game Center** (player by player: pts, live proj, game status, "needs X" Monday night).
+3. **2.2 Sportsbook batch 2** before **Tue Oct 13, 6 AM PT** lines (weekly specials, best bettor, Sportsbook Champion). First real settlement **Wed Oct 21, 3 AM PT**.
+4. Jayson: confirm Gridiron Gold sound on a real iPhone.
 
 ## Decisions made (and why)
 - Fantasy / history first. Betting numbers (win %, lines, odds, spreads) only inside the Book tab. (Jayson, 2026-10-09)
@@ -59,6 +63,11 @@ Jayson wants to see it on his phone and may ask to put the old card back. Revert
 - Git tags cannot be pushed from some agents. Saved versions live on branches (`release-v1.0` through `release-v1.8`).
 
 ## Files changed in the latest push
+- server/sleeper/client.js (injury_status kept as `i`), server/book/data.js (players `inj`; homeCard warn/empty)
+- prototype/v2.0/app.js (medianLine, warnLine, standStrip, EXPLAIN.median, slot root `.ggslot`), app.css (card lines, strip, `.ggslot`, box header wrap)
+- HANDOFF.md, CHANGELOG.md, BIBLE.md
+
+## Files changed in the push before
 - `server/book/data.js` — `homeCard()` (points, projection, playing, left). No odds.
 - `server/routes/hub.js` — `/api/pulse` includes `games`
 - `prototype/v2.0/app.js` — your game card

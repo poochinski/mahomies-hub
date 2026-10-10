@@ -56,10 +56,31 @@ function loadPulse(){
 }
 setInterval(function(){if(LIVE&&document.visibilityState==='visible')loadPulse()},60*1000);
 function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
-function gsig(j){return (j&&j.games||[]).map(function(g){return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b].join(':')}).join('|')}
+function gsig(j){return (j&&j.games||[]).map(function(g){return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b,(g.warn_a||[]).length,(g.warn_b||[]).length,g.empty_a,g.empty_b].join(':')}).join('|')}
 function savedTeam(){return (store('auth')||{}).user_id||store('me')||''}
 function slateGame(uid){var gs=PULSE&&PULSE.games;if(!gs)return null;for(var i=0;i<gs.length;i++)if(gs[i].a===uid||gs[i].b===uid)return gs[i];return null}
-function slateSide(g,uid){var k=g.a===uid?'a':'b';return {pts:g['pts_'+k],proj:g['proj_'+k],now:g['now_'+k],left:g['left_'+k],on:g['on_'+k],fin:g['fin_'+k]}}
+function slateSide(g,uid){var k=g.a===uid?'a':'b';return {pts:g['pts_'+k],proj:g['proj_'+k],now:g['now_'+k],left:g['left_'+k],on:g['on_'+k],fin:g['fin_'+k],warn:g['warn_'+k]||[],empty:g['empty_'+k]||0}}
+/* Home part 3 (v2.0): median game, lineup warning, standings strip. Fantasy only, no betting numbers. */
+function finalOf(s){return s.fin?s.pts:(s.proj!=null?s.proj:s.pts)}
+function medianLine(me){
+  if(!D.league.median||!pulseForWeek()||!PULSE.games||!PULSE.games.length)return '';
+  var all=[];PULSE.games.forEach(function(g){[g.a,g.b].forEach(function(u){var s=slateSide(g,u);all.push({u:u,v:finalOf(s),fin:s.fin,on:s.on})})});
+  if(all.length<4||!all.some(function(x){return x.u===me}))return '';
+  all.sort(function(a,b){return b.v-a.v});var n=all.length,half=n/2,rk=0;all.forEach(function(x,i){if(x.u===me)rk=i+1});
+  var cut=(all[half-1].v+all[half].v)/2,mine=all[rk-1].v,done=all.every(function(x){return x.fin}),started=all.some(function(x){return x.on});
+  var top=rk<=half,t;
+  if(done)t='Median game: you finished <b>'+ord(rk)+' of '+n+'</b> · '+(top?'<em class="ok">extra win ✓</em>':'<em class="no">extra loss</em>');
+  else t='Median game: '+(started?'projected':'projected')+' <b>'+ord(rk)+' of '+n+'</b> · '+(top?'<em class="ok">on track for the extra win</em>':'<em class="no">'+f1(Math.max(.1,cut-mine))+' pts short of the top '+half+'</em>')+' <span>(top-'+half+' line ≈ '+f1(cut)+')</span>';
+  return '<button type="button" class="yg-med" data-info="median">'+t+'</button>'}
+function warnLine(s){if(!s)return '';var bits=s.warn.map(function(w){return esc(w.name)+(w.pos?' ('+esc(w.pos)+')':'')+' '+(w.why==='bye'?'is on bye':w.why==='no team'?'has no NFL team':'is '+esc(String(w.why).toUpperCase()))});
+  if(s.empty)bits.push(s.empty+' empty starting slot'+(s.empty>1?'s':''));
+  return bits.length?'<div class="yg-warn">⚠️ Lineup check: '+bits.join(' · ')+' <span>Fix it in Sleeper.</span></div>':''}
+function standStrip(me){var sts=(D.seasons[CUR()]||{}).standings||[];if(sts.length<8)return '';var st=sts.slice().sort(function(a,b){return a.seed-b.seed}),m=st.find(function(x){return x.uid===me});if(!m)return '';
+  var po=(D.league.playoff_teams||6),gb=function(a,b){return ((a.w-b.w)+(b.l-a.l))/2},fmt=function(x){return (x%1?x.toFixed(1):String(x))},line;
+  if(m.seed<=po){var nx=st[po];var d=gb(m,nx);line=d>0?fmt(d)+' game'+(d===1?'':'s')+' up on '+ord(po+1):'tied with '+ord(po+1)+' (points decide)'}
+  else{var ls=st[po-1];var d2=gb(ls,m);line=d2>0?fmt(d2)+' game'+(d2===1?'':'s')+' back of '+ord(po):'tied with '+ord(po)+' (points decide)'}
+  var o=(D.odds.list||[]).find(function(x){return x.uid===me});
+  return '<button type="button" class="yg-strip" data-go="league:season"><span><small>Place</small><b>'+ord(m.seed)+'</b></span><span><small>Playoff line</small><b>'+line+'</b></span>'+(o?'<span><small>Playoff odds</small><b>'+pct(o.playoff)+'</b></span>':'')+'</button>'}
 function ygScore(s){
   if(!s)return '<b class="yg-s num">0.00</b>';
   if(!s.on&&s.proj!=null)return '<div class="yg-sc"><b class="yg-s num dim">'+f1(s.proj)+'</b><small>proj</small></div>';
@@ -94,7 +115,8 @@ function home(){
      '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+
      '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
      '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span>'+ygMeta(sOpp)+'</div>'+ygScore(sOpp)+'</div>'+
-     '</button></div>';
+     '</button>'+(savedTeam()?warnLine(sg?sMe:null)+medianLine(me):'')+'</div>';
+    if(savedTeam())h+=standStrip(me);
   } else if(!savedTeam()){
     h+='<button type="button" class="yourgame" data-tab="me"><div class="yg-k">Your game</div><div class="yg-n"><b>Pick your team</b><span>Then this card shows your matchup.</span></div></button>';
   } else {
@@ -765,6 +787,10 @@ var EXPLAIN={
   ['Reading it','100 = best in the league at all four. 50 = right in the middle. 0 = last at everything.'],
   ['Why record isn\'t everything','Scoring counts for most of the score, so a 2-3 team that puts up big numbers can rank above a lucky 4-1 team.'],
   ['Arrow','How many spots you moved since last week.']]},
+ median:{t:'Median game',b:[
+  ['What it is','In 2026 every team also plays the league median each week: score in the top half of the league (top 6 of 12) and you get an extra win; bottom half, an extra loss. It counts in the standings W-L.'],
+  ['Projected place','Each team\'s projected final is the same Sleeper projection as Your game: points already scored plus each starter\'s projection for what\'s left (before games, the full projection). All 12 are ranked; the top-6 line is halfway between 6th and 7th.'],
+  ['Lineup check','Starters who haven\'t played yet and are tagged Out, Doubtful, IR or suspended, are on bye, or have no team, plus empty slots. Injury tags come from Sleeper\'s player list, refreshed once a day, so check Sleeper on game day too.']]},
  odds:{t:'Playoff odds',b:[
   ['Simulations','The app plays out the rest of the regular season 5,000 times with the real remaining schedule.'],
   ['Each team\'s score','Every simulated week, each team scores its projection plus random swing. The projection is 45% last 3 weeks, 35% season average, 20% last season. The swing is how much that team\'s score usually bounces week to week.'],
@@ -821,7 +847,7 @@ var EXPLAIN={
   ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],
   ['Settling','Wednesday 3 AM, after Sleeper\'s stat corrections. Exact ties on a spread or total push (stake back).']]}
 };
-var EXPLAIN_ORDER=['data','standings','power','odds','awards','records','alltime','h2h','preview','book','bench','trades','draft'];
+var EXPLAIN_ORDER=['data','standings','median','power','odds','awards','records','alltime','h2h','preview','book','bench','trades','draft'];
 function info(k){return '<button type="button" class="info" data-info="'+k+'" aria-label="How '+esc(EXPLAIN[k].t)+' works">ⓘ How it works</button>'}
 function explainSheet(k){var x=EXPLAIN[k];if(!x)return '';
   return '<div class="ph" style="margin:0"><div><div class="kicker">How it works</div><h2>'+esc(x.t)+'</h2></div></div><div class="rows">'+
@@ -965,7 +991,7 @@ function ggFonts(){if(document.getElementById('ggFont'))return;var st=document.c
   document.head.appendChild(st);try{document.fonts&&document.fonts.load('400 20px Bungee');document.fonts&&document.fonts.load('900 20px Orbitron')}catch(e){}}
 
 /* ---------- cabinet ---------- */
-function slotRoot(){var el=document.getElementById('slot');if(!el){el=document.createElement('div');el.id='slot';el.className='slot';document.body.appendChild(el)}return el}
+function slotRoot(){var el=document.getElementById('slot');if(!el){el=document.createElement('div');el.id='slot';el.className='ggslot';document.body.appendChild(el)}return el}
 function bulbs(n){var h='';for(var i=0;i<n;i++)h+='<i></i>';return '<div class="gg-bulbs">'+h+'</div>'}
 function jpHtml(bet){return GG_JP.map(function(j){return '<div class="gg-jp" style="--c:'+j[2]+'"><small>'+j[0]+'</small><b class="num" data-jpx="'+j[1]+'">'+gb(j[1]*bet)+'</b></div>'}).join('')}
 function tabsHtml(side){var rows=[[],[],[]],L=(SL.pt&&SL.pt.lines)||[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1]];
