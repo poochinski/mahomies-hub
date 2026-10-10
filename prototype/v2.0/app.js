@@ -1482,7 +1482,7 @@ if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash}; // loca
 /* ---------- ME / PROFILE ---------- */
 function profile(u,isMe){
   var a=D.alltime.find(function(x){return x.uid===u});var m=M(u);
-  var h='<section class="hero"><div style="display:flex;gap:12px;align-items:center">'+av(u,56)+'<div style="min-width:0"><div class="eyebrow">'+(isMe?'Playing as':'Manager')+(m.active?'':' · former')+'</div><h1 style="font-size:24px;letter-spacing:-.7px;margin:4px 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(team(u))+'</h1><p class="sub">'+esc(m.name)+'</p></div></div>'+
+  var h='<section class="hero">'+(isMe?'<div class="eyebrow">'+D.league.first+' – '+CUR()+'</div><h1 style="font-size:24px;letter-spacing:-.7px;margin:4px 0 2px">My career</h1>':'<div style="display:flex;gap:12px;align-items:center">'+av(u,56)+'<div style="min-width:0"><div class="eyebrow">Manager'+(m.active?'':' · former')+'</div><h1 style="font-size:24px;letter-spacing:-.7px;margin:4px 0 2px;overflow-wrap:anywhere">'+esc(team(u))+'</h1><p class="sub">'+esc(m.name)+'</p></div></div>'+(m.active?'<button type="button" class="link" data-team="'+u+'">This season: roster &amp; schedule ›</button>':''))+
    '<div class="tiles"><div class="tile t-y"><small>Titles</small><strong>'+a.titles.length+'</strong><span>'+(a.titles.join(', ')||'Not yet')+'</span></div>'+
    '<div class="tile t-b"><small>Career W-L</small><strong class="num">'+a.w+'-'+a.l+'</strong><span>'+(a.pct*100).toFixed(1)+'% · '+f1(a.avg)+' ppg</span></div>'+
    '<button type="button" class="tile t-g" data-game="'+gi(a.best.s,a.best.w,u)+'"><small>Best week ›</small><strong class="num">'+f2(a.best.v)+'</strong><span>'+sw(a.best.s,a.best.w)+'</span></button>'+
@@ -1498,7 +1498,7 @@ function profile(u,isMe){
   opp.sort(function(a,b){return (b.w-b.l)-(a.w-a.l)||b.n-a.n});
   if(opp.length){
     h+='<section class="panel"><div class="ph"><div><div class="kicker">Head to head</div><h2>Record vs everyone</h2></div></div><div class="rows">'+
-     opp.map(function(x){return '<div class="row">'+who(x.o,x.n+(x.n===1?' game':' games'),28)+'<span class="val" style="font-size:14px;color:'+(x.w>x.l?'var(--win)':x.w<x.l?'var(--loss)':'var(--ink)')+'">'+x.w+'-'+x.l+'</span></div>'}).join('')+'</div></section>';
+     opp.map(function(x){return '<button type="button" class="row me-riv" data-rival="'+u+'|'+x.o+'">'+whoS(x.o,x.n+(x.n===1?' game':' games')+' · rivalry card',28)+'<span class="val" style="font-size:14px;color:'+(x.w>x.l?'var(--win)':x.w<x.l?'var(--loss)':'var(--ink)')+'">'+x.w+'-'+x.l+'</span></button>'}).join('')+'</div></section>';
   }
   return h;
 }
@@ -1555,12 +1555,25 @@ document.addEventListener('input',function(e){if(!e.target||e.target.id!=='srQ')
   var q=SR.q;SR.t=setTimeout(function(){fetch('/api/players/search?q='+encodeURIComponent(q),{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(j){if(q!==SR.q)return;SR.res=Array.isArray(j)?j:[];var el=document.getElementById('srRes');if(el)el.innerHTML=srList()}).catch(function(){})},250)});
 
 function me(){
-  var act=ids.filter(function(u){return M(u).active}),h;
-  if(AUTH)h='<section class="panel"><div class="ph" style="margin:0"><div><div class="kicker">Logged in to the Sportsbook</div><h2 style="font-size:18px">'+esc(team(AUTH.user_id))+'</h2></div><button type="button" class="x" data-logout="1">Log out</button></div></section>';
-  else h='<section class="panel"><label for="meSel" class="kicker" style="display:block;margin-bottom:6px">Who are you?</label><select id="meSel">'+act.map(function(u){return '<option value="'+u+'"'+(u===S.me?' selected':'')+'>'+esc(team(u))+' · '+esc(M(u).name)+'</option>'}).join('')+'</select>'+
-    (LIVE?'<p class="muted" style="font-size:11.5px;margin-top:6px">Just browsing. Log in with your team PIN to bet.</p><button type="button" class="cta" data-login="1" style="margin-top:10px">Log in to the Book</button>':'<p class="muted" style="font-size:11.5px;margin-top:6px">Pick your team to see your stats.</p>')+'</section>';
-  h+=profile(S.me,true);
-  h+=explainPanel();
+  var act=ids.filter(function(u){return M(u).active}),u=S.me,st=stOf(u),h='';
+  // One identity: the team you pick is "you" everywhere; logging in with the PIN only unlocks betting.
+  h+='<section class="panel me-id"><div class="me-row">'+av(u,46)+'<div class="me-tx"><div class="kicker">'+(AUTH?'You · logged in':'You are')+'</div><b>'+esc(team(u))+'</b><span>'+esc(M(u).name)+(st?' · '+st.w+'-'+st.l+' · '+ord(st.seed)+' place':'')+'</span></div></div>';
+  if(AUTH)h+='<div class="me-acts"><button type="button" class="ghost sm" data-logout="1">Log out</button></div>';
+  else h+='<label for="meSel" class="me-lbl">Not you? Pick your team</label><select id="meSel">'+act.map(function(x){return '<option value="'+x+'"'+(x===u?' selected':'')+'>'+esc(team(x))+' · '+esc(M(x).name)+'</option>'}).join('')+'</select>'+
+    (LIVE?'<button type="button" class="cta me-login" data-login="1">Log in to bet</button><p class="muted me-note">Everything else works without logging in. Your PIN only unlocks the Book.</p>':'');
+  h+='</section>';
+  // This season
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">'+CUR()+' season</div><h2>My team</h2></div><button class="link" data-team="'+u+'">Roster &amp; schedule ›</button></div>';
+  var my=(D.lines||[]).filter(function(l){return l.a===u||l.b===u})[0];
+  if(st)h+='<div class="tm-stats"><div><b class="num">'+st.w+'-'+st.l+'</b><small>record</small></div><div><b class="num">'+ord(st.seed)+'</b><small>place</small></div><div><b class="num">'+f1(st.avg)+'</b><small>per week</small></div><div><b class="num">'+(st.luck>0?'+':'')+f1(st.luck)+'</b><small>luck</small></div></div>';
+  if(my){var opp=my.a===u?my.b:my.a;h+='<button type="button" class="row me-next" data-prev="'+my.id+'">'+whoS(opp,'Week '+D.league.week+' opponent · '+recOf(opp),28)+CHEV+'</button>'}
+  h+='</section>';
+  // My Book
+  if(AUTH&&BK.me){var open=(BK.me.bets||[]).filter(function(b){return b.status==='open'}),won=(BK.me.bets||[]).filter(function(b){return b.status==='won'}).length,lost=(BK.me.bets||[]).filter(function(b){return b.status==='lost'}).length,toWin=open.reduce(function(a,b){return a+b.to_win},0);
+    h+='<section class="panel"><div class="ph"><div><div class="kicker">Mahomie Bucks · play money</div><h2>My Book</h2></div><button class="link" data-go="book">Open the Book ›</button></div><div class="tm-stats"><div><b class="num">'+money(BK.me.balance)+'</b><small>balance</small></div><div><b class="num">'+open.length+'</b><small>open bets</small></div><div><b class="num">'+money(toWin)+'</b><small>could win</small></div><div><b class="num">'+won+'-'+lost+'</b><small>won-lost</small></div></div>'+
+      (open.length?'<div class="me-open">'+open.slice(0,3).map(function(b){return stub(b,true)}).join('')+'</div>':'')+'</section>'}
+  h+=profile(u,true);
+  h+='<button type="button" class="twih-go" data-howto="1"><span>📖</span><b>How the app works</b><em>Every stat explained in plain English</em>'+CHEV+'</button>';
   h+=admPanel();
   return h+foot();
 }
@@ -1803,6 +1816,8 @@ document.addEventListener('click',function(e){
   if(d.mgr){nav(function(){openSheet(profile(d.mgr,false)+CLOSE)});return}
   if(d.team){nav(function(){teamOpen(d.team)});return}
   if(d.wire){nav(function(){openSheet(wireSheet()+CLOSE)});return}
+  if(d.howto){nav(function(){openSheet(explainPanel()+CLOSE)});return}
+  if(d.rival){var rp=d.rival.split('|');S.h2a=rp[0];S.h2b=rp[1];go('league','h2h');var rt=document.getElementById('rivalTop');if(rt)rt.scrollIntoView({block:'start'});return}
   if(d.search){nav(searchOpen);return}
   if(t.id==='closeP'){closeSheet();return}
 });

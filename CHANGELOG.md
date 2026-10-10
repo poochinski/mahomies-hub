@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — v2.3 Me is one identity: "You are <team>" at the top (pick your team, or log in to bet; logging in only unlocks the Book), My team (record, place, this week's opponent, roster & schedule), My Book (balance, open bets, could win, record), My career, Record vs everyone rows open the rivalry card, How the app works folded into one row. (Claude)
 - 2026-10-10 — v2.3 League Wire: Home shows the latest trades, waiver claims (with FAAB bid) and adds, and how many points each move has put in the new team's lineup since; "All →" opens every move this season plus FAAB spent by team. (Claude)
 - 2026-10-10 — v2.3 Team page + player search + Back: tap a team in Standings, Power rankings or Playoff odds for its season page (record, every week's score, schedule with results and what's left, roster with season points and how each player was added, moves). 🔍 in the header finds any NFL player and shows who has him. Every pop-up opened from another pop-up now has ‹ Back. (Claude)
 - 2026-10-10 — v2.3 cleanup: Last week recap says what the tiles don't (blowout, nail-biter, upset, record); Explore replaced by one This week in history row; League menu is a chip row (Records lives in its tab); Power rankings no longer repeat the record; History starts with the current season; 💵 button says Book when logged out; game scores 2 decimals; removed the unused React app, Vite build and dead code/CSS. (Claude)
