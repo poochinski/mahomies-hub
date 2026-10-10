@@ -158,3 +158,16 @@ CREATE TABLE IF NOT EXISTS slot_spins (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS slot_spins_user ON slot_spins(user_id, season);
+
+-- 2026-10-10: progressive MAJOR / GRAND pots for Gridiron Gold, one per season + bet size.
+-- Every paid spin adds PROG[name].rate × bet; a pot resets to seed × bet when someone collects it.
+CREATE TABLE IF NOT EXISTS slot_jackpots (
+  season   TEXT NOT NULL,
+  bet      NUMERIC(10,2) NOT NULL,
+  name     TEXT NOT NULL,
+  amount   NUMERIC(14,4) NOT NULL,
+  won_by   TEXT,
+  won_at   TIMESTAMPTZ,
+  won_amt  NUMERIC(14,2),
+  PRIMARY KEY (season, bet, name)
+);

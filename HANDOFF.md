@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-09 23:30 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-10 01:00 (Pacific) · **AI:** Claude
 **Current phase:** v2.0 Home rework — parts 1–3 live; part 4 (This week list, recap, Explore) next
-**Last commit:** "Gridiron Gold: 3+ stopwatches anywhere start the Two-Minute Drill"
+**Last commit:** "Gridiron Gold v2.1: 20 lines, more frequent features, progressive jackpots, season stats"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -13,6 +13,11 @@ This push changes **your game card** only. Before a team has played, the big num
 Jayson wants to see it on his phone and may ask to put the old card back. Revert commit message: "v2.0 Home: your game card shows projected score instead of 0.00".
 
 ## Done (newest first)
+- 2026-10-10 — **Gridiron Gold v2.1** (Claude). Jayson: go to 20 lines; he hit only 3 features in hours of testing (normal at 1 in 156, but too rare for this game); asked for progressive pots.
+  - 20 lines (side number tabs replaced by plain gold rails; 20 line colors). Free spins 8 × 2, Two-Minute Drill 6 starting drives, TD 23%; both features 1 in 87. Pays trimmed. Exact par 92.48% incl. 1.5% progressive (BIBLE §7). Sim cross-check 91.05% (without progressive) vs par 90.98%.
+  - Progressive MAJOR/GRAND per season + bet size (`slot_jackpots`; seeds 50×/250× bet; +1% / +0.5% of each paid spin). Drill coins are priced in Bucks when the drill triggers (`cell.amt`, `frame.got_amt`, `bonus.jackpots`, `bonus.jp_won`); won pots reset. State/spin responses carry `pots`; plaques tick up after each spin. Old pending bonuses still replay (client falls back to v × bet).
+  - `GET /api/book/slots/stats`: spins, Bucks played/won, features hit vs expected, payback, biggest win → "Your season on Gridiron Gold" in the paytable.
+  - Tests: slot ledger test passes (balance matches to the cent; a MAJOR was won and reset); UI checked at 390px (machine, paytable stats, a drill collecting a MAJOR).
 - 2026-10-09 — **Gridiron Gold trigger change** (Claude, Jayson's call): the Two-Minute Drill starts on **3 or more stopwatches anywhere** (was one on each of reels 1–3). Strips: 1 stopwatch on every reel (was 2 on reels 1–3). Bonus 1 in 156 (was 187). Line pays trimmed (see BIBLE §7) → par **92.53%** (`node server/slots/par.js`; sim 92.4%; slot ledger test passes). Client: anticipation on 2 stopwatches, highlights on any reel, paytable text.
 - 2026-10-09 — Jayson: playoff odds don't belong in the weekly game card. Removed entirely. **Open question:** where playoff odds should live in the Home / weekly breakdown — decide with Jayson later. (Claude)
 - 2026-10-09 — Jayson: the standings strip was too much. Removed it; Your game now shows one gold line under your record: "7.3% playoff odds" (`myOdds()`). Games-back info lives on the Standings page. (Claude)

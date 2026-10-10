@@ -705,3 +705,11 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .gg-pt{font:400 14px/1.45 var(--body);letter-spacing:0;text-align:left}
 .gg-pt .gg-pt-sub{text-align:center}
 .gg{min-height:100%;justify-content:center}
+/* v2.1 slot: 20 lines (plain rails), progressive plaques */
+.gg-win{grid-template-columns:8px minmax(0,1fr) 8px}
+.gg-tabs{background:linear-gradient(90deg,#3a2a10,#8a6206,#3a2a10);border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.5)}
+.gg-jp.prog{animation:ggprog 2.4s ease-in-out infinite}
+@keyframes ggprog{50%{box-shadow:inset 0 0 0 1px var(--c),0 0 16px -2px var(--c)}}
+.gg-jp b.tick{animation:ggtick .5s ease-out}
+@keyframes ggtick{0%{transform:scale(1.18);color:#fff3b0}100%{transform:none}}
+.gg-pp span small{font:600 10px var(--mono);color:rgba(243,230,192,.55);text-shadow:none}

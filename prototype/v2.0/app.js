@@ -855,7 +855,7 @@ function explainPanel(){return '<section class="panel"><div class="ph"><div><div
    and synthesized casino sounds with a volume control (saved per phone). */
 var SL={open:false,busy:false,spinning:false,bet:10,state:null,pt:null,res:null,slam:false,auto:0,cred:0,winShown:0,cycleT:null,stopT:[],raf:null,lt:0,landed:0,items:null,roll:null};
 var GG_N={RING:'Title Ring',TROPHY:'Trophy',STADIUM:'Helmet',PLAYBOOK:'Football',BALL:'Ace',CAP:'King',WILD:'MH Wild',TICKET:'Free Spins',DRAFT:'Two-Minute Drill'};
-var GG_COL=['#ff4545','#3bd1ff','#ffd23b','#5dff8f','#ff5fd6','#ff9a3b','#b18cff','#3bffd8','#ffffff'];
+var GG_COL=['#ff4545','#3bd1ff','#ffd23b','#5dff8f','#ff5fd6','#ff9a3b','#b18cff','#3bffd8','#ffffff','#ff7aa2','#7ab8ff','#d4ff5c','#ffb3f0','#9cffd0','#ffcf8a','#c9a7ff','#8af0ff','#ff6e6e','#b7ff8a','#ffe08a'];
 var GG_SEQ=['RING','CAP','TROPHY','BALL','STADIUM','PLAYBOOK','WILD','CAP','BALL','TICKET','PLAYBOOK','DRAFT'];
 var GG_V=26; // reel speed, symbols per second
 var GG_JP=[['GRAND',250,'#ff5fd6'],['MAJOR',50,'#ff4545'],['MINOR',15,'#3bd1ff'],['MINI',5,'#5dff8f']];
@@ -986,10 +986,9 @@ function ggFonts(){if(document.getElementById('ggFont'))return;var st=document.c
 /* ---------- cabinet ---------- */
 function slotRoot(){var el=document.getElementById('slot');if(!el){el=document.createElement('div');el.id='slot';el.className='ggslot';document.body.appendChild(el)}return el}
 function bulbs(n){var h='';for(var i=0;i<n;i++)h+='<i></i>';return '<div class="gg-bulbs">'+h+'</div>'}
-function jpHtml(bet){return GG_JP.map(function(j){return '<div class="gg-jp" style="--c:'+j[2]+'"><small>'+j[0]+'</small><b class="num" data-jpx="'+j[1]+'">'+gb(j[1]*bet)+'</b></div>'}).join('')}
-function tabsHtml(side){var rows=[[],[],[]],L=(SL.pt&&SL.pt.lines)||[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1]];
-  L.forEach(function(ln,i){rows[side?ln[4]:ln[0]].push(i)});
-  return '<div class="gg-tabs">'+rows.map(function(r){return '<div class="rw">'+r.map(function(i){return '<i style="--c:'+GG_COL[i]+'">'+(i+1)+'</i>'}).join('')+'</div>'}).join('')+'</div>'}
+function jpVal(name,x,bet){var p=SL.state&&SL.state.pots&&SL.state.pots[bet];return p&&p[name]!=null?p[name]:x*bet}
+function jpHtml(bet,fixed){return GG_JP.map(function(j){var prog=j[0]==='GRAND'||j[0]==='MAJOR',v=fixed?(fixed[j[0]]!=null?fixed[j[0]]:j[1]*bet):jpVal(j[0],j[1],bet);return '<div class="gg-jp'+(prog?' prog':'')+'" style="--c:'+j[2]+'"><small>'+j[0]+'</small><b class="num" data-jpn="'+j[0]+'" data-jpx="'+j[1]+'">'+gb(v)+'</b></div>'}).join('')}
+function tabsHtml(side){return '<div class="gg-tabs"></div>'}
 var GR=[];
 function ggStripOf(i){return SL.pt&&SL.pt.strips&&SL.pt.strips[i]?SL.pt.strips[i]:GG_SEQ}
 function ggReelsInit(){for(var i=0;i<5;i++){if(!GR[i])GR[i]={i:i,p:Math.floor(Math.random()*30),mode:'idle',v:0,base:null};var s=ggStripOf(i);if(GR[i].s!==s){GR[i].s=s;GR[i].base=null;GR[i].p=Math.floor(Math.random()*s.length)}}}
@@ -1004,7 +1003,7 @@ function openSlot(){
     ggReelsInit();slotRender();aPlay('open');
     if(SL.state.bonus){SL.busy=true;ggSplash('drill',function(){SL.busy=false;drillStart(SL.state.bonus)})}
     else if(SL.state.free_left>0)ggMsg(SL.state.free_left+' free spins left · tap FREE');
-    else ggMsg(SL.cred<SL.bet?'Not enough Bucks to spin':'Play 9 lines · good luck')}).catch(function(e){ggMsg(e.message)})}
+    else ggMsg(SL.cred<SL.bet?'Not enough Bucks to spin':'Play '+((SL.pt&&SL.pt.lines.length)||20)+' lines · good luck')}).catch(function(e){ggMsg(e.message)})}
 function closeSlot(){if(SL.spinning||SL.busy||SL.roll)return;SL.open=false;SL.auto=0;ggStopCycle();aHum(false);var el=slotRoot();el.classList.remove('open');document.body.style.overflow='';bookLoad()}
 function slotRender(){
   var el=slotRoot(),st=SL.state,free=!!(st&&st.free_left>0);
@@ -1052,12 +1051,12 @@ function ggMeters(){var st=SL.state,free=!!(st&&st.free_left>0),$e=function(id){
   $e('ggCred').textContent=st?gb(SL.cred):'—';$e('ggBet').textContent=SL.bet+(free?' ×'+fm():'');
   $e('ggWinL').textContent=free?'Free spin win':'Win';$e('ggWin').textContent=free?gb(st.free_won||0):SL.winShown?gb(SL.winShown):'0';
   var cab=$e('ggCab');if(cab)cab.classList.toggle('free',free);
-  $e('ggTag').textContent=free?'★ Free spins · '+st.free_left+' left · all wins ×'+fm()+' ★':'9 lines · MH wild · Two-Minute Drill';
+  $e('ggTag').textContent=free?'★ Free spins · '+st.free_left+' left · all wins ×'+fm()+' ★':((SL.pt&&SL.pt.lines.length)||20)+' lines · progressive jackpots';
   var sp=$e('ggSpin');sp.className='gg-spin'+(SL.spinning?' stop':free?' free':'');$e('ggSpinT').textContent=SL.spinning?'STOP':free?'FREE':'SPIN';$e('ggSpinS').textContent=free&&!SL.spinning?st.free_left+' left':'';
   var lock=SL.spinning||free||!!SL.roll,bets=(SL.pt&&SL.pt.bets)||[10,25,50],bi=bets.indexOf(SL.bet);
   $e('ggMinus').disabled=lock||bi<=0;$e('ggPlus').disabled=lock||bi>=bets.length-1;
   var au=$e('ggAuto');au.textContent=SL.auto>0?'STOP '+SL.auto:'AUTO';au.classList.toggle('on',SL.auto>0);au.disabled=free&&!SL.auto;
-  [].forEach.call(document.querySelectorAll('#ggJps [data-jpx]'),function(b){b.textContent=gb(+b.dataset.jpx*SL.bet)})}
+  [].forEach.call(document.querySelectorAll('#ggJps [data-jpx]'),function(b){var nv=gb(jpVal(b.dataset.jpn,+b.dataset.jpx,SL.bet));if(b.textContent!==nv){b.textContent=nv;b.classList.remove('tick');void b.offsetWidth;b.classList.add('tick')}})}
 function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getElementById('ggWin');if(c)c.textContent=gb(SL.cred);if(w)w.textContent=gb(SL.state&&SL.state.free_left>0&&SL.res&&SL.res.free?(SL.freeBase||0)+SL.winShown:SL.winShown)}
 
 /* ---------- a spin ---------- */
@@ -1107,7 +1106,7 @@ function ggShowAll(items){var all=[];items.forEach(function(it){all=all.concat(i
 function ggCycle(){ggStopCycle();var it=SL.items;if(!it||!it.length)return;if(it.length===1){ggMark(it[0].cells);ggLineSvg(it);ggMsg(it[0].label,'hot');return}
   var k=0,step=function(){var x=it[k%it.length];ggMark(x.cells);ggLineSvg([x]);ggMsg(x.label,'hot');k++};step();SL.cycleT=setInterval(step,1500)}
 function ggStopCycle(){clearInterval(SL.cycleT);SL.cycleT=null}
-function ggDone(){var r=SL.res;SL.spinning=false;var st=SL.state;
+function ggDone(){var r=SL.res;SL.spinning=false;var st=SL.state;if(r.pots)st.pots=r.pots;
   st.free_left=r.free_left;st.free_bet=r.free_left>0?r.bet:null;st.balance=r.balance;
   var items=r.wins.map(function(w){return {line:w.line,cells:w.cells,label:'Line '+(w.line+1)+' · '+w.n+' '+GG_N[w.sym]+' · '+gb(w.pay)}});
   if(r.tickets>=3){var tc=[];r.grid.forEach(function(col,ri){col.forEach(function(s,row){if(s==='TICKET')tc.push([ri,row])})});items.push({line:-1,cells:tc,label:r.tickets+' tickets'+(r.scatter?' pay '+gb(r.scatter):'')+' · free spins!'})}
@@ -1148,7 +1147,7 @@ function ggCoins(cv,n){var ctx=cv.getContext('2d'),dpr=Math.min(2,window.deviceP
     if(spawned>=n&&!P.length)return;requestAnimationFrame(f)}
   requestAnimationFrame(f);return function(){n=spawned}}
 var GG_SPLASH={
-  free:function(n){return {icon:'TICKET',k:'Feature',t:'FREE SPINS',n:n,s:'Every win pays ×'+fm()+'. Land 3 more tickets for 10 more.',b:'Start'}},
+  free:function(n){return {icon:'TICKET',k:'Feature',t:'FREE SPINS',n:n,s:'Every win pays ×'+fm()+'. Land 3 more tickets for '+((SL.pt&&SL.pt.free_spins)||8)+' more.',b:'Start'}},
   retrigger:function(n){return {icon:'TICKET',k:'Retrigger',t:'+'+n+' FREE SPINS',s:'More free spins added.',b:'Keep going'}},
   drill:function(){return {icon:'DRAFT',k:'Bonus',t:'TWO-MINUTE DRILL',s:'Every drive the 9 squares spin. When the play reel lands TOUCHDOWN, you collect the whole board. '+((SL.pt&&SL.pt.drill&&SL.pt.drill.drives)||8)+' drives.',b:'Let\'s go'}},
   freedone:function(n){return {icon:'TICKET',k:'Free spins complete',t:'YOU WON',n:gb(n),s:'Bucks',b:'Collect'}}};
@@ -1174,9 +1173,10 @@ function ggBig(amt,bet,cb,opt){opt=opt||{};SL.auto=0;var el=slotRoot(),d=documen
 /* ---------- Two-Minute Drill (hold-and-spin bonus) ---------- */
 var DR=null,TD_MISS=['INCOMPLETE','SACKED','PUNT','FUMBLE','PICKED OFF','3 &amp; OUT'];
 function drCell(c,bet){if(!c||c.t==='blank')return '<div class="dc blank"><svg viewBox="0 0 100 100"><use href="#gg-PLAYBOOK"/></svg></div>';
-  if(c.t==='val')return '<div class="dc coin"><b>'+gb(c.v*bet)+'</b></div>';
-  if(c.t==='jp')return '<div class="dc coin jp jp-'+c.jp.toLowerCase()+'"><small>'+c.jp+'</small><b>'+gb(c.v*bet)+'</b></div>';
+  if(c.t==='val')return '<div class="dc coin"><b>'+gb(c.amt!=null?c.amt:c.v*bet)+'</b></div>';
+  if(c.t==='jp')return '<div class="dc coin jp jp-'+c.jp.toLowerCase()+'"><small>'+c.jp+'</small><b>'+gb(c.amt!=null?c.amt:c.v*bet)+'</b></div>';
   return '<div class="dc coin xd"><b>+1</b><small>DRIVE</small></div>'}
+function drJp(b){var o={};(b.jackpots||[]).forEach(function(x){if(x.amt!=null)o[x.name]=x.amt});return o}
 function drFake(){var r=Math.random();return r<.5?{t:'blank'}:r<.86?{t:'val',v:[0.5,1,2,3,5][Math.floor(Math.random()*5)]}:r<.95?{t:'jp',jp:['MINI','MINOR','MAJOR'][Math.floor(Math.random()*3)],v:[5,15,50][Math.floor(Math.random()*3)]}:{t:'extra'}}
 function tdc(td,lbl){return td?'<div class="tdc td"><b>TOUCH<br>DOWN!</b></div>':'<div class="tdc"><b>'+lbl+'</b></div>'}
 function drillStart(b){var el=slotRoot(),ov=document.getElementById('slBonus');if(!ov){ov=document.createElement('div');ov.id='slBonus';ov.className='gg-drill';el.appendChild(ov)}
@@ -1186,7 +1186,7 @@ function drillStart(b){var el=slotRoot(),ov=document.getElementById('slBonus');i
    '<div class="gg-top"><span></span><div class="gg-ttl">Gridiron Gold · bonus</div><button type="button" class="gg-ib" data-slmute="1" aria-label="Mute" id="drSnd">'+sndIcon()+'</button></div>'+
    '<div class="gg-cab free">'+
     '<div class="gg-marq">'+bulbs(17)+'<div class="gg-logo sm"><span>TWO-MINUTE</span><b>DRILL</b></div><div class="gg-tag">Score a touchdown · collect the board</div>'+bulbs(17)+'</div>'+
-    '<div class="gg-jps">'+jpHtml(b.bet)+'</div>'+
+    '<div class="gg-jps">'+jpHtml(b.bet,drJp(b))+'</div>'+
     '<div class="dr-sb"><div><small>Drive</small><b class="num" id="drDrive">1 / '+d0+'</b></div><div><small>Collected</small><b class="num wn" id="drCol">0</b></div></div>'+
     '<div class="dr-field" id="drField"><div class="dr-grid">'+[0,1,2,3,4,5,6,7,8].map(function(i){return '<div class="dr-slot" data-dc="'+i+'">'+drCell(null,b.bet)+'</div>'}).join('')+'</div>'+
      '<div class="dr-play"><small>Play</small><div class="dr-td" id="drTd"><div class="dr-tds" id="drTds">'+tdc(false,'READY')+tdc(false,'HUT!')+tdc(false,'')+'</div></div></div></div>'+
@@ -1223,8 +1223,8 @@ function drPlay(f){if(!DR)return;var tds=document.getElementById('drTds'),box=do
     aPlay('td');drMsg('TOUCHDOWN!','hot');
     var slots=[].slice.call(document.querySelectorAll('.dr-slot')),hit=[];f.cells.forEach(function(c,i){if(c.v)hit.push(i)});
     if(!hit.length){drMsg('Touchdown! (empty board)','hot');drT(drillNext,1300);return}
-    var j=0;function col(){if(!DR)return;if(j<hit.length){var i=hit[j],c=f.cells[i];slots[i].classList.add('got');DR.collected=Math.round((DR.collected+c.v*b.bet)*100)/100;drSet('drCol',gb(DR.collected));aPlay('collect',j);j++;drT(col,130);return}
-      drMsg('TOUCHDOWN! +'+gb(f.got*b.bet),'hot');drT(drillNext,1500)}
+    var j=0;function col(){if(!DR)return;if(j<hit.length){var i=hit[j],c=f.cells[i];slots[i].classList.add('got');DR.collected=Math.round((DR.collected+(c.amt!=null?c.amt:c.v*b.bet))*100)/100;if(c.t==='jp'&&(c.jp==='GRAND'||c.jp==='MAJOR')){drMsg(c.jp+' JACKPOT! +'+gb(c.amt!=null?c.amt:c.v*b.bet),'hot');aPlay('big');var pl=document.querySelector('#slBonus [data-jpn="'+c.jp+'"]');if(pl)pl.textContent=gb((c.jp==='GRAND'?250:50)*b.bet)}drSet('drCol',gb(DR.collected));aPlay('collect',j);j++;drT(col,130);return}
+      drMsg('TOUCHDOWN! +'+gb(f.got_amt!=null?f.got_amt:f.got*b.bet),'hot');drT(drillNext,1500)}
     drT(col,600)},960)}
 function drillEnd(){if(!DR)return;var b=DR.b;DR.done=true;clearInterval(DR.iv);DR.collected=b.total;drSet('drCol',gb(b.total));
   var tds=b.frames.filter(function(x){return x.td}).length;
@@ -1248,22 +1248,30 @@ function bonusClose(){if(DR){DR.timers.forEach(clearTimeout);clearInterval(DR.iv
 /* ---------- paytable & rules ---------- */
 function paytableSheet(){var pt=SL.pt;if(!pt)return;var bet=SL.bet,lb=bet/9,el=slotRoot(),ov=document.createElement('div'),par=pt.par||{};ov.className='gg-pt';
   var mini=function(ln,i){var h='';for(var r=0;r<3;r++)for(var c=0;c<5;c++)h+='<i'+(ln[c]===r?' style="background:'+GG_COL[i]+'"':'')+'></i>';return '<div class="gg-pl"><div class="plg">'+h+'</div><small>'+(i+1)+'</small></div>'};
-  ov.innerHTML='<div class="gg-pt-in"><div class="gg-logo sm"><span>PAY</span><b>TABLE</b></div><p class="gg-pt-sub">Prizes shown at your bet of <b>'+bet+' Bucks</b> a spin (9 lines). Wins pay left to right; the best win on each line counts.</p>'+
+  ov.innerHTML='<div class="gg-pt-in"><div class="gg-logo sm"><span>PAY</span><b>TABLE</b></div><p class="gg-pt-sub">Prizes shown at your bet of <b>'+bet+' Bucks</b> a spin ('+pt.lines.length+' lines). Wins pay left to right; the best win on each line counts.</p>'+
    '<div class="pt-grid">'+['WILD','RING','TROPHY','STADIUM','PLAYBOOK','BALL','CAP'].map(function(s){var p=pt.pays[s];return '<div class="pt-c">'+gc(s)+'<div class="pt-v"><span><em>5</em>'+gb(p[2]*lb)+'</span><span><em>4</em>'+gb(p[1]*lb)+'</span><span><em>3</em>'+gb(p[0]*lb)+'</span></div><small>'+GG_N[s]+'</small></div>'}).join('')+'</div>'+
    '<div class="pt-sp">'+gc('WILD')+'<div><b>MH Wild</b><p>Reels 2, 3 and 4. Stands in for every picture except the ticket and the stopwatch. Five wilds in a row pays the top prize: '+gb(pt.pays.WILD[2]*lb)+'.</p></div></div>'+
-   '<div class="pt-sp">'+gc('TICKET')+'<div><b>Free Spins</b><p>3, 4 or 5 tickets anywhere pay '+pt.ticket_pays.map(function(x){return gb(x*bet)}).join(' / ')+' and start '+pt.free_spins+' free spins at your bet. Every free-spin win pays ×'+pt.free_mult+'. 3 more tickets add 10 more.</p></div></div>'+
-   '<div class="pt-sp">'+gc('DRAFT')+'<div><b>Two-Minute Drill</b><p>3 or more stopwatches anywhere on the screen start the bonus: '+pt.drill.drives+' drives on a 3×3 board. Each drive the squares spin to Bucks, jackpot coins (GRAND '+gb(250*bet)+' · MAJOR '+gb(50*bet)+' · MINOR '+gb(15*bet)+' · MINI '+gb(5*bet)+'), +1 DRIVE (up to '+pt.drill.max+') or nothing. When the play reel lands TOUCHDOWN you collect everything on the board.</p></div></div>'+
-   '<div class="pt-h">The 9 paylines</div><div class="pt-lines">'+pt.lines.map(mini).join('')+'</div>'+
+   '<div class="pt-sp">'+gc('TICKET')+'<div><b>Free Spins</b><p>3, 4 or 5 tickets anywhere pay '+pt.ticket_pays.map(function(x){return gb(x*bet)}).join(' / ')+' and start '+pt.free_spins+' free spins at your bet. Every free-spin win pays ×'+pt.free_mult+'. 3 more tickets add '+pt.free_spins+' more.</p></div></div>'+
+   '<div class="pt-sp">'+gc('DRAFT')+'<div><b>Two-Minute Drill</b><p>3 or more stopwatches anywhere on the screen start the bonus: '+pt.drill.drives+' drives on a 3×3 board. Each drive the squares spin to Bucks, jackpot coins (GRAND '+gb(jpVal('GRAND',250,bet))+' · MAJOR '+gb(jpVal('MAJOR',50,bet))+' · MINOR '+gb(15*bet)+' · MINI '+gb(5*bet)+'), +1 DRIVE (up to '+pt.drill.max+') or nothing. When the play reel lands TOUCHDOWN you collect everything on the board.</p><p><b>MAJOR and GRAND are progressive:</b> every spin anyone in the league makes at this bet adds a little to them ('+((pt.prog&&pt.prog.MAJOR.rate*100)||1)+'% and '+((pt.prog&&pt.prog.GRAND.rate*100)||0.5)+'% of the bet). When someone collects one, it resets to '+gb(50*bet)+' / '+gb(250*bet)+'. Each bet size has its own pots.</p></div></div>'+
+   '<div class="pt-h">The '+pt.lines.length+' paylines</div><div class="pt-lines">'+pt.lines.map(mini).join('')+'</div>'+
    '<div class="pt-h">The math (par sheet)</div><div class="pt-par">'+
-    [['Payback',(par.rtp?(par.rtp*100).toFixed(1):'92.5')+'%','Theoretical, over the long run. That\'s the Las Vegas Strip average (Nevada\'s legal minimum is 75%).'],
+    [['Payback',(par.rtp?(par.rtp*100).toFixed(1):'92.5')+'%','Theoretical, over the long run, including '+((par.prog||0.015)*100).toFixed(1)+'% that goes into the progressive pots. That\'s the Las Vegas Strip average (Nevada\'s legal minimum is 75%).'],
      ['Hit frequency','1 in '+(par.hit?(1/par.hit).toFixed(1):'2.8'),'How often a spin pays something (many pay less than the bet, like a real slot).'],
      ['Free Spins','1 in '+(par.free_odds||158),'Spins, on average, between free-spin features.'],
      ['Two-Minute Drill','1 in '+(par.bonus_odds||187),'Averages about '+(par.drill_avg||31)+'× your bet.'],
      ['Every spin','Independent','A random stop on each reel from the server\'s secure random number generator. The game has no memory: it\'s never "due", and a loss doesn\'t make a win more likely.']]
     .map(function(r){return '<div class="gg-pp"><b>'+r[0]+'</b><span class="num">'+r[1]+'</span><p>'+r[2]+'</p></div>'}).join('')+'</div>'+
+   '<div class="pt-h">Your season on Gridiron Gold</div><div id="ggStats" class="pt-par"><p class="gg-pt-sub">Loading…</p></div>'+
    '<p class="gg-pt-sub">Spins come out of your Mahomie Bucks. Going broke still means you\'re done for the season.</p>'+
    '<button type="button" class="gg-sp-b" data-slptx="1">Back to the game</button></div>';
-  el.appendChild(ov);aPlay('click')}
+  el.appendChild(ov);aPlay('click');
+  api('/slots/stats').then(function(s){var el2=document.getElementById('ggStats');if(!el2)return;
+    var row=function(a,b,c){return '<div class="gg-pp"><b>'+a+'</b><span class="num">'+b+'</span><p>'+c+'</p></div>'};
+    el2.innerHTML=s.spins?row('Spins',s.spins.toLocaleString('en-US'),'Paid spins this season ('+gb(s.wagered)+' Bucks played, '+gb(s.won)+' won back).')+
+      row('Free Spins hit',s.free_hits+' <small>/ '+s.expect_free+' expected</small>','What the math expects from '+s.spins+' spins at 1 in '+(par.free_odds||87)+'. Short runs swing a lot either way.')+
+      row('Drills hit',s.drills+' <small>/ '+s.expect_drills+' expected</small>','Expected at 1 in '+(par.bonus_odds||87)+'.')+
+      row('Your payback',s.payback!=null?s.payback+'%':'–','Bucks won ÷ Bucks played. Over thousands of spins it drifts toward '+((par.rtp||0.925)*100).toFixed(1)+'%; over a few hundred it can be anywhere.')+
+      row('Biggest win',gb(s.best),'Single spin or bonus.'):'<p class="gg-pt-sub">No spins yet this season.</p>'}).catch(function(){})}
 
 /* ---------- controls ---------- */
 function ggPop(id,show){[].forEach.call(document.querySelectorAll('#slot .gg-pop'),function(p){p.hidden=p.id===id?(show==null?!p.hidden:!show):true})}

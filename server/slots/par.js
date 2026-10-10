@@ -4,7 +4,7 @@
 // (expected board value × touchdown chance × expected number of drives, by dynamic programming).
 //   node server/slots/par.js          → prints the sheet
 //   import { parSheet } from './par.js' → same numbers as an object (cached)
-import { STRIPS, LINES, PAYS, TICKET_PAYS, FREE_SPINS, FREE_MULT, DRILL } from './engine.js';
+import { STRIPS, LINES, PAYS, TICKET_PAYS, FREE, DRILL, PROG } from './engine.js';
 
 let cached = null;
 
@@ -91,13 +91,16 @@ export function parSheet() {
   const dr = drillEV();
   const perSpin = line + scatter; // × bet
   const bonusEV = pBonus * dr.ev;
-  // Free spins: each pays ×FREE_MULT on lines and tickets; retriggers add FREE_SPINS more.
-  const expFree = FREE_SPINS / (1 - FREE_SPINS * pFree);
-  const freeEV = pFree * expFree * (FREE_MULT * perSpin + bonusEV);
-  const rtp = perSpin + bonusEV + freeEV;
+  // Free spins: each pays ×FREE.mult on lines and tickets; retriggers add FREE.spins more.
+  const expFree = FREE.spins / (1 - FREE.spins * pFree);
+  const freeEV = pFree * expFree * (FREE.mult * perSpin + bonusEV);
+  // Progressive jackpots: every paid spin adds rate × bet to MAJOR/GRAND; over time all of it is paid back.
+  const prog = Object.values(PROG).reduce((a, p) => a + p.rate, 0);
+  const fixed = perSpin + bonusEV + freeEV;
+  const rtp = fixed + prog;
   cached = {
     screens: n,
-    rtp, base: perSpin, lines: line, scatter, free: freeEV, bonus: bonusEV,
+    rtp, fixed, prog, base: perSpin, lines: line, scatter, free: freeEV, bonus: bonusEV,
     hitRate: hits / n, freeOdds: 1 / pFree, bonusOdds: 1 / pBonus,
     drill: { avg: dr.ev, avgDrives: dr.expDrives, boardAvg: dr.board, td: DRILL.td },
     maxLineSpin: maxLine, grand: Math.max(...DRILL.jackpots.map((j) => j[1]))
@@ -110,7 +113,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const t0 = Date.now(); const p = parSheet();
   console.log(`Gridiron Gold PAR sheet (${p.screens.toLocaleString()} screens, ${((Date.now() - t0) / 1000).toFixed(1)}s)`);
   console.log(`  Theoretical payback  ${pct(p.rtp)}   (house edge ${pct(1 - p.rtp)})`);
-  console.log(`    base lines ${pct(p.lines)} · tickets ${pct(p.scatter)} · free spins ${pct(p.free)} · Two-Minute Drill ${pct(p.bonus)}`);
+  console.log(`    base lines ${pct(p.lines)} · tickets ${pct(p.scatter)} · free spins ${pct(p.free)} · Two-Minute Drill ${pct(p.bonus)} (jackpots at seed) · progressive growth ${pct(p.prog)}`);
   console.log(`  Hit frequency        1 in ${(1 / p.hitRate).toFixed(2)} (${pct(p.hitRate)})`);
   console.log(`  Free spins           1 in ${p.freeOdds.toFixed(0)}`);
   console.log(`  Two-Minute Drill     1 in ${p.bonusOdds.toFixed(0)} · averages ${p.drill.avg.toFixed(1)}× bet over ${p.drill.avgDrives.toFixed(2)} drives (TD chance ${p.drill.td})`);

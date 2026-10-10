@@ -44,6 +44,7 @@ router.get('/book/feed', wrap((req) => book.feed(req.query.limit)));
 router.get('/book/slots/paytable', wrap(() => slots.paytable()));
 router.get('/book/slots/state', wrap(async (req) => slots.state(await need(req))));
 router.post('/book/slots/spin', wrap(async (req) => slots.spin(await need(req), req.body?.bet)));
+router.get('/book/slots/stats', wrap(async (req) => slots.stats(await need(req))));
 router.post('/book/slots/bonus-seen', wrap(async (req) => slots.bonusSeen(await need(req))));
 
 // ---------- commish tools ----------

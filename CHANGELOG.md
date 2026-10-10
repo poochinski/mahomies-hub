@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — Gridiron Gold v2.1: 20 lines, features about 1 in 87 each (was 1 in 156), progressive MAJOR/GRAND pots shared by the league, "Your season" stats vs expected in the paytable; payback 92.48%. (Claude)
 - 2026-10-09 — Gridiron Gold: Two-Minute Drill now starts on 3+ stopwatches anywhere (scatter on every reel, 1 in 156); line pays trimmed to keep 92.53% payback. (Claude)
 - 2026-10-09 — Home: playoff odds removed from Your game entirely (placement to be decided later). (Claude)
 - 2026-10-09 — Home: removed the standings strip (too much); your playoff odds are now one gold line under your record on the Your game card. (Claude)
