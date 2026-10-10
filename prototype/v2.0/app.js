@@ -364,9 +364,9 @@ function seasonView(){
   return h;
 }
 function oddsView(){
-  var h='<section class="hero"><div class="eyebrow">'+money(D.odds.sims)+' simulated seasons · '+D.odds.weeks_left+' weeks left</div><h1 style="font-size:28px">Playoff odds</h1>'+info('odds')+'<p class="sub">Each simulation plays out the rest of the schedule using every team\'s scoring level and week-to-week swing, including the median game. Top 6 make it, top 2 get a bye.</p></section>';
-  h+='<section class="panel"><div class="tw"><table><thead><tr><th>Team</th><th>Rec</th><th>Proj W</th><th>Playoffs</th><th>Bye</th><th>#1</th><th>Last</th></tr></thead><tbody>'+
-   D.odds.list.map(function(o,i){return '<tr class="'+(o.uid===S.me?'me ':'')+(i===5?'cut':'')+'"><td class="tm"><button class="who" type="button" data-team="'+o.uid+'">'+av(o.uid,22)+'<span class="tx"><b style="font-size:13px">'+esc(team(o.uid))+'</b></span></button></td><td>'+o.rec+'</td><td>'+f1(o.wins)+'</td><td class="'+(o.playoff>=.5?'pos':'')+'"><b>'+pct(o.playoff)+'</b></td><td>'+pct(o.bye)+'</td><td>'+pct(o.top)+'</td><td class="'+(o.last>=.2?'negv':'')+'">'+pct(o.last)+'</td></tr>'}).join('')+
+  var h='<section class="hero"><div class="eyebrow">'+money(D.odds.sims)+' simulated seasons · '+D.odds.weeks_left+' weeks left</div><h1 style="font-size:28px">Playoff odds</h1>'+info('odds')+'<p class="sub">Top 6 make the playoffs, top 2 get a bye. Tap a team for its schedule.</p></section>';
+  h+='<section class="panel"><div class="tw"><table><thead><tr><th>Team</th><th>Proj W</th><th>Playoffs</th><th>Bye</th><th>Last</th></tr></thead><tbody>'+
+   D.odds.list.map(function(o,i){return '<tr class="'+(o.uid===S.me?'me ':'')+(i===5?'cut':'')+'"><td class="tm"><button class="who" type="button" data-team="'+o.uid+'"><span class="tx"><b style="font-size:13px">'+esc(team(o.uid))+'</b><span>'+esc(o.rec)+'</span></span></button></td><td>'+f1(o.wins)+'</td><td class="'+(o.playoff>=.5?'pos':'')+'"><b>'+pct(o.playoff)+'</b></td><td>'+pct(o.bye)+'</td><td class="'+(o.last>=.2?'negv':'')+'">'+pct(o.last)+'</td></tr>'}).join('')+
    '</tbody></table></div><p class="muted" style="font-size:11.5px;margin-top:9px;line-height:1.5">Projected wins include median-game wins (28 total games). Odds update every week once the app is live.</p></section>';
   return h;
 }
@@ -386,11 +386,18 @@ function historyView(){
 }
 function pod(c,ic,u,label,cls,s){if(s===undefined){s=cls;cls=''}var tn=D.seasons[s].team_names[u]||M(u).name;
   return '<div class="pod"><span class="medal '+c+'">'+ic+'</span>'+who(u,tn===team(u)?M(u).name:'as '+tn,30)+'<span class="lbl '+cls+'">'+label+'</span></div>'}
-function atRow(x){return '<tr class="'+(x.uid===S.me?'me':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+x.uid+'">'+av(x.uid,22)+'<span class="tx"><b style="font-size:13px">'+esc(team(x.uid))+fmr(x.uid)+'</b><span>'+esc(M(x.uid).name)+'</span></span></button></td><td>'+(x.titles.length||'')+'</td><td>'+x.w+'-'+x.l+'</td><td>'+(x.pct*100).toFixed(1)+'</td><td>'+f1(x.avg)+'</td><td>'+x.playoffs.length+'</td><td>'+x.tb+'</td><td>'+x.rb+'</td></tr>'}
+var AT_SORT=[['titles','🏆 Titles'],['pct','Win %'],['avg','Points/week'],['playoffs','Playoffs'],['tb','🔥 On Fire']];
+function atKey(x,k){return k==='titles'?x.titles.length*1000+x.pct:k==='playoffs'?x.playoffs.length*1000+x.pct:k==='tb'?x.tb*1000+x.pct:x[k]}
+function atCard(x,i){var tt=x.titles.length;
+  return '<button type="button" class="at-c'+(x.uid===S.me?' me':'')+'" data-mgr="'+x.uid+'"><span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+av(x.uid,34)+
+   '<span class="at-n"><b>'+esc(team(x.uid))+fmr(x.uid)+'</b><small>'+esc(M(x.uid).name)+(tt?' · <em>'+'🏆'.repeat(Math.min(tt,5))+(tt>5?'×'+tt:'')+'</em>':'')+'</small></span>'+
+   '<span class="at-g"><span><b class="num">'+x.w+'-'+x.l+'</b><small>W-L</small></span><span><b class="num">'+(x.pct*100).toFixed(1)+'</b><small>Win%</small></span><span><b class="num">'+f1(x.avg)+'</b><small>PPG</small></span><span><b class="num">'+x.playoffs.length+'</b><small>Playoffs</small></span><span><b class="num">'+x.tb+'</b><small>🔥</small></span><span><b class="num">'+x.rb+'</b><small>🧊</small></span></span></button>'}
 function alltimeView(){
-  var head='<thead><tr><th>Team</th><th>🏆</th><th>W-L</th><th>Win%</th><th>PPG</th><th>Playoffs</th><th>🔥</th><th>🧊</th></tr></thead>';
-  return '<section class="panel"><div class="ph"><div><div class="kicker">'+D.league.first+' – '+CUR()+' · regular season</div><h2>All-time table</h2></div>'+info('alltime')+'</div><div class="tw"><table>'+head+'<tbody>'+D.alltime.map(atRow).join('')+'</tbody></table></div>'+
-   '<p class="muted" style="font-size:11.5px;margin-top:9px">🔥 On Fire = weeks as the league\'s top scorer. 🧊 Ice Cold = weeks as the lowest. W-L is head-to-head only.</p></section>';
+  var k=S.ats||'titles',list=D.alltime.slice().sort(function(a,b){return atKey(b,k)-atKey(a,k)});
+  return '<section class="panel"><div class="ph"><div><div class="kicker">'+D.league.first+' – '+CUR()+' · regular season</div><h2>All-time</h2></div>'+info('alltime')+'</div>'+
+   '<div class="chips" style="margin-bottom:10px">'+AT_SORT.map(function(o){return '<button type="button" class="chip'+(k===o[0]?' on':'')+'" data-ats="'+o[0]+'">'+o[1]+'</button>'}).join('')+'</div>'+
+   '<div class="at-list">'+list.map(atCard).join('')+'</div>'+
+   '<p class="muted" style="font-size:11.5px;margin-top:9px">🔥 On Fire = weeks as the league\'s top scorer. 🧊 Ice Cold = weeks as the lowest. W-L is head-to-head only. Tap a manager for the career page.</p></section>';
 }
 function mgrOptions(sel){return ids.map(function(u){return '<option value="'+u+'"'+(u===sel?' selected':'')+'>'+esc(team(u))+' ('+esc(M(u).name)+')'+(M(u).active?'':' · Former')+'</option>'}).join('')}
 function h2hView(){
@@ -1775,6 +1782,7 @@ document.addEventListener('click',function(e){
   if(d.shareAw){shareAwards(d.shareAw);return}
   if(d.rf){S.rf=d.rf;render();return}
   if(d.aws){S.aws=d.aws;render();return}
+  if(d.ats){S.ats=d.ats;render();return}
   if(d.lab){S.lab=d.lab;render();return}
   if(d.labs){S.labs=d.labs;render();return}
   if(d.recpick){openSheet(recPickSheet()+CLOSE);return}
