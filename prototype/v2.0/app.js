@@ -108,7 +108,7 @@ function seriesTag(a,b){
   return name+' '+( /[sz]$/i.test(name)?'lead':'leads')+' '+Math.max(r.w,r.l)+'–'+Math.min(r.w,r.l);
 }
 function upsetOn(a,b,sa,sb){
-  if(!sa||!sb||(sa.fin&&sb.fin)||!(sa.on||sb.on)||sa.pts===sb.pts)return false;
+  if(!sa||!sb||(sa.fin&&sb.fin)||!sa.on||!sb.on||sa.pts===sb.pts)return false;
   var ahead=sa.pts>sb.pts?a:b,trail=sa.pts>sb.pts?b:a,wa=winsOf(ahead),wb=winsOf(trail);
   return wa!=null&&wb!=null&&wa<wb;
 }

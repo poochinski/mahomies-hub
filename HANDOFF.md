@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-10 01:00 (Pacific) · **AI:** Grok
 **Current phase:** v2.0 Home rework — parts 1–4 live; next is the Live Game Center (2.1)
-**Last commit:** "Home part 4: This week list, one-line recap, shorter Explore"
+**Last commit:** "Home: Upset brewing waits until both teams have started"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -18,7 +18,7 @@ Where things stand (Grok, 2026-10-10):
 ## Done (newest first)
 - 2026-10-10 — **Home part 4** (Grok). Jayson said go on the proposal.
   - This week: one full-width row per game, your game left off when a team is picked on this phone, tightest gap first. Gap is the projected final while the game is still going, the real margin once both lineups are done. Finished games sit under games that aren't done. Scores use the same pulse numbers as the card (proj before they play, points plus proj while they're playing, final when both are done). No spreads, odds, or win %.
-  - Tags: all-time series from head-to-head ("Phil McCraken leads 3–1", "Tied 2–2"; names ending in s or z use "lead"), Final, Upset brewing (the team with fewer wins this season is ahead on points, and the game has started but is not final).
+  - Tags: all-time series from head-to-head ("Phil McCraken leads 3–1", "Tied 2–2"; names ending in s or z use "lead"), Final, Upset brewing (the team with fewer wins this season is ahead on points, and both teams have started). A few early points against a team that hasn't played yet is not an upset.
   - Last week: one sentence, the same first line as the full recap. Explore is three tiles: This week in history, Awards, Record book.
 - 2026-10-10 — **Gridiron Gold v2.1** (Claude). Jayson: go to 20 lines; he hit only 3 features in hours of testing (normal at 1 in 156, but too rare for this game); asked for progressive pots.
   - 20 lines (side number tabs replaced by plain gold rails; 20 line colors). Free spins 8 × 2, Two-Minute Drill 6 starting drives, TD 23%; both features 1 in 87. Pays trimmed. Exact par 92.48% incl. 1.5% progressive (BIBLE §7). Sim cross-check 91.05% (without progressive) vs par 90.98%.
