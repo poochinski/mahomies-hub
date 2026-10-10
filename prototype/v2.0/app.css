@@ -375,6 +375,21 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .gl-t b{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gl-t i{font:600 12.5px var(--mono);font-style:normal}
 .gl-t.w{color:var(--ink)}.gl-t.w i{color:var(--win)}
+/* This week list (Home part 4). Prefixed tw- so it can't clash with .tw tables or the slot. */
+.tw-list{display:grid;gap:8px}
+.tw-row{display:grid;gap:7px;width:100%;padding:10px 10px 8px;border:1px solid var(--line);border-radius:12px;background:var(--ground-2);color:inherit;text-align:left;min-width:0;overflow:hidden}
+.tw-row:active{border-color:var(--gold)}
+.tw-side{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;min-width:0}
+.tw-n{display:grid;min-width:0}
+.tw-n b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tw-n .yg-st{font:11px var(--mono)}
+.tw-row .yg-s{font-size:22px}
+.tw-tags{display:flex;flex-wrap:wrap;gap:4px}
+.tw-tag{font:500 10px var(--mono);letter-spacing:.02em;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 7px;line-height:1.3;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.tw-tag-final{color:var(--gold);border-color:rgba(246,207,76,.4)}
+.tw-tag-up{color:#ffb347;border-color:rgba(255,179,71,.45)}
+.tw-recap{font-size:13.5px;line-height:1.45;color:var(--ink);margin:0 0 10px}
+.tw-recap b{color:var(--gold);font-weight:600}
 .lw{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .lw-c{position:relative;overflow:hidden;display:grid;gap:2px;padding:10px 9px 9px;border:1px solid var(--line);border-radius:10px;background:var(--ground-2);color:inherit;text-align:left;min-width:0}
 .lw-c::before{content:"";position:absolute;top:0;left:0;right:0;height:2px}

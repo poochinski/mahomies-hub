@@ -127,8 +127,8 @@ From the Home audit (2026-10-09):
 4. **Median tracker:** "You're 4th of 12 this week — on track for the median win." (half of every 2026 week is invisible today).
 5. **Lineup alert:** starter OUT / on bye / empty slot (weekState already detects "slots not playing").
 6. **Standings strip:** your seed, games back of the playoff line, playoff odds.
-7. **This week grid:** no cut-off names (one game per row), remove your own game, sort by closest, tags like "6–0 all-time", "Final", "Upset brewing".
-8. **Put the one-sentence recap on Home.** Shrink *Explore* to one row (tabs already cover it); keep *This week in history*.
+7. **This week grid:** DONE 2026-10-10. One game per row, your own game left off once a team is picked, closest first, tags for the all-time series, Final, and Upset brewing. Scores match the card (not 0.00). No betting numbers.
+8. **One-sentence recap on Home:** DONE 2026-10-10. It sits under Last week (same first sentence as the full recap). Explore is one row: This week in history, Awards, Record book.
 
 ### 2.1 — Live Game Center
 Player-by-player view of any matchup during games: points, live projection, game clock/status, who's left, "needs X from Y" on Monday night. This keeps people in the app on Sundays instead of Sleeper.

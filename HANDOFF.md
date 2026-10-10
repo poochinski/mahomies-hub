@@ -1,20 +1,25 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 01:00 (Pacific) · **AI:** Claude
-**Current phase:** v2.0 Home rework — parts 1–3 live; part 4 (This week list, recap, Explore) next
-**Last commit:** "Gridiron Gold v2.1: 20 lines, more frequent features, progressive jackpots, season stats"
+**Last updated:** 2026-10-10 01:00 (Pacific) · **AI:** Grok
+**Current phase:** v2.0 Home rework — parts 1–4 live; next is the Live Game Center (2.1)
+**Last commit:** "Home part 4: This week list, one-line recap, shorter Explore"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 **v2.0 Home page rework** (docs/V2-HANDOFF.md Part 4), then the Live Game Center (2.1). Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
-Where things stand (Claude → Grok, 2026-10-10 00:30 PT):
-- Home parts 1–3 are live: Live badge + week phase line, Your game card (points, Sleeper projection, playing/left), lineup check, median-game line. Jayson kept the card. **No playoff odds or standings strip on the card** (he removed them; where playoff odds go on Home is an open question to decide with him).
-- Box-score lineups fixed (the slot's old `.slot` class was hiding the slot column).
-- Gridiron Gold v2.1 is live: 20 lines, features ~1 in 87, progressive MAJOR/GRAND, "Your season" stats. Math is exact in `server/slots/par.js` (92.48%). Any slot math change: re-run par.js, update `PAR` in engine.js.
-- Next: Home part 4 (below).
+Where things stand (Grok, 2026-10-10):
+- Home parts 1–4 are live. Part 4: This week is one game per row (your own game left off once this phone has picked a team, closest first). Scores match the card (projection, not 0.00). Tags: all-time series ("Boyz lead 6–0" or "Tied 3–3"), Final, Upset brewing (worse record ahead on points, only after the game has started). Last week has a one-sentence recap. Explore is one row: This week in history, Awards, Record book.
+- Your game card is unchanged: lineup check, median-game line. No playoff odds or standings strip on the card (where playoff odds go on Home is still open).
+- Box-score lineups fixed (the slot's old `.slot` class was hiding the slot column). New Home classes are prefixed `tw-`.
+- Gridiron Gold v2.1 is live. Any slot math change: re-run par.js, update `PAR` in engine.js.
+- Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **Home part 4** (Grok). Jayson said go on the proposal.
+  - This week: one full-width row per game, your game left off when a team is picked on this phone, tightest gap first. Gap is the projected final while the game is still going, the real margin once both lineups are done. Finished games sit under games that aren't done. Scores use the same pulse numbers as the card (proj before they play, points plus proj while they're playing, final when both are done). No spreads, odds, or win %.
+  - Tags: all-time series from head-to-head ("Phil McCraken leads 3–1", "Tied 2–2"; names ending in s or z use "lead"), Final, Upset brewing (the team with fewer wins this season is ahead on points, and the game has started but is not final).
+  - Last week: one sentence, the same first line as the full recap. Explore is three tiles: This week in history, Awards, Record book.
 - 2026-10-10 — **Gridiron Gold v2.1** (Claude). Jayson: go to 20 lines; he hit only 3 features in hours of testing (normal at 1 in 156, but too rare for this game); asked for progressive pots.
   - 20 lines (side number tabs replaced by plain gold rails; 20 line colors). Free spins 8 × 2, Two-Minute Drill 6 starting drives, TD 23%; both features 1 in 87. Pays trimmed. Exact par 92.48% incl. 1.5% progressive (BIBLE §7). Sim cross-check 91.05% (without progressive) vs par 90.98%.
   - Progressive MAJOR/GRAND per season + bet size (`slot_jackpots`; seeds 50×/250× bet; +1% / +0.5% of each paid spin). Drill coins are priced in Bucks when the drill triggers (`cell.amt`, `frame.got_amt`, `bonus.jackpots`, `bonus.jp_won`); won pots reset. State/spin responses carry `pots`; plaques tick up after each spin. Old pending bonuses still replay (client falls back to v × bet).
@@ -37,10 +42,9 @@ Where things stand (Claude → Grok, 2026-10-10 00:30 PT):
 - Nothing half-done.
 
 ## Next steps (in order)
-1. **Home part 4.** This week: one game per row, drop your own game, closest first, show projections like the card (not 0.00), small tags ("6–0 all-time", "Final", "Upset brewing" = lower record leading). One-sentence recap on Home. Explore shrinks to one row; keep This week in history.
-2. **2.1 Live Game Center** (player by player: pts, live proj, game status, "needs X" Monday night).
-3. **2.2 Sportsbook batch 2** before **Tue Oct 13, 6 AM PT** lines (weekly specials, best bettor, Sportsbook Champion). First real settlement **Wed Oct 21, 3 AM PT**.
-4. Jayson: confirm Gridiron Gold sound on a real iPhone.
+1. **2.1 Live Game Center** (player by player: pts, live proj, game status, "needs X" Monday night).
+2. **2.2 Sportsbook batch 2** before **Tue Oct 13, 6 AM PT** lines (weekly specials, best bettor, Sportsbook Champion). First real settlement **Wed Oct 21, 3 AM PT**.
+3. Jayson: confirm Gridiron Gold sound on a real iPhone.
 
 ## Decisions made (and why)
 - Fantasy / history first. Betting numbers (win %, lines, odds, spreads) only inside the Book tab. (Jayson, 2026-10-09)
@@ -74,13 +78,11 @@ Where things stand (Claude → Grok, 2026-10-10 00:30 PT):
 - Git tags cannot be pushed from some agents. Saved versions live on branches (`release-v1.0` through `release-v1.8`).
 
 ## Files changed in the latest push
+- prototype/v2.0/app.js — thisWeek list, recapOne, Explore row of three
+- prototype/v2.0/app.css — tw- list, row, tags, recap (does not touch .tw tables)
+- HANDOFF.md, CHANGELOG.md, BIBLE.md, docs/V2-HANDOFF.md
+
+## Files changed in the push before
 - server/sleeper/client.js (injury_status kept as `i`), server/book/data.js (players `inj`; homeCard warn/empty)
 - prototype/v2.0/app.js (medianLine, warnLine, standStrip, EXPLAIN.median, slot root `.ggslot`), app.css (card lines, strip, `.ggslot`, box header wrap)
 - HANDOFF.md, CHANGELOG.md, BIBLE.md
-
-## Files changed in the push before
-- `server/book/data.js` — `homeCard()` (points, projection, playing, left). No odds.
-- `server/routes/hub.js` — `/api/pulse` includes `games`
-- `prototype/v2.0/app.js` — your game card
-- `prototype/v2.0/app.css` — proj label, playing line, pick link
-- `BIBLE.md`, `docs/V2-HANDOFF.md`, `CHANGELOG.md`, `HANDOFF.md`

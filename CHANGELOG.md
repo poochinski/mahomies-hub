@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — Home part 4: This week is one game per row (your game left off, closest first, projections instead of 0.00, tags for the all-time series, Final, and Upset brewing). Last week gets a one-sentence recap. Explore shrinks to This week in history, Awards, and the Record book. (Grok)
 - 2026-10-10 — Gridiron Gold v2.1: 20 lines, features about 1 in 87 each (was 1 in 156), progressive MAJOR/GRAND pots shared by the league, "Your season" stats vs expected in the paytable; payback 92.48%. (Claude)
 - 2026-10-09 — Gridiron Gold: Two-Minute Drill now starts on 3+ stopwatches anywhere (scatter on every reel, 1 in 156); line pays trimmed to keep 92.53% payback. (Claude)
 - 2026-10-09 — Home: playoff odds removed from Your game entirely (placement to be decided later). (Claude)

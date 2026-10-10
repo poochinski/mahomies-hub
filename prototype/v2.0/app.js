@@ -86,6 +86,53 @@ function ygMeta(s){
   var bits=[];if(s.now)bits.push(s.now+' playing');if(s.left)bits.push(s.left+' left');
   return bits.length?'<span class="yg-st">'+bits.join(' · ')+'</span>':'';
 }
+/* Home part 4: This week is a list, not a 2-column grid. Fantasy only. */
+function slateOrHist(l,k){
+  var g=pulseForWeek()&&PULSE.games&&PULSE.games.filter(function(x){return x.a===l.a&&x.b===l.b})[0];
+  if(g)return slateSide(g,k==='a'?l.a:l.b);
+  var pts=Number(l['live_'+k]||0),proj=l['p'+k];
+  return {pts:pts,proj:proj!=null?proj:null,now:0,left:0,on:pts>0,fin:false,warn:[],empty:0};
+}
+function twGap(a,b){
+  var fin=a.fin&&b.fin,x,y;
+  if(fin){x=a.pts;y=b.pts}
+  else if(a.proj!=null&&b.proj!=null){x=a.proj;y=b.proj}
+  else {x=a.pts;y=b.pts}
+  return Math.abs((x||0)-(y||0));
+}
+function winsOf(u){var st=(D.seasons[CUR()]||{}).standings||[],x=st.filter(function(t){return t.uid===u})[0];return x?x.w:null}
+function seriesTag(a,b){
+  var r=D.h2h&&D.h2h[a+'|'+b];if(!r||!r.games||!r.games.length)return '';
+  if(r.w===r.l)return 'Tied '+r.w+'–'+r.l;
+  var lead=r.w>r.l?a:b,name=team(lead).replace(/^The /,'');
+  return name+' '+( /[sz]$/i.test(name)?'lead':'leads')+' '+Math.max(r.w,r.l)+'–'+Math.min(r.w,r.l);
+}
+function upsetOn(a,b,sa,sb){
+  if(!sa||!sb||(sa.fin&&sb.fin)||!(sa.on||sb.on)||sa.pts===sb.pts)return false;
+  var ahead=sa.pts>sb.pts?a:b,trail=sa.pts>sb.pts?b:a,wa=winsOf(ahead),wb=winsOf(trail);
+  return wa!=null&&wb!=null&&wa<wb;
+}
+function twRow(l){
+  var sa=slateOrHist(l,'a'),sb=slateOrHist(l,'b'),tags=[],know=!!(pulseForWeek()&&PULSE.games&&PULSE.games.length);
+  var ser=seriesTag(l.a,l.b);if(ser)tags.push('<span class="tw-tag">'+esc(ser)+'</span>');
+  if(know&&sa.fin&&sb.fin)tags.push('<span class="tw-tag tw-tag-final">Final</span>');
+  else if(know&&upsetOn(l.a,l.b,sa,sb))tags.push('<span class="tw-tag tw-tag-up">Upset brewing</span>');
+  var side=function(u,s){var meta=s.on&&!s.fin?ygMeta(s):'';return '<div class="tw-side">'+av(u,28)+'<div class="tw-n"><b>'+esc(team(u))+'</b>'+meta+'</div>'+ygScore(s)+'</div>'};
+  return {fin:know&&sa.fin&&sb.fin?1:0,gap:twGap(sa,sb),id:l.id,
+    html:'<button type="button" class="tw-row" data-prev="'+l.id+'">'+side(l.a,sa)+side(l.b,sb)+(tags.length?'<div class="tw-tags">'+tags.join('')+'</div>':'')+'</button>'};
+}
+function thisWeek(){
+  var lines=(D.lines||[]).slice();if(!lines.length)return '';
+  var me=savedTeam(),rows=lines.filter(function(l){return !me||(l.a!==me&&l.b!==me)});
+  if(!rows.length)rows=lines;
+  var built=rows.map(twRow).sort(function(a,b){return (a.fin-b.fin)||(a.gap-b.gap)||(a.id<b.id?-1:a.id>b.id?1:0)});
+  return '<section class="panel tight"><div class="ph"><div><div class="kicker">'+(me?'The other games':'Every game')+' · tap for preview</div><h2>This week</h2></div></div><div class="tw-list">'+built.map(function(r){return r.html}).join('')+'</div></section>';
+}
+function recapOne(s,w){
+  var ws=weekScores(s,w);if(!ws.length)return '';
+  var top=ws[0],low=ws[ws.length-1];
+  return '<p class="tw-recap"><b>'+esc(tnS(s,top.u))+'</b> led the week with '+f2(top.p)+', while <b>'+esc(tnS(s,low.u))+'</b> brought up the rear at '+f2(low.p)+'.</p>';
+}
 /* ---------- Book math ---------- */
 function line(id){return D.lines.find(function(l){return l.id===id})}
 /* ---------- HOME ---------- */
@@ -117,25 +164,18 @@ function home(){
     if(st)h+='<button type="button" class="yourgame" data-go="league:odds"><div class="yg-k">Your season</div><div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+st.w+'-'+st.l+' · seed '+st.seed+(o?' · '+pct(o.playoff)+' playoff odds':'')+'</span></div></div></button>';
   }
   h+='</section>';
-  if(D.lines.length){
-    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Live scores · tap a game</div><h2>This week</h2></div></div><div class="games">'+
-     D.lines.map(function(l){var aw=l.live_a>=l.live_b;return '<button type="button" class="gl" data-prev="'+l.id+'">'+
-       '<span class="gl-t'+(aw&&l.live_a>0?' w':'')+'">'+av(l.a,22)+'<b>'+esc(team(l.a))+'</b><i class="num">'+f1(l.live_a)+'</i></span>'+
-       '<span class="gl-t'+(!aw&&l.live_b>0?' w':'')+'">'+av(l.b,22)+'<b>'+esc(team(l.b))+'</b><i class="num">'+f1(l.live_b)+'</i></span></button>'}).join('')+'</div></section>';
-  }
+  h+=thisWeek();
   var wk=weekScores(CUR(),hw),top=wk[0],rot=wk[wk.length-1],potw=null;
   wk.forEach(function(x){var t=topP(CUR(),hw,x.u);if(t&&t.name&&(!potw||t.pts>potw.pts))potw={u:x.u,name:t.name,pts:t.pts}});
   if(top){
-    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Week '+hw+' final</div><h2>Last week</h2></div><button class="link" data-wk="'+hw+'">Recap &amp; scores →</button></div><div class="lw">'+
+    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Week '+hw+' final</div><h2>Last week</h2></div><button class="link" data-wk="'+hw+'">Recap &amp; scores →</button></div>'+recapOne(CUR(),hw)+'<div class="lw">'+
      '<button type="button" class="lw-c t-y" data-game="'+gi(CUR(),hw,top.u)+'"><small>🔥 High score</small><strong class="num">'+f1(top.p)+'</strong><span>'+esc(team(top.u))+'</span></button>'+
      '<button type="button" class="lw-c t-r" data-game="'+gi(CUR(),hw,rot.u)+'"><small>🧊 Low score</small><strong class="num">'+f1(rot.p)+'</strong><span>'+esc(team(rot.u))+'</span></button>'+
      (potw?'<button type="button" class="lw-c t-b" data-game="'+gi(CUR(),hw,potw.u)+'"><small>⭐ Top player</small><strong class="num">'+f1(potw.pts)+'</strong><span>'+esc(potw.name)+'</span></button>':'')+
      '</div></section>';
   }
-  h+='<section class="block"><div class="bh"><div><div class="kicker">Everything else</div><h2>Explore</h2></div></div><div class="jump">'+
-   [['data-go="league:awards"','🏆','Awards','t-y'],['data-go="league:odds"','🎯','Playoff odds','t-b'],['data-go="league:season"','📈','Power rankings','t-g'],
-    ['data-go="records"','📚','Record book','t-r'],['data-go="league:history"','📜','History','t-k'],['data-go="league:h2h"','⚔️','Rivals','t-g'],
-    ['data-wk="'+hw+'"','📅','Weekly results','t-b'],['data-twih="1"','🕰️','This week in history','t-y'],['data-go="league:lab"','🧪','Lab','t-r']]
+  h+='<section class="block"><div class="bh"><div><div class="kicker">Shortcuts</div><h2>Explore</h2></div></div><div class="jump">'+
+   [['data-twih="1"','🕰️','This week in history','t-y'],['data-go="league:awards"','🏆','Awards','t-y'],['data-go="records"','📚','Record book','t-r']]
     .map(function(j){return '<button type="button" class="jt '+j[3]+'" '+j[0]+'><span>'+j[1]+'</span><b>'+j[2]+'</b></button>'}).join('')+'</div></section>';
   return h+foot();
 }
