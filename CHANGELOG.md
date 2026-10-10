@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — **v2.1 Live Game Center**: tap any game on Home for both lineups player by player (points, projected final, NFL game clock + score, injury tags, empty slots, benches, what the trailing team needs), refreshes every minute; Home scores show 0.00 before a team plays (projection underneath). (Claude)
 - 2026-10-10 — Home This week: the team that's ahead shows its score in green; "Upset brewing" goes only on the single biggest upset of the week. (Claude)
 - 2026-10-10 — Home: "Upset brewing" only after both teams have started, so a few Thursday points can't tag a game the other team hasn't played yet. (Grok)
 - 2026-10-10 — Home part 4: This week is one game per row (your game left off, closest first, projections instead of 0.00, tags for the all-time series, Final, and Upset brewing). Last week gets a one-sentence recap. Explore shrinks to This week in history, Awards, and the Record book. (Grok)

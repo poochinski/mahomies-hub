@@ -2,7 +2,7 @@
 // scores so far, live/final points and current starters.
 import { sleeper, getPlayers } from '../sleeper/client.js';
 import { LEAGUE_ID } from '../config.js';
-import { kickoffs } from './kickoffs.js';
+import { kickoffs, kickShort } from './kickoffs.js';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -22,7 +22,8 @@ export async function league({ fresh = false } = {}) {
     P: Number(st.playoff_week_start) || 15, lastScored: Number(st.last_scored_leg) || 0,
     nflWeek: Number(state.week) || 0, nflSeason: String(state.season), seasonType: state.season_type,
     owner, teams, active: Object.keys(owner).map((r) => owner[r]).filter(Boolean),
-    scoring: lg.scoring_settings || {}
+    scoring: lg.scoring_settings || {},
+    slots: (lg.roster_positions || []).filter((x) => x !== 'BN' && x !== 'IR' && x !== 'TAXI')
   };
 }
 
@@ -219,4 +220,53 @@ export async function playerPoints(L, week, maxAgeMs = 0) {
   const out = {};
   for (const m of ms) for (const [pid, v] of Object.entries(m.players_points || {})) out[String(pid)] = Number(v || 0);
   return out;
+}
+
+// ---------- Live Game Center (v2.1) ----------
+// One fantasy matchup, player by player: points, Sleeper projection (live: points + projection for the
+// part of his NFL game still to play), NFL game status/score, injury tag, plus each bench. No odds.
+export async function gameCenter(week, matchupId) {
+  const L = await league();
+  const w = Number(week) || L.nflWeek;
+  const [k, ms, players, proj] = await Promise.all([
+    kickoffs(L.season, w, { maxAgeMs: 45 * 1000 }).catch(() => ({ gameOf: {}, games: [] })),
+    matchups(L.leagueId, w, 45 * 1000), getPlayers().catch(() => ({})), projections(L, w)]);
+  const pair = ms.filter((m) => String(m.matchup_id) === String(matchupId));
+  if (pair.length !== 2) return { week: w, error: 'Matchup not found' };
+  const teamOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? pid : players[pid]?.t || '');
+  const posOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? 'DEF' : players[pid]?.p || '');
+  const player = (m, pid, slot) => {
+    pid = String(pid || '');
+    if (!pid || pid === '0') return { slot, empty: true };
+    const nfl = teamOf(pid), g = k.gameOf?.[nfl], got = Number((m.players_points || {})[pid] || 0), pj = proj[pid];
+    const prog = g ? g.progress : 1, state = g ? g.state : 'bye';
+    const opp = g ? (g.teams.find((t) => t !== nfl) || '') : '';
+    let status = 'Bye';
+    if (g && g.state === 'pre') status = kickShort(g.at);
+    else if (g && g.state === 'in') status = g.detail || 'Live';
+    else if (g) status = 'Final';
+    return {
+      slot, pid, name: players[pid]?.n || pid, pos: posOf(pid), nfl, inj: players[pid]?.i || null,
+      pts: Math.round(got * 100) / 100, proj_full: pj ?? null,
+      proj: !g ? Math.round(got * 10) / 10 : pj == null ? null : Math.round((got + pj * (1 - prog)) * 10) / 10,
+      state, status, opp: opp ? (g.home === nfl ? 'vs ' : '@ ') + opp : '',
+      nfl_score: g && g.state !== 'pre' && opp ? `${nfl} ${g.score?.[nfl] ?? 0}–${g.score?.[opp] ?? 0} ${opp}` : '',
+      sc: g && g.state !== 'pre' && opp ? `${g.score?.[nfl] ?? 0}–${g.score?.[opp] ?? 0}` : ''
+    };
+  };
+  const side = (m) => {
+    const starters = (m.starters || []).map((pid, i) => player(m, pid, L.slots[i] || 'FLEX'));
+    const set = new Set((m.starters || []).map(String));
+    const bench = (m.players || []).filter((p) => !set.has(String(p))).map((pid) => player(m, pid, 'BN')).sort((a, b) => (b.pts - a.pts) || ((b.proj_full || 0) - (a.proj_full || 0)));
+    const live = starters.filter((p) => !p.empty);
+    const projSum = live.reduce((a, p) => a + (p.proj ?? p.pts), 0);
+    return {
+      user: L.owner[m.roster_id], team: L.teams[L.owner[m.roster_id]]?.team || '', pts: Math.round(pts(m) * 100) / 100,
+      proj: Math.round(projSum * 10) / 10,
+      playing: live.filter((p) => p.state === 'in').length, left: live.filter((p) => p.state === 'pre').length,
+      done: live.filter((p) => p.state === 'post' || p.state === 'bye').length,
+      starters, bench
+    };
+  };
+  return { week: w, matchup_id: Number(matchupId), updated: new Date().toISOString(), a: side(pair[0]), b: side(pair[1]) };
 }

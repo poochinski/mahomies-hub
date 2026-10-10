@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import { buildHub } from '../hub/build.js';
 import { kickoffs, describeWeek } from '../book/kickoffs.js';
-import { homeCard } from '../book/data.js';
+import { homeCard, gameCenter } from '../book/data.js';
 import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
@@ -53,6 +53,13 @@ router.get('/pulse', async (_req, res) => {
     console.error('pulse failed', err.message);
     res.json(blank);
   }
+});
+
+// GET /api/live/:week/:mid — Live Game Center for one matchup (player by player). Polled about once a minute.
+router.get('/live/:week/:mid', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { res.json(await gameCenter(req.params.week, req.params.mid)); }
+  catch (err) { console.error('live failed', err.message); res.status(500).json({ error: err.message }); }
 });
 
 export default router;

@@ -27,7 +27,10 @@ export async function kickoffs(season, week, { maxAgeMs = 30 * 60 * 1000 } = {})
       teams: (e.competitions?.[0]?.competitors || []).map((c) => { const t = c.team?.abbreviation || ''; return FIX[t] || t; }),
       state: e.status?.type?.state || 'pre', // pre | in | post
       period: Number(e.status?.period) || 0,
-      clock: Number(e.status?.clock ?? 900)
+      clock: Number(e.status?.clock ?? 900),
+      detail: e.status?.type?.shortDetail || '', // "Q3 8:12", "Final", "Halftime"…
+      home: (() => { const c = (e.competitions?.[0]?.competitors || []).find((x) => x.homeAway === 'home'); const t = c?.team?.abbreviation || ''; return FIX[t] || t; })(),
+      score: Object.fromEntries((e.competitions?.[0]?.competitors || []).map((c) => { const t = c.team?.abbreviation || ''; return [FIX[t] || t, Number(c.score) || 0]; }))
     })).filter((g) => !Number.isNaN(g.at.getTime()));
     // How much of each game has been played (0 = not started, 1 = final).
     for (const g of games) {

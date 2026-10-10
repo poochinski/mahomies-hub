@@ -77,7 +77,7 @@ function warnLine(s){if(!s)return '';var bits=s.warn.map(function(w){return esc(
   return bits.length?'<div class="yg-warn">⚠️ Lineup check: '+bits.join(' · ')+' <span>Fix it in Sleeper.</span></div>':''}
 function ygScore(s){
   if(!s)return '<b class="yg-s num">0.00</b>';
-  if(!s.on&&s.proj!=null)return '<div class="yg-sc"><b class="yg-s num dim">'+f1(s.proj)+'</b><small>proj</small></div>';
+  if(!s.on)return '<div class="yg-sc"><b class="yg-s num dim">'+f2(s.pts||0)+'</b>'+(s.proj!=null?'<small>proj '+f1(s.proj)+'</small>':'')+'</div>';
   var sub=s.on&&!s.fin&&s.proj!=null?'<small>proj '+f1(s.proj)+'</small>':(s.fin?'<small>final</small>':'');
   return '<div class="yg-sc"><b class="yg-s num">'+f2(s.pts)+'</b>'+sub+'</div>';
 }
@@ -133,13 +133,47 @@ function thisWeek(){
   var best=null;built.forEach(function(r){if(r.up>0&&(!best||r.up>best.up))best=r});
   if(best)best.tags.push('<span class="tw-tag tw-tag-up">Upset brewing</span>');
   built.forEach(function(r){r.html=r.head+(r.tags.length?'<div class="tw-tags">'+r.tags.join('')+'</div>':'')+'</button>'});
-  return '<section class="panel tight"><div class="ph"><div><div class="kicker">'+(me?'The other games':'Every game')+' · tap for preview</div><h2>This week</h2></div></div><div class="tw-list">'+built.map(function(r){return r.html}).join('')+'</div></section>';
+  return '<section class="panel tight"><div class="ph"><div><div class="kicker">'+(me?'The other games':'Every game')+' · tap for the live game</div><h2>This week</h2></div></div><div class="tw-list">'+built.map(function(r){return r.html}).join('')+'</div></section>';
 }
 function recapOne(s,w){
   var ws=weekScores(s,w);if(!ws.length)return '';
   var top=ws[0],low=ws[ws.length-1];
   return '<p class="tw-recap"><b>'+esc(tnS(s,top.u))+'</b> led the week with '+f2(top.p)+', while <b>'+esc(tnS(s,low.u))+'</b> brought up the rear at '+f2(low.p)+'.</p>';
 }
+/* ---------- LIVE GAME CENTER (v2.1): one matchup, player by player. Fantasy only, no odds. ---------- */
+var GC={id:null,data:null,timer:null};
+function gcOpen(id){GC.id=id;GC.data=null;openSheet(gcHtml());gcLoad();clearInterval(GC.timer);
+  GC.timer=setInterval(function(){if(!document.getElementById('gc')||!$('#sheet').classList.contains('open')){clearInterval(GC.timer);GC.timer=null;return}if(document.visibilityState==='visible')gcLoad()},60*1000)}
+function gcLoad(){var m=/^w(\d+)m(\d+)$/.exec(GC.id||'');if(!m)return;var id=GC.id;
+  fetch('/api/live/'+m[1]+'/'+m[2],{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(GC.id!==id)return;GC.data=d;var el=document.getElementById('gc');if(el)el.outerHTML=gcHtml()})
+   .catch(function(){var el=document.getElementById('gcErr');if(el)el.textContent='Couldn\'t reach Sleeper just now. Trying again in a minute.'})}
+function gcState(p){if(p.state==='in')return 'live';if(p.state==='post')return 'fin';if(p.state==='bye')return 'bye';return 'pre'}
+function gcCell(p,side){if(!p)return '<div class="gc-p '+side+'"></div>';if(p.empty)return '<div class="gc-p '+side+' gc-empty"><b>Empty slot</b><span>no player</span></div>';
+  var st=gcState(p),inj=p.inj&&st==='pre'&&/^(out|ir|doubt|sus|pup|na|q)/i.test(p.inj)?'<em class="gc-inj">'+esc(String(p.inj).toUpperCase().slice(0,4))+'</em>':'';
+  return '<div class="gc-p '+side+'"><b>'+esc(p.name)+'</b><span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+'</span><span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+((p.sc||p.nfl_score)&&st!=='pre'?' · '+esc(p.sc||p.nfl_score):'')+inj+'</span></div>'}
+function gcPts(p,side,hi){if(!p||p.empty)return '<div class="gc-v '+side+'"></div>';var st=gcState(p);
+  return '<div class="gc-v '+side+(hi?' hi':'')+'"><b class="num">'+f1(p.pts)+'</b>'+(st!=='fin'&&st!=='bye'&&p.proj!=null?'<small>'+f1(p.proj)+'</small>':'')+'</div>'}
+function gcNeed(X,Y){var left=X.playing+X.left;if(!left)return '';var est=(Y.playing+Y.left)?Y.proj:Y.pts,need=est-X.pts;if(need<=0||X.proj>=est)return '';
+  var rest=Math.max(0,X.proj-X.pts),names=X.starters.filter(function(p){return !p.empty&&(p.state==='pre'||p.state==='in')}).map(function(p){return p.name.split(' ').slice(-1)[0]});
+  return '<p class="gc-need"><b>'+esc(team(X.user))+'</b> needs <b class="num">'+f1(need)+'</b> more'+((Y.playing+Y.left)?' to pass '+esc(team(Y.user))+'\'s projection':' to win')+' · '+left+' left'+(names.length&&names.length<=4?' ('+esc(names.join(', '))+')':'')+', projected <b class="num">'+f1(rest)+'</b></p>'}
+function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})||{};
+  var h='<div id="gc"><div class="ph" style="margin:0 0 8px"><div><div class="kicker">Week '+((d&&d.week)||D.league.week)+' · Game center'+(d&&(d.a.playing+d.b.playing)?' · <span class="live"><i></i>Live</span>':'')+'</div><h2>'+(d&&d.a?esc(team(d.a.user))+' vs '+esc(team(d.b.user)):L.a?esc(team(L.a))+' vs '+esc(team(L.b)):'This matchup')+'</h2></div></div>';
+  if(!d)return h+'<p class="muted">Loading the lineups from Sleeper…</p></div>';
+  if(d.error)return h+'<p class="err">'+esc(d.error)+'</p></div>';
+  var A=d.a,B=d.b,started=A.playing+A.done+B.playing+B.done>0,lead=started&&A.pts!==B.pts?(A.pts>B.pts?'a':'b'):'';
+  var tb=function(X,k){return '<div class="gc-tb '+k+(lead===k?' lead':'')+'">'+av(X.user,34)+'<b class="gc-tn">'+esc(team(X.user))+'</b><span class="gc-big num">'+f2(X.pts)+'</span><small>proj '+f1(X.proj)+'</small><small class="gc-pl">'+(X.playing?X.playing+' playing · ':'')+X.left+' left</small></div>'};
+  h+='<div class="gc-sb">'+tb(A,'a')+'<span class="gc-vs">vs</span>'+tb(B,'b')+'</div>'+gcNeed(A,B)+gcNeed(B,A);
+  h+='<div class="gc-rows"><div class="gc-r gc-hd"><span>'+esc(team(A.user))+'</span><span></span><span></span><span></span><span>'+esc(team(B.user))+'</span></div>';
+  var n=Math.max(A.starters.length,B.starters.length);
+  for(var i=0;i<n;i++){var a=A.starters[i],b=B.starters[i],ap=a&&!a.empty?a.pts:-1,bp=b&&!b.empty?b.pts:-1;
+    h+='<div class="gc-r">'+gcCell(a,'a')+gcPts(a,'a',ap>bp&&ap>0)+'<span class="gc-slot">'+esc(((a||b).slot||'').replace('SUPER_FLEX','SF').replace('FLEX','FLX').replace('REC_FLEX','RFX').replace('WRRB_FLEX','W/R'))+'</span>'+gcPts(b,'b',bp>ap&&bp>0)+gcCell(b,'b')+'</div>'}
+  h+='</div><p class="gc-key">Big number = points so far · small = projected final (points + Sleeper\'s projection for the rest of his game)</p>';
+  var bench=function(X){var tot=X.bench.reduce(function(s,p){return s+(p.pts||0)},0);return '<details class="gc-bench"><summary>'+esc(team(X.user))+' bench · '+f1(tot)+' pts</summary>'+
+    X.bench.map(function(p){return '<div class="gc-br">'+gcCell(p,'a')+gcPts(p,'b',false)+'</div>'}).join('')+'</details>'};
+  h+=bench(A)+bench(B);
+  h+='<p class="gc-up" id="gcErr">Updated '+new Date(d.updated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' · refreshes every minute</p>';
+  h+='<button type="button" class="ghost" data-gcprev="'+GC.id+'" style="width:100%;margin-top:6px">Matchup preview &amp; history</button>';
+  return h+CLOSE.replace(/^/,'')+'</div>'}
 /* ---------- Book math ---------- */
 function line(id){return D.lines.find(function(l){return l.id===id})}
 /* ---------- HOME ---------- */
@@ -160,7 +194,7 @@ function home(){
     if(!sOpp)sOpp={pts:mineA?my.live_b:my.live_a,proj:null,now:0,left:0,on:true,fin:false};
     var pick=savedTeam()?'':'<button type="button" class="yg-pick" data-tab="me">Pick your team</button>';
     h+='<div class="yourgame">'+pick+
-     '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+
+     '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for the live game</div>'+
      '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
      '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span>'+ygMeta(sOpp)+'</div>'+ygScore(sOpp)+'</div>'+
      '</button>'+(savedTeam()?warnLine(sg?sMe:null)+medianLine(me):'')+'</div>';
@@ -1585,7 +1619,8 @@ document.addEventListener('click',function(e){
   if(d.twih){openSheet(twihSheet()+CLOSE);return}
   if(d.rec){closeSheetQuiet();S.rec=d.rec;S.recMore=false;render();centerChip('[data-rec="'+S.rec+'"]');return}
   if(d.pair){var pp=d.pair.split('|');S.h2a=pp[0];S.h2b=pp[1];render();var el=document.getElementById('rivalTop');if(el)el.scrollIntoView({block:'start'});return}
-  if(d.prev){openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE);return}
+  if(d.prev){if(S.tab!=='book'&&LIVE&&/^w\d+m\d+$/.test(d.prev)){gcOpen(d.prev);return}openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE);return}
+  if(d.gcprev){openSheet(previewSheet(d.gcprev,false)+CLOSE);return}
   if(d.season){S.ss=d.season;S.sw=null;openSheet(seasonSheet(d.season)+CLOSE);return}
   if(d.sweek){var sp=d.sweek.split('|');S.sw=+sp[1];var keep=$('#sheet').scrollTop;openSheet(seasonSheet(sp[0])+CLOSE);$('#sheet').scrollTop=keep;return}
   if(d.shareRec){shareRecord();return}

@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 11:45 (Pacific) · **AI:** Claude
-**Current phase:** v2.0 Home rework — parts 1–4 live; next is the Live Game Center (2.1)
-**Last commit:** "Home This week: leader in green, one Upset brewing tag"
+**Last updated:** 2026-10-10 12:10 (Pacific) · **AI:** Claude
+**Current phase:** v2.1 Live Game Center live; next is 2.2 Sportsbook batch 2 (before Tue Oct 13, 6 AM PT)
+**Last commit:** "v2.1 Live Game Center + 0.00 before kickoff"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,10 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.1 Live Game Center** (Claude, Jayson said go).
+  - Jayson: before a team plays, show **0.00** (not the projection) on Your game and This week; the projection stays small underneath (`ygScore`).
+  - Tapping Your game or a This week row (Home/League, not the Book) opens the Game Center sheet (`gcOpen` in app.js; Book still opens the betting preview). Header scoreboard (points, projected final, playing/left, leader in green), a "needs X more" line for the team projected to lose (Monday night: "to win"), every starter side by side by slot (name, pos · NFL team, vs/@ opponent, game status: kickoff time / live clock + NFL score / Final / Bye, injury tag, empty slots in red), points big + projected final small, both benches, "Matchup preview & history" button (old preview), refreshes every 60 s while open.
+  - Server: `GET /api/live/:week/:mid` → `gameCenter()` in server/book/data.js (Sleeper matchups + projections + ESPN). `kickoffs()` now also keeps ESPN `detail` (clock text), `home`, `score`. `league()` has `slots` (roster_positions without BN/IR/TAXI). CSS prefix `gc-`.
 - 2026-10-10 — **This week tweaks** (Claude, Jayson asked): leader's score in green (`twLeader`: final score when both done, points once anyone has played, nobody before kickoff). "Upset brewing" only on the week's single biggest upset (`upsetOn` now returns a size = win gap, ties broken by point lead; `thisWeek()` tags the max). Reviewed Grok's Home part 4: good, kept as is.
 - 2026-10-10 — **Home part 4** (Grok). Jayson said go on the proposal.
   - This week: one full-width row per game, your game left off when a team is picked on this phone, tightest gap first. Gap is the projected final while the game is still going, the real margin once both lineups are done. Finished games sit under games that aren't done. Scores use the same pulse numbers as the card (proj before they play, points plus proj while they're playing, final when both are done). No spreads, odds, or win %.
@@ -43,7 +47,7 @@ Where things stand (Grok, 2026-10-10):
 - Nothing half-done.
 
 ## Next steps (in order)
-1. **2.1 Live Game Center** (player by player: pts, live proj, game status, "needs X" Monday night).
+1. ~~2.1 Live Game Center~~ done. Ideas for later: highlight players currently on the field, show big plays, push alerts.
 2. **2.2 Sportsbook batch 2** before **Tue Oct 13, 6 AM PT** lines (weekly specials, best bettor, Sportsbook Champion). First real settlement **Wed Oct 21, 3 AM PT**.
 3. Jayson: confirm Gridiron Gold sound on a real iPhone.
 
