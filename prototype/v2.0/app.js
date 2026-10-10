@@ -33,8 +33,32 @@ var S={tab:'home',lseg:'season',rec:'high',rf:'all',resMore:false,recMore:false,
 S.h2a=S.me;
 /* On Railway the page sits next to our server: turn on live lineups + real avatars. */
 var LIVE=false;
-try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render();loadHub();loadPulse();bookLoad()}}).catch(function(){})}catch(e){}
+try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render();loadHub();loadPulse();loadWire();bookLoad()}}).catch(function(){})}catch(e){}
 
+/* League Wire (v2.3): trades, waivers and adds this season. */
+var WIRE=null;
+function loadWire(){fetch('/api/wire',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.moves)return;var was=!!WIRE;WIRE=j;if(S.tab==='home'&&!$('#sheet').classList.contains('open'))render()}).catch(function(){})}
+function wireNames(list){return list.map(function(p){return '<b class="plk" data-pl="'+esc(p.id)+'">'+esc(p.name)+'</b>'}).join(', ')}
+function wireRow(x){
+  var head,body='';
+  if(x.type==='trade'){var a=x.sides[0],b=x.sides[1]||null;
+    head='<span class="wr-ic">🤝</span><span class="wr-h">Trade · <b data-team="'+a.uid+'" class="wr-t">'+esc(team(a.uid))+'</b>'+(b?' ⇄ <b data-team="'+b.uid+'" class="wr-t">'+esc(team(b.uid))+'</b>':'')+'</span>';
+    var lead=b&&(a.value||b.value)&&a.value!==b.value?(a.value>b.value?a.uid:b.uid):null;
+    body=x.sides.map(function(sd){return '<div class="wr-side">'+av(sd.uid,18)+'<div><span class="wr-got">'+esc(team(sd.uid))+' got '+(sd.got.length?wireNames(sd.got):'')+(sd.picks.length?(sd.got.length?' + ':'')+esc(sd.picks.join(', ')):'')+(!sd.got.length&&!sd.picks.length?'nothing':'')+'</span>'+
+      (sd.got.length?'<span class="wr-val">'+f1(sd.value)+' pts in the lineup since'+(lead===sd.uid?' <em>winning so far</em>':'')+'</span>':'')+'</div></div>'}).join('');
+  } else {var sd=x.sides[0];
+    head='<span class="wr-ic">'+(x.type==='waiver'?'📋':'➕')+'</span><span class="wr-h"><b data-team="'+sd.uid+'" class="wr-t">'+esc(team(sd.uid))+'</b> '+(sd.got.length?(x.type==='waiver'?'claimed ':'added ')+wireNames(sd.got):'dropped '+wireNames(sd.gave))+(x.bid!=null&&sd.got.length?' <span class="wr-bid">$'+x.bid+'</span>':'')+'</span>';
+    if(sd.got.length)body='<div class="wr-sub">'+(sd.gave.length?'Dropped '+wireNames(sd.gave)+' · ':'')+(sd.value||sd.got.some(function(p){return p.starts})?f1(sd.value)+' pts in the lineup since':'Hasn\'t started yet')+'</div>';
+  }
+  return '<div class="wr"><div class="wr-top">'+head+'<span class="wr-wk">Wk '+x.week+'</span></div>'+body+'</div>'}
+function wireHome(){if(!WIRE||!WIRE.moves.length)return '';
+  return '<section class="panel tight"><div class="ph"><div><div class="kicker">Trades, waivers, adds · '+WIRE.season+'</div><h2>League Wire</h2></div><button class="link" data-wire="1">All '+WIRE.total+' →</button></div>'+WIRE.moves.slice(0,4).map(wireRow).join('')+'</section>'}
+function wireSheet(){var W=WIRE;if(!W)return '<p class="muted">Loading…</p>';
+  var spend=Object.keys(W.faab||{}).map(function(u){return {u:u,v:W.faab[u]}}).sort(function(a,b){return b.v-a.v});
+  var h='<section class="hero"><div class="eyebrow">'+W.season+' · through Week '+W.scored_thru+'</div><h1>League Wire</h1><div class="tm-stats"><div><b class="num">'+W.total+'</b><small>moves</small></div><div><b class="num">'+W.trades+'</b><small>trades</small></div><div><b class="num">'+W.waivers+'</b><small>claims</small></div><div><b class="num">'+(W.top_bid?'$'+W.top_bid.bid:'–')+'</b><small>top bid</small></div></div>'+
+   '<p class="sub" style="font-size:12px">"In the lineup since" counts only points a player scored as a starter for his new team, from the week of the move.</p></section>';
+  if(spend.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">Waiver budget spent</div><h2>FAAB</h2></div></div><div class="rows">'+spend.map(function(x){return '<div class="row">'+whoT(x.u,'',24)+'<span class="val" style="font-size:15px">$'+x.v+'</span></div>'}).join('')+'</div></section>';
+  return h+'<section class="panel tight">'+W.moves.map(wireRow).join('')+'</section>'}
 function loadHub(){
   fetch('/api/hub',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
     if(!j||!j.league||!j.seasons)return;
@@ -43,7 +67,7 @@ function loadHub(){
     render();
   }).catch(function(){});
 }
-setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&!$('#sheet').classList.contains('open'))loadHub()},3*60*1000);
+setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&!$('#sheet').classList.contains('open')){loadHub();loadWire()}},3*60*1000);
 /* Home "Live" is an NFL game in progress, not "the server answered". Polled once a minute. */
 var PULSE=null;
 function loadPulse(){
@@ -194,7 +218,8 @@ function nav(f){if($('#sheet').classList.contains('open')){var b=$('#sheetBody')
 function shBack(){var s=SH.pop();if(!s)return;openSheet(s.html);$('#sheet').scrollTop=s.top;var q=document.getElementById('srQ');if(q)q.value=SR.q;
   if(s.gc){GC.id=s.gc;gcLoad();clearInterval(GC.timer);GC.timer=setInterval(function(){if(!document.getElementById('gc')||!$('#sheet').classList.contains('open')){clearInterval(GC.timer);GC.timer=null;return}if(document.visibilityState==='visible')gcLoad()},60*1000)}}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl)return;e.stopPropagation();e.preventDefault();nav(function(){plOpen(t.dataset.pl)})},true);
-document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bsh],[data-shback]');if(!t)return;e.stopPropagation();
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bsh],[data-shback],b[data-team]');if(!t)return;e.stopPropagation();
+  if(t.dataset.team){var u=t.dataset.team;nav(function(){teamOpen(u)});return}
   if(t.dataset.bsh!=null){nav(function(){openSheet(benchSheet(+t.dataset.bsh))});return}
   if(t.dataset.shback!=null)shBack()},true);
 function plOpen(pid){
@@ -285,6 +310,7 @@ function home(){
      (potw?'<button type="button" class="lw-c t-b" data-game="'+gi(CUR(),hw,potw.u)+'"><small>⭐ Top player</small><strong class="num">'+f2(potw.pts)+'</strong><span>'+esc(potw.name)+'</span></button>':'')+
      '</div></section>';
   }
+  h+=wireHome();
   if(PAST().length)h+='<button type="button" class="twih-go" data-twih="1"><span>🕰️</span><b>Week '+L.week+' in past seasons</b><em>This week in history</em>'+CHEV+'</button>';
   return h+foot();
 }
@@ -1776,6 +1802,7 @@ document.addEventListener('click',function(e){
   if(d.game!==undefined){var gx=+d.game;if(gx>=0){nav(function(){openSheet(gameSheet(gx)+'<button type="button" class="share-btn wide" data-share-game="'+gx+'">Share this game</button>'+CLOSE);loadLineups(gx)});return}}
   if(d.mgr){nav(function(){openSheet(profile(d.mgr,false)+CLOSE)});return}
   if(d.team){nav(function(){teamOpen(d.team)});return}
+  if(d.wire){nav(function(){openSheet(wireSheet()+CLOSE)});return}
   if(d.search){nav(searchOpen);return}
   if(t.id==='closeP'){closeSheet();return}
 });

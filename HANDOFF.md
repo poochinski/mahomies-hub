@@ -16,6 +16,7 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.3 push 3: League Wire** (Claude). `GET /api/wire` (server/team.js `wire()`): every completed trade / waiver / free-agent move this season, newest first; per side: players got (with points scored as a starter for the new team from the move's week through the last scored week), dropped, draft picks; summary (moves, trades, claims, top bid, FAAB by team). Home: `wireHome()` after Last week (latest 4); `data-wire` opens `wireSheet()`. Team names inside Wire rows are `<b data-team>` (handled by the capture listener because they aren't buttons). Loaded with the hub, refreshed every 3 min.
 - 2026-10-10 — **v2.3 push 2: Team page, player search, Back** (Claude).
   - Server `server/team.js`: `GET /api/team/:uid` (current lineup by slot, bench/IR/taxi with season points + starts + how acquired, regular-season schedule incl. future weeks, this season's moves), `GET /api/players/search?q=` (fantasy positions, rostered players float up, owner), `GET /api/wire` (built for push 3). `leagueIndex` is now exported from server/player.js.
   - Client: `teamOpen/teamHtml` (data-team; Standings, Power rankings, Playoff odds rows open it; "Career ›" goes to the old manager page), `searchOpen` (🔍 header button). Sheet history: `nav(fn)` pushes the current sheet before opening a new one, `openSheet` adds ‹ Back (`data-shback`) when there's history, close clears it. The old player-card-only `PLB` is gone. Game Center restarts its timer when you come back to it.
