@@ -10,7 +10,7 @@ const r1 = (n) => Math.round(n * 10) / 10, r2 = (n) => Math.round(n * 100) / 100
 
 // ---------- whole-league index (all seasons): matchups, owners, drafts, transactions ----------
 let IDX = null, IDX_AT = 0, IDX_LOADING = null;
-async function leagueIndex() {
+export async function leagueIndex() {
   if (IDX && Date.now() - IDX_AT < 10 * 60 * 1000) return IDX;
   if (IDX_LOADING) return IDX_LOADING;
   IDX_LOADING = (async () => {

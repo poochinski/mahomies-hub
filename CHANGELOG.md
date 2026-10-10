@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — v2.3 Team page + player search + Back: tap a team in Standings, Power rankings or Playoff odds for its season page (record, every week's score, schedule with results and what's left, roster with season points and how each player was added, moves). 🔍 in the header finds any NFL player and shows who has him. Every pop-up opened from another pop-up now has ‹ Back. (Claude)
 - 2026-10-10 — v2.3 cleanup: Last week recap says what the tiles don't (blowout, nail-biter, upset, record); Explore replaced by one This week in history row; League menu is a chip row (Records lives in its tab); Power rankings no longer repeat the record; History starts with the current season; 💵 button says Book when logged out; game scores 2 decimals; removed the unused React app, Vite build and dead code/CSS. (Claude)
 - 2026-10-10 — Yahoo import parked for now (Yahoo still refuses access); notes in HANDOFF. (Claude)
 - 2026-10-10 — Yahoo connect now asks Yahoo for Fantasy Sports read access by name (scope fspt-r). (Claude)

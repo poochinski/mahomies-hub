@@ -5,6 +5,7 @@ import { buildHub } from '../hub/build.js';
 import { kickoffs, describeWeek } from '../book/kickoffs.js';
 import { homeCard, gameCenter } from '../book/data.js';
 import { playerProfile } from '../player.js';
+import { teamPage, playerSearch, wire } from '../team.js';
 import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
@@ -67,6 +68,24 @@ router.get('/live/:week/:mid', async (req, res) => {
 router.get('/player/:pid', async (req, res) => {
   try { res.json(await playerProfile(req.params.pid)); }
   catch (err) { console.error('player failed', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/team/:uid — this season for one team (roster, schedule, moves).
+router.get('/team/:uid', async (req, res) => {
+  try { res.json(await teamPage(String(req.params.uid))); }
+  catch (err) { if (err.status !== 404) console.error('team failed', err.message); res.status(err.status || 500).json({ error: err.message }); }
+});
+
+// GET /api/players/search?q= — any NFL player, with who has him in the league.
+router.get('/players/search', async (req, res) => {
+  try { res.json(await playerSearch(String(req.query.q || ''))); }
+  catch (err) { console.error('search failed', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/wire — League Wire: this season's trades, waivers and adds.
+router.get('/wire', async (req, res) => {
+  try { res.json(await wire({ limit: Math.min(100, Number(req.query.limit) || 40) })); }
+  catch (err) { console.error('wire failed', err.message); res.status(500).json({ error: err.message }); }
 });
 
 export default router;

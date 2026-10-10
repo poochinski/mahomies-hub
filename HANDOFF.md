@@ -16,6 +16,10 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.3 push 2: Team page, player search, Back** (Claude).
+  - Server `server/team.js`: `GET /api/team/:uid` (current lineup by slot, bench/IR/taxi with season points + starts + how acquired, regular-season schedule incl. future weeks, this season's moves), `GET /api/players/search?q=` (fantasy positions, rostered players float up, owner), `GET /api/wire` (built for push 3). `leagueIndex` is now exported from server/player.js.
+  - Client: `teamOpen/teamHtml` (data-team; Standings, Power rankings, Playoff odds rows open it; "Career ›" goes to the old manager page), `searchOpen` (🔍 header button). Sheet history: `nav(fn)` pushes the current sheet before opening a new one, `openSheet` adds ‹ Back (`data-shback`) when there's history, close clears it. The old player-card-only `PLB` is gone. Game Center restarts its timer when you come back to it.
+  - Local mock Sleeper (Claude's scratchpad) now has rosters, lineups, transactions and a draft so these can be tested.
 - 2026-10-10 — **v2.3 push 1: cleanup** (Claude; Jayson said do the whole audit list now). `recapOne` = blowout + nail-biter + upset + top-3 record (no longer repeats High/Low tiles). Explore → one `.twih-go` row. League `LSEGS` → `.chips.lchips` row (Records removed; it's a tab). Power rankings subtitle = last-3 ppg only. Standings' "2026 weeks" card removed; History view starts with the current season card. Header button shows "Book" when logged out. Last-week tiles 2 decimals. Removed dead `DONE/matchCard/awardCard/oddsBar`, ~85 unused CSS rules, the old React app (`src/`, `index.html`, `vite.config.js`) and Vite/React deps; `npm run build` is gone (Railway just runs `npm start`).
 - 2026-10-10 — **Yahoo history import, part 1** (Claude). The league played **2021 (10 teams) and 2022 (12 teams) on Yahoo**, PPR both years, then moved to Sleeper (12 teams since). Jayson wants those years in the app.
   - New page **/yahoo** (server-rendered, phone-sized). Actions are commish-only: the page reads the Book login from `localStorage['mh-auth']`.
