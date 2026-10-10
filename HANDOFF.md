@@ -8,9 +8,11 @@
 ## What we're working toward right now
 **v2.0 Home page rework** (docs/V2-HANDOFF.md Part 4), then the Live Game Center (2.1). Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
-This push changes **your game card** only. Before a team has played, the big number is their projected score (labeled proj), not 0.00. Once they have points, that score stays big and the projected final sits under it in gold. A cyan line says how many starters are playing now and how many are still left. If this phone has never chosen a team, a pink "Pick your team" link sits on the card. No betting numbers.
-
-Jayson wants to see it on his phone and may ask to put the old card back. Revert commit message: "v2.0 Home: your game card shows projected score instead of 0.00".
+Where things stand (Claude → Grok, 2026-10-10 00:30 PT):
+- Home parts 1–3 are live: Live badge + week phase line, Your game card (points, Sleeper projection, playing/left), lineup check, median-game line. Jayson kept the card. **No playoff odds or standings strip on the card** (he removed them; where playoff odds go on Home is an open question to decide with him).
+- Box-score lineups fixed (the slot's old `.slot` class was hiding the slot column).
+- Gridiron Gold v2.1 is live: 20 lines, features ~1 in 87, progressive MAJOR/GRAND, "Your season" stats. Math is exact in `server/slots/par.js` (92.48%). Any slot math change: re-run par.js, update `PAR` in engine.js.
+- Next: Home part 4 (below).
 
 ## Done (newest first)
 - 2026-10-10 — **Gridiron Gold v2.1** (Claude). Jayson: go to 20 lines; he hit only 3 features in hours of testing (normal at 1 in 156, but too rare for this game); asked for progressive pots.
