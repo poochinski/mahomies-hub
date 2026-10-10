@@ -9,6 +9,9 @@ import { COMMISH_USER_ID } from '../config.js';
 import { priceWeek, legTerms, gradeLeg, gradeBet, betOdds, money, livePrice, worseThan, swing, propPrice, gradeProp, priceSpecials, gradeSpecial, SPECIAL_MARKETS } from './engine.js';
 import { kickoffs, postTime, settleTime, fmtPT } from './kickoffs.js';
 import * as sl from './data.js';
+import { sleeper } from '../sleeper/client.js';
+import { getHub } from '../hub/cache.js';
+import { HOLD, americanWide } from './engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIN = 60 * 1000;
@@ -40,7 +43,7 @@ async function tx(fn) {
 async function log(kind, detail, by = null) { await q('INSERT INTO book_log(kind, by_user, detail) VALUES ($1,$2,$3)', [kind, by, JSON.stringify(detail ?? null)]).catch(() => {}); }
 
 // ---------- settings ----------
-export const DEFAULTS = { start_week: 6, grant: 1000, min_bet: 10, max_bet: 250, parlay_min_legs: 2, parlay_max_legs: 4, parlay_max_payout: 10000 };
+export const DEFAULTS = { start_week: 6, grant: 1000, min_bet: 10, max_bet: 250, parlay_min_legs: 2, parlay_max_legs: 4, parlay_max_payout: 10000, futures_cap: 250 };
 export async function settings() {
   const rows = await q('SELECT key, value FROM book_settings');
   const s = { ...DEFAULTS };
@@ -174,6 +177,7 @@ export async function postLines(week, { force = false, by = null } = {}) {
     }
     await insertSpecials(c, season, week, priced, k?.first || null);
   });
+  await postFutures(season, week, k?.first || null).catch((e) => console.error('[book] futures', e.message));
   await log('post_lines', { season, week, lines: priced.length, force, sleeper_projections: priced.filter((m) => m.blended).length }, by);
   await refreshLocks(season, week, { fresh: true }).catch(() => {});
   return linesFor(week);
@@ -216,6 +220,102 @@ async function specialsFor(season, week, L) {
     bets: handle.reduce((a, h) => a + h.n, 0) };
 }
 
+// ---------- season futures (v2.3) ----------
+// Repriced every Tuesday with the lines, from the app's 5,000-season simulation (/api/hub odds).
+// Straight bets only, 250 Bucks per person per season (futures_cap), close at the week's first kickoff,
+// graded when the regular season ends (playoffs, #1 seed, Points King, wins) or the title game is final (Champion, Sacko).
+export const FUTURE_MARKETS = ['champ', 'sacko', 'playoffs', 'seed1', 'pking', 'wins'];
+const fuId = (season, week) => `${season}-w${week}-fu`;
+const fuTried = new Map(); // "season|week" -> last attempt (so a failed post isn't retried on every page load)
+async function postFutures(season, week, firstKick) {
+  const [have] = await q('SELECT 1 FROM lines WHERE id=$1', [fuId(season, week)]);
+  if (have) return;
+  if (firstKick && new Date(firstKick) <= now()) return; // too late for this week's board
+  const key = `${season}|${week}`; if (Date.now() - (fuTried.get(key) || 0) < 30 * MIN) return; fuTried.set(key, Date.now());
+  const hub = await getHub({ fresh: true });
+  const list = hub?.odds?.list || [];
+  if (String(hub?.league?.season) !== String(season) || list.length < 4) return;
+  const rows = [];
+  // Off the board when nearly impossible (<0.3%) or when the price would be shorter than -1000 (same rule as moneylines).
+  const add = (market, pick, p, point = null) => { if (p >= 0.003 && p * (1 + HOLD) <= 0.909) rows.push([market, pick, americanWide(p * (1 + HOLD)), point, Math.round(p * 10000) / 10000]); };
+  for (const t of list) {
+    add('champ', t.uid, t.champ ?? 0); add('sacko', t.uid, t.sacko ?? 0); add('seed1', t.uid, t.top ?? 0); add('pking', t.uid, t.pking ?? 0);
+    add('playoffs', `yes:${t.uid}`, t.playoff ?? 0); add('playoffs', `no:${t.uid}`, 1 - (t.playoff ?? 0));
+    if (t.wins_ou) { add('wins', `over:${t.uid}`, t.wins_ou.over, t.wins_ou.line); add('wins', `under:${t.uid}`, 1 - t.wins_ou.over, t.wins_ou.line); }
+  }
+  if (!rows.length) return;
+  const id = fuId(season, week);
+  await tx(async (c) => {
+    await c.query(`INSERT INTO lines(id, season, week, matchup_id, team_a, team_b, roster_a, roster_b, proj_a, proj_b, spread, total, ml_a, ml_b, wp_a, lock_at, note)
+                   VALUES ($1,$2,$3,-1,'*','*',0,0,0,0,0,0,100,100,0.5,$4,'Season futures') ON CONFLICT (id) DO NOTHING`, [id, season, week, firstKick]);
+    for (const r of rows) await c.query('INSERT INTO book_specials(line_id, market, pick, odds, point, prob) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING', [id, ...r]);
+  });
+  await log('post_futures', { season, week, prices: rows.length });
+}
+async function futuresUsed(userId, season) {
+  const [r] = await q(`SELECT COALESCE(SUM(b.stake),0)::float AS used FROM bets b WHERE b.user_id=$1 AND b.season=$2 AND b.status <> 'cancelled'
+                       AND EXISTS (SELECT 1 FROM bet_legs g WHERE g.bet_id=b.id AND g.market = ANY($3))`, [userId, season, FUTURE_MARKETS]);
+  return r.used;
+}
+async function futuresFor(season, week, L) {
+  const [row] = await q('SELECT * FROM lines WHERE id=$1', [fuId(season, week)]);
+  if (!row) return null;
+  const px = await q('SELECT market, pick, odds, point::float, prob::float FROM book_specials WHERE line_id=$1 ORDER BY prob DESC', [row.id]);
+  const s = await settings();
+  const board = {};
+  for (const x of px) {
+    const [side, uid] = x.pick.includes(':') ? x.pick.split(':') : [null, x.pick];
+    (board[x.market] ||= []).push({ pick: x.pick, side, uid, team: L.teams[uid]?.team || '?', odds: x.odds, prob: x.prob, point: x.point });
+  }
+  return { id: row.id, lock_at: row.lock_at, started: !!isStarted(row), status: row.status, cap: s.futures_cap, board };
+}
+const outcomeOf = (pick) => (pick.includes(':') ? pick.split(':') : [null, pick]);
+// Grade open futures once Sleeper has the answers.
+export async function settleFutures() {
+  const L = await sl.league();
+  const legs = await q(`SELECT g.*, l.season FROM bet_legs g JOIN lines l ON l.id=g.line_id WHERE l.matchup_id=-1 AND l.season=$1 AND g.result='open'`, [L.season]);
+  if (!legs.length) return { graded: 0 };
+  const lg = await sleeper(`/league/${L.leagueId}`, { maxAgeMs: 10 * MIN });
+  const median = !!lg.settings?.league_average_match, playoffN = Number(lg.settings?.playoff_teams) || 6;
+  const res = {};
+  if (L.lastScored >= L.P - 1) {
+    // Final regular-season standings: wins (head to head + median game), then points.
+    const W = {}, PF = {};
+    for (let w = 1; w < L.P; w++) {
+      const ms = await sl.matchups(L.leagueId, w, 24 * 60 * MIN);
+      const pts = (m) => Number(m.custom_points ?? m.points ?? 0);
+      const sc = ms.map(pts).sort((a, b) => a - b), n = sc.length, med = n ? (sc[(n - 1) >> 1] + sc[n >> 1]) / 2 : 0;
+      const by = {}; for (const m of ms) { const u = L.owner[m.roster_id]; if (!u) continue; PF[u] = (PF[u] || 0) + pts(m); W[u] = W[u] || 0; if (median && pts(m) > med) W[u]++; if (m.matchup_id != null) (by[m.matchup_id] ||= []).push(m); }
+      for (const pair of Object.values(by)) if (pair.length === 2) { const [a, b] = pair; const ua = L.owner[a.roster_id], ub = L.owner[b.roster_id]; if (pts(a) > pts(b)) W[ua]++; else if (pts(b) > pts(a)) W[ub]++; }
+    }
+    const order = Object.keys(W).sort((a, b) => W[b] - W[a] || PF[b] - PF[a]);
+    const topPF = Math.max(...Object.values(PF)), kings = Object.keys(PF).filter((u) => Math.abs(PF[u] - topPF) < 1e-9);
+    res.playoffs = (u) => order.indexOf(u) < playoffN;
+    res.seed1 = order[0]; res.kings = kings; res.W = W;
+  }
+  try {
+    const wb = await sleeper(`/league/${L.leagueId}/winners_bracket`, { maxAgeMs: 30 * MIN });
+    const lb = await sleeper(`/league/${L.leagueId}/losers_bracket`, { maxAgeMs: 30 * MIN });
+    const f = (wb || []).find((m) => m.p === 1 && m.w != null), t = (lb || []).find((m) => m.p === 1 && m.w != null);
+    if (f) res.champ = L.owner[f.w]; if (t) res.sacko = L.owner[t.w];
+  } catch { /* brackets not set yet */ }
+  const touched = new Set();
+  for (const g of legs) {
+    const [side, u] = outcomeOf(g.pick); let r = null;
+    if (g.market === 'champ' && res.champ) r = res.champ === u ? 'won' : 'lost';
+    else if (g.market === 'sacko' && res.sacko) r = res.sacko === u ? 'won' : 'lost';
+    else if (g.market === 'playoffs' && res.playoffs) r = res.playoffs(u) === (side === 'yes') ? 'won' : 'lost';
+    else if (g.market === 'seed1' && res.seed1) r = res.seed1 === u ? 'won' : 'lost';
+    else if (g.market === 'pking' && res.kings) r = !res.kings.includes(u) ? 'lost' : res.kings.length > 1 ? 'push' : 'won';
+    else if (g.market === 'wins' && res.W) { const x = (res.W[u] || 0) - Number(g.point); r = Math.abs(x) < 1e-9 ? 'push' : (side === 'over' ? x > 0 : x < 0) ? 'won' : 'lost'; }
+    if (!r) continue;
+    await q('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, r]); touched.add(g.bet_id);
+  }
+  for (const b of touched) await gradeOne(b);
+  if (touched.size) await log('settle_futures', { graded: touched.size, champ: res.champ || null, sacko: res.sacko || null });
+  return { graded: touched.size };
+}
+
 // Live state of a week: when each matchup started (its first starter's kickoff),
 // points so far and how much of each lineup is left. Nothing locks: once a game
 // starts, betting continues at live odds (Jayson, 2026-10-09).
@@ -235,7 +335,7 @@ export async function liveWeek(season, week, { fresh = false } = {}) {
   await q('UPDATE book_weeks SET first_kick=$3, last_kick=$4, settle_at=COALESCE(settle_at,$5) WHERE season=$1 AND week=$2 AND settled_at IS NULL',
     [season, week, st.k.first, st.k.last, settleTime(st.k)]);
   if (st.k.first) await q(`UPDATE lines SET lock_at = CASE WHEN locked THEN lock_at ELSE $3 END, locked = locked OR $4, updated_at = now()
-                           WHERE season=$1 AND week=$2 AND matchup_id=0`, [season, week, st.k.first, new Date(st.k.first) <= t]);
+                           WHERE season=$1 AND week=$2 AND matchup_id <= 0`, [season, week, st.k.first, new Date(st.k.first) <= t]);
   // Lines posted before live betting existed have no swing saved; fill it in once.
   const noSd = await q('SELECT id, team_a, team_b FROM lines WHERE season=$1 AND week=$2 AND sd_a IS NULL', [season, week]);
   if (noSd.length) {
@@ -291,13 +391,15 @@ export async function linesFor(week, { season = null } = {}) {
   if (bw && !bw.settled_at) await ensureSpecials(season, week).catch((e) => console.error('[book] specials', e.message));
   const rows = await q('SELECT * FROM lines WHERE season=$1 AND week=$2 AND matchup_id > 0 ORDER BY matchup_id', [season, week]);
   const specials = await specialsFor(season, week, L).catch(() => null);
+  if (bw && !bw.settled_at && season === L.season) await postFutures(season, week, bw.first_kick).catch((e) => console.error('[book] futures', e.message));
+  const futures = await futuresFor(season, week, L).catch(() => null);
   const live = Object.fromEntries(Object.entries(st?.rosters || {}).map(([r, x]) => [r, x.pts]));
   const handle = await q(`SELECT l.line_id, COUNT(*)::int AS n, COALESCE(SUM(b.stake),0)::float AS bucks FROM bet_legs l JOIN bets b ON b.id=l.bet_id
                           WHERE b.season=$1 AND b.week=$2 AND b.status <> 'cancelled' GROUP BY l.line_id`, [season, week]);
   const H = Object.fromEntries(handle.map((h) => [h.line_id, h]));
   return {
     season, week: Number(week),
-    posted_at: bw?.posted_at || null, first_kick: bw?.first_kick || null, settle_at: bw?.settle_at || null, settled_at: bw?.settled_at || null, specials,
+    posted_at: bw?.posted_at || null, first_kick: bw?.first_kick || null, settle_at: bw?.settle_at || null, settled_at: bw?.settled_at || null, specials, futures,
     lines: rows.map((r) => { const p = priceNow(r, st); return {
       id: r.id, matchup_id: r.matchup_id, a: r.team_a, b: r.team_b,
       team_a: L.teams[r.team_a]?.team || '?', team_b: L.teams[r.team_b]?.team || '?',
@@ -352,6 +454,15 @@ function label(leg, line, teams) {
   const nm = (u) => teams[u]?.team || '?';
   const odds = (o) => (o > 0 ? `+${o}` : `${o}`);
   if (leg.market === 'prop') return `${leg.player_name || 'Player'} ${leg.pick === 'over' ? 'over' : 'under'} ${Number(leg.point)} pts`;
+  if (FUTURE_MARKETS.includes(leg.market)) {
+    const [side, u] = outcomeOf(leg.pick);
+    if (leg.market === 'champ') return `Champion: ${nm(u)}`;
+    if (leg.market === 'sacko') return `Sacko: ${nm(u)}`;
+    if (leg.market === 'seed1') return `#1 seed: ${nm(u)}`;
+    if (leg.market === 'pking') return `Points King: ${nm(u)}`;
+    if (leg.market === 'playoffs') return `${nm(u)} ${side === 'yes' ? 'makes' : 'misses'} the playoffs`;
+    if (leg.market === 'wins') return `${nm(u)} ${side} ${Number(leg.point)} wins`;
+  }
   if (leg.market === 'onfire') return `On Fire: ${nm(leg.pick)} top score`;
   if (leg.market === 'icecold') return `Ice Cold: ${nm(leg.pick)} lowest score`;
   if (leg.market === 'lowscore') return `Week's low score ${leg.pick === 'over' ? 'over' : 'under'} ${Number(leg.point)}`;
@@ -376,6 +487,7 @@ export async function placeBet(userId, legsIn, stakeIn) {
   const ids = legsIn.map((l) => String(l.line_id));
   if (new Set(ids).size !== ids.length) throw new BookError('A parlay can only use one pick per fantasy matchup');
 
+  if (legsIn.some((l) => FUTURE_MARKETS.includes(l.market)) && parlay) throw new BookError('Futures are straight bets only');
   const lines = await q('SELECT * FROM lines WHERE id = ANY($1)', [ids]);
   const byId = Object.fromEntries(lines.map((l) => [l.id, l]));
   const weeks = new Set(lines.map((l) => `${l.season}|${l.week}`));
@@ -391,6 +503,20 @@ export async function placeBet(userId, legsIn, stakeIn) {
     const [fresh] = await q('SELECT * FROM lines WHERE id=$1', [String(li.line_id)]);
     const vs = `${L.teams[fresh.team_a]?.team} vs ${L.teams[fresh.team_b]?.team}`;
     if (fresh.status !== 'open') throw new BookError('That game is off the board');
+    if (FUTURE_MARKETS.includes(li.market) || fresh.matchup_id === -1) {
+      if (fresh.matchup_id !== -1 || !FUTURE_MARKETS.includes(li.market)) throw new BookError('Unknown bet type');
+      if (isStarted(fresh)) throw new BookError("Futures are closed until next Tuesday's new prices");
+      const [px] = await q('SELECT odds, point FROM book_specials WHERE line_id=$1 AND market=$2 AND pick=$3', [fresh.id, li.market, String(li.pick)]);
+      if (!px) throw new BookError('That future is off the board');
+      const [side, u] = outcomeOf(String(li.pick));
+      if (u === userId && (li.market === 'sacko' || (li.market === 'playoffs' && side === 'no') || (li.market === 'wins' && side === 'under'))) throw new BookError("You can't bet against yourself");
+      const cap = (await settings()).futures_cap, used = await futuresUsed(userId, season);
+      if (used + stake > cap) throw new BookError(`Futures are capped at ${cap} Bucks a season (you have ${money(Math.max(0, cap - used))} left)`);
+      const terms = { point: px.point != null ? Number(px.point) : null, odds: px.odds, live: false };
+      if (worseThan(li.market === 'wins' ? 'total' : 'ml', side || 'over', { odds: li.odds, point: li.point }, terms)) throw new BookError('Odds moved. Check the new price and place it again.', 409);
+      legs.push({ line: fresh, market: li.market, pick: String(li.pick), ...terms });
+      continue;
+    }
     if (SPECIAL_MARKETS.includes(li.market) || fresh.matchup_id === 0) {
       if (fresh.matchup_id !== 0 || !SPECIAL_MARKETS.includes(li.market)) throw new BookError('Unknown bet type');
       if (!fresh.lock_at) throw new BookError("Can't confirm kickoff times right now. Try again in a minute.", 503);
@@ -496,7 +622,7 @@ export async function me(userId) {
   const ledger = await q('SELECT amount::float, kind, bet_id, note, created_at FROM bankroll_ledger WHERE user_id=$1 AND season=$2 ORDER BY id DESC LIMIT 50', [userId, L.season]);
   return {
     user_id: userId, team: L.teams[userId]?.team || '?', commish: userId === COMMISH_USER_ID, season: L.season,
-    balance: bal, in_play: money(open.reduce((x, b) => x + b.stake, 0)), bets, ledger
+    balance: bal, in_play: money(open.reduce((x, b) => x + b.stake, 0)), bets, ledger, futures_used: await futuresUsed(userId, L.season)
   };
 }
 
@@ -573,6 +699,7 @@ export async function settleWeek(season, week, { force = false, by = null } = {}
   let graded = 0;
   await tx(async (c) => {
     for (const l of lines) {
+      if (l.matchup_id < 0) continue; // season futures settle on their own (settleFutures)
       if (l.matchup_id === 0) {
         const vals = Object.values(scores);
         await c.query("UPDATE lines SET status='final', final_a=$2, final_b=$3, locked=true, updated_at=now() WHERE id=$1", [l.id, vals.length ? Math.max(...vals) : null, vals.length ? Math.min(...vals) : null]);
@@ -619,6 +746,8 @@ export async function tick() {
     try { await settleWeek(d.season, d.week); out.settled.push(d.week); }
     catch (e) { out.errors.push(`settle wk ${d.week}: ${e.message}`); }
   }
+  // 2b) Season futures, once Sleeper has the answers.
+  try { const f = await settleFutures(); if (f.graded) out.futures = f.graded; } catch (e) { out.errors.push(`futures: ${e.message}`); }
   // 3) Keep lock flags current for open weeks.
   const open = await q('SELECT season, week FROM book_weeks WHERE settled_at IS NULL');
   for (const o of open) await refreshLocks(o.season, o.week).catch((e) => out.errors.push(`locks wk ${o.week}: ${e.message}`));

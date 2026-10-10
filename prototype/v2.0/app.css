@@ -887,3 +887,8 @@ td.tm .who .tx>span{font-size:10.5px}
 .sp-row .ob{min-height:40px}
 .sp-ou{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sp-ou .ob{min-height:46px}
 .bb .row .who b{font-size:15px}
+/* v2.3 season futures */
+.fu-cap{font-size:12.5px;color:var(--muted);margin:0 2px 10px}.fu-cap b{color:var(--gold)}
+.fu-row{display:grid;grid-template-columns:minmax(0,1fr) 72px 72px;gap:6px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.sp-grid .fu-row:first-child{border-top:0}
+.fu-row.me .who b{color:var(--gold)}.fu-row .ob{min-height:40px;padding:4px 2px}
+.fu-off{text-align:center;color:var(--faint);font:12px var(--mono)}

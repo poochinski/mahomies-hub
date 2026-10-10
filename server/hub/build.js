@@ -310,8 +310,9 @@ export async function buildHub(leagueId, me) {
       sched.push(Object.values(by).filter((p) => p.length === 2).map(([a, b]) => [idx[U(CUR, a)], idx[U(CUR, b)]]));
     }
     const N = 5000, n = uids.length, playoffN = Number(cur.league.settings?.playoff_teams) || 6;
-    const cnt = uids.map(() => ({ po: 0, bye: 0, top: 0, last: 0, wins: 0 }));
+    const cnt = uids.map(() => ({ po: 0, bye: 0, top: 0, last: 0, wins: 0, champ: 0, sacko: 0, pk: 0, wh: {} }));
     const baseW = curSt.map((t) => t.w), basePF = curSt.map((t) => t.pf);
+    const game = (a, b) => { const x = mu[a] + sd[a] * gauss(), y = mu[b] + sd[b] * gauss(); return x >= y ? [a, b] : [b, a]; }; // [winner, loser]
     for (let s = 0; s < N; s++) {
       const W = baseW.slice(), PF = basePF.slice();
       for (const pairs of sched) {
@@ -322,12 +323,30 @@ export async function buildHub(leagueId, me) {
       }
       const order = uids.map((_, i) => i).sort((a, b) => W[b] - W[a] || PF[b] - PF[a]);
       order.forEach((i, rk) => { const c = cnt[i]; if (rk < playoffN) c.po++; if (rk < 2) c.bye++; if (rk === 0) c.top++; if (rk === n - 1) c.last++; });
-      for (let i = 0; i < n; i++) cnt[i].wins += W[i];
+      for (let i = 0; i < n; i++) { cnt[i].wins += W[i]; cnt[i].wh[W[i]] = (cnt[i].wh[W[i]] || 0) + 1; }
+      let pk = 0; for (let i = 1; i < n; i++) if (PF[i] > PF[pk]) pk = i; cnt[pk].pk++;
+      // Playoffs (this league's bracket): 3v6 and 4v5, then the 1 seed plays the lowest seed left; final.
+      if (n >= 12 && playoffN === 6) {
+        const sd_ = order; // sd_[0] = 1 seed
+        const r1a = game(sd_[2], sd_[5]), r1b = game(sd_[3], sd_[4]);
+        const left = [r1a[0], r1b[0]].sort((a, b) => order.indexOf(a) - order.indexOf(b)); // higher seed first
+        const s1 = game(sd_[0], left[1]), s2 = game(sd_[1], left[0]);
+        cnt[game(s1[0], s2[0])[0]].champ++;
+        // Toilet Bowl, losers advance: 8v9 and 7v10; 12 plays the loser of 8v9, 11 the loser of 7v10; the final's loser takes the Sacko.
+        const t1 = game(sd_[7], sd_[8]), t2 = game(sd_[6], sd_[9]);
+        const u1 = game(sd_[11], t1[1]), u2 = game(sd_[10], t2[1]);
+        cnt[game(u1[1], u2[1])[1]].sacko++;
+      }
     }
-    const games_ = (t) => t.w + t.l;
-    odds = { sims: N, weeks_left: sched.length, list: uids.map((u, i) => ({ uid: u, playoff: Math.round(cnt[i].po / N * 1000) / 1000, bye: Math.round(cnt[i].bye / N * 1000) / 1000,
-      top: Math.round(cnt[i].top / N * 1000) / 1000, last: Math.round(cnt[i].last / N * 1000) / 1000, wins: r1(cnt[i].wins / N),
-      rec: `${curSt[i].w}-${curSt[i].l}`, g: games_(curSt[i]) })).sort((a, b) => b.playoff - a.playoff || b.wins - a.wins) };
+    const games_ = (t) => t.w + t.l, P3 = (x) => Math.round(x / N * 1000) / 1000;
+    // Season wins over/under: the line is the median simulated finish, at x.5 so it can't push.
+    const winsLine = (wh) => { let acc = 0, med = 0; for (const k of Object.keys(wh).map(Number).sort((a, b) => a - b)) { acc += wh[k]; if (acc >= N / 2) { med = k; break; } }
+      const pOver = (line) => { let o = 0; for (const [k, v] of Object.entries(wh)) if (Number(k) > line) o += v; return o; };
+      const a = pOver(med - 0.5), b = pOver(med + 0.5), line = Math.abs(a - N / 2) < Math.abs(b - N / 2) ? med - 0.5 : med + 0.5;
+      return { line, over: P3(pOver(line)) }; };
+    odds = { sims: N, weeks_left: sched.length, list: uids.map((u, i) => ({ uid: u, playoff: P3(cnt[i].po), bye: P3(cnt[i].bye),
+      top: P3(cnt[i].top), last: P3(cnt[i].last), wins: r1(cnt[i].wins / N), champ: P3(cnt[i].champ), sacko: P3(cnt[i].sacko), pking: P3(cnt[i].pk),
+      wins_ou: winsLine(cnt[i].wh), rec: `${curSt[i].w}-${curSt[i].l}`, g: games_(curSt[i]) })).sort((a, b) => b.playoff - a.playoff || b.wins - a.wins) };
   }
 
   // ---------- awards ----------
