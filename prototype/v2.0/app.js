@@ -188,7 +188,9 @@ function gcNeed(X,Y){var left=X.playing+X.left;if(!left)return '';var est=(Y.pla
   var rest=Math.max(0,X.proj-X.pts),names=X.starters.filter(function(p){return !p.empty&&(p.state==='pre'||p.state==='in')}).map(function(p){return p.name.split(' ').slice(-1)[0]});
   return '<p class="gc-need"><b>'+esc(team(X.user))+'</b> needs <b class="num">'+f1(need)+'</b> more'+((Y.playing+Y.left)?' to pass '+esc(team(Y.user))+'\'s projection':' to win')+' · '+left+' left'+(names.length&&names.length<=4?' ('+esc(names.join(', '))+')':'')+', projected <b class="num">'+f1(rest)+'</b></p>'}
 function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})||{};
-  var h='<div id="gc"><div class="ph" style="margin:0 0 8px"><div><div class="kicker">Week '+((d&&d.week)||D.league.week)+' · Game center'+(d&&(d.a.playing+d.b.playing)?' · <span class="live"><i></i>Live</span>':'')+'</div><h2>'+(d&&d.a?esc(team(d.a.user))+' vs '+esc(team(d.b.user)):L.a?esc(team(L.a))+' vs '+esc(team(L.b)):'This matchup')+'</h2></div></div>';
+  // One game page: Preview before anyone plays, Live while players are on the field, Final when both lineups are done.
+  var stage=!d||!d.a?'':(d.a.playing+d.b.playing)?' · <span class="live"><i></i>Live</span>':(d.a.left+d.b.left===0&&(d.a.done+d.b.done)>0)?' · <span class="gc-stage fin">Final</span>':(d.a.done+d.b.done)>0?' · <span class="gc-stage">In progress</span>':' · <span class="gc-stage pre">Preview</span>';
+  var h='<div id="gc"><div class="ph" style="margin:0 0 8px"><div><div class="kicker">Week '+((d&&d.week)||D.league.week)+stage+'</div><h2>'+(d&&d.a?esc(team(d.a.user))+' vs '+esc(team(d.b.user)):L.a?esc(team(L.a))+' vs '+esc(team(L.b)):'This matchup')+'</h2></div></div>';
   if(!d)return h+'<p class="muted">Loading the lineups from Sleeper…</p></div>';
   if(d.error)return h+'<p class="err">'+esc(d.error)+'</p></div>';
   var A=d.a,B=d.b,started=A.playing+A.done+B.playing+B.done>0,lead=started&&A.pts!==B.pts?(A.pts>B.pts?'a':'b'):'';
@@ -203,8 +205,8 @@ function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})
     X.bench.map(function(p){return '<div class="gc-br">'+gcCell(p,'a')+gcPts(p,'b',false)+'</div>'}).join('')+'</details>'};
   h+=bench(A)+bench(B);
   h+='<p class="gc-up" id="gcErr">Updated '+new Date(d.updated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' · refreshes every minute</p>';
-  h+='<button type="button" class="ghost" data-gcprev="'+GC.id+'" style="width:100%;margin-top:6px">Matchup preview &amp; history</button>';
-  return h+CLOSE.replace(/^/,'')+'</div>'}
+  var au=A.user,bu=B.user;if(au&&bu)h+='<div class="gc-story"><div class="kicker" style="margin:14px 0 8px">The matchup</div>'+matchupStory(au,bu)+'</div>';
+  return h+CLOSE+'</div>'}
 /* ---------- PLAYER CARD (v2.2): tap any NFL player's name anywhere ---------- */
 // Headshots from Sleeper's image CDN (team logo for defenses); initials show if the image can't load.
 function plPic(pid,name,sz,pos,espn){pid=String(pid||'');var def=/^[A-Z]{2,3}$/.test(pid)||pos==='DEF';
@@ -1527,7 +1529,7 @@ function teamHtml(uid,d){
   h+='<button type="button" class="link" data-mgr="'+uid+'">Career, trophies &amp; rivalries ›</button></section>';
   // weekly scores
   var X=scores26(uid);if(X.length){var mx=Math.max.apply(null,X.map(function(x){return x.p}).concat([1]));
-    h+='<section class="panel"><div class="ph"><div><div class="kicker">Tap a bar for the game</div><h2>Every week</h2></div></div><div class="form-bars tm-bars" style="grid-template-columns:repeat('+Math.max(4,X.length)+',1fr)">'+X.map(function(x){return '<button type="button" class="fb" data-game="'+gi(CUR(),x.w,uid)+'"><i style="height:'+Math.max(8,x.p/mx*100)+'%"></i><span>'+Math.round(x.p)+'</span><small>W'+x.w+'</small></button>'}).join('')+'</div></section>'}
+    h+='<section class="panel"><div class="ph"><div><div class="kicker">Tap a bar for the game</div><h2>Every week</h2></div></div><div class="form-bars tm-bars">'+X.map(function(x){return '<button type="button" class="fb" data-game="'+gi(CUR(),x.w,uid)+'"><i style="height:'+Math.max(8,x.p/mx*100)+'%"></i><span>'+Math.round(x.p)+'</span><small>W'+x.w+'</small></button>'}).join('')+'</div></section>'}
   if(!d){h+='<section class="panel"><p class="muted" id="tmErr">'+(LIVE?'Loading roster and schedule from Sleeper…':'Roster and schedule load in the live app.')+'</p></section>';return h+CLOSE+'</div>'}
   if(d.error){h+='<section class="panel"><p class="err">'+esc(d.error)+'</p></section>';return h+CLOSE+'</div>'}
   // schedule
@@ -1671,6 +1673,24 @@ function P26(w,u){var t=D.tw[CUR()+'|'+w+'|'+u];return t?t[0]:null}
 function oddsOf(u){return D.odds.list.find(function(o){return o.uid===u})}
 function powOf(u){return D.power.find(function(p){return p.uid===u})}
 function recOf(u){var st=(D.seasons[CUR()].standings||[]).find(function(x){return x.uid===u});return st?st.w+'-'+st.l+' · '+ord(st.seed)+' place':''}
+// The non-betting half of a matchup: form, keys, all-time series, last meeting. Used by the Game page and the Book preview.
+function matchupStory(a,b){
+  var A=scores26(a),B=scores26(b),h='';
+  var avg=function(x){return x.reduce(function(s,y){return s+y.p},0)/Math.max(1,x.length)};
+  var sA=sdOf(A.map(function(x){return x.p})),sB=sdOf(B.map(function(x){return x.p}));
+  var r=D.h2h[a+'|'+b]||{w:0,l:0,games:[]},last=r.games[r.games.length-1],oA=oddsOf(a),oB=oddsOf(b);
+  var formRow=function(u,X){var mx=200;return '<div class="form"><div class="form-h">'+whoS(u,'avg '+f1(avg(X))+' · swing ±'+f1(sdOf(X.map(function(x){return x.p})))+'',26)+'</div><div class="form-bars">'+X.map(function(x){return '<button type="button" class="fb" data-game="'+gi(CUR(),x.w,u)+'"><i style="height:'+Math.max(8,x.p/mx*100)+'%"></i><span>'+Math.round(x.p)+'</span><small>W'+x.w+'</small></button>'}).join('')+'</div></div>'};
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">'+CUR()+' weekly scores · tap a bar</div><h2>Form</h2></div></div>'+formRow(a,A)+formRow(b,B)+'</section>';
+  var keys=[],dAvg=avg(A)-avg(B);
+  keys.push(esc(team(dAvg>=0?a:b))+' has scored '+f1(Math.abs(dAvg))+' more points per week this season.');
+  if(Math.abs(sA-sB)>4)keys.push(esc(team(sA<sB?a:b))+' is the steadier team. '+esc(team(sA<sB?b:a))+' swings more week to week, which makes it the boom-or-bust side.');
+  if(r.games.length)keys.push(r.w===r.l?'The all-time series is tied '+r.w+'-'+r.l+'.':esc(team(r.w>r.l?a:b))+' leads the all-time series '+Math.max(r.w,r.l)+'-'+Math.min(r.w,r.l)+'.');
+  else keys.push('First time these two have ever met.');
+  if(oA&&oB)keys.push('Playoff odds right now: '+esc(team(a))+' '+pct(oA.playoff)+', '+esc(team(b))+' '+pct(oB.playoff)+'.');
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">What to watch</div><h2>Keys to the game</h2></div></div><ul class="keys">'+keys.map(function(k){return '<li>'+k+'</li>'}).join('')+'</ul></section>';
+  if(last){var li=gi(last.s,last.w,a);h+='<section class="panel"><div class="ph"><div><div class="kicker">Last meeting</div><h2>'+sw(last.s,last.w)+'</h2></div></div><button type="button" class="row" data-game="'+li+'" style="grid-template-columns:minmax(0,1fr) auto 10px">'+whoS(last.m>last.o?a:b,(last.m>last.o?'beat ':'beat ')+team(last.m>last.o?b:a),28)+'<span class="val">'+f2(Math.max(last.m,last.o))+'–'+f2(Math.min(last.m,last.o))+'</span>'+CHEV+'</button></section>'}
+  return h;
+}
 function previewSheet(id,fromBook){
   var l=line(id),a=l.a,b=l.b,pa=Math.round(l.wp*100),A=scores26(a),B=scores26(b);
   var avg=function(x){return x.reduce(function(s,y){return s+y.p},0)/Math.max(1,x.length)};
@@ -1685,16 +1705,7 @@ function previewSheet(id,fromBook){
    '<div class="stat"><small>Spread</small><strong>'+esc(team(l.spread>=0?a:b).split(' ')[0])+' '+spr(-Math.abs(l.spread))+'</strong><span>favorite</span></div>'+
    '<div class="stat"><small>Moneyline</small><strong style="font-size:16px">'+odds(l.ml_a)+' / '+odds(l.ml_b)+'</strong><span>'+esc(M(a).name)+' / '+esc(M(b).name)+'</span></div>'+
    '<div class="stat"><small>Total</small><strong>'+f1(l.total)+'</strong><span>points</span></div></div></section>';
-  var formRow=function(u,X){var mx=200;return '<div class="form"><div class="form-h">'+whoS(u,'avg '+f1(avg(X))+' · swing ±'+f1(sdOf(X.map(function(x){return x.p})))+'',26)+'</div><div class="form-bars">'+X.map(function(x){return '<button type="button" class="fb" data-game="'+gi(CUR(),x.w,u)+'"><i style="height:'+Math.max(8,x.p/mx*100)+'%"></i><span>'+Math.round(x.p)+'</span><small>W'+x.w+'</small></button>'}).join('')+'</div></div>'};
-  h+='<section class="panel"><div class="ph"><div><div class="kicker">'+CUR()+' weekly scores · tap a bar</div><h2>Form</h2></div></div>'+formRow(a,A)+formRow(b,B)+'</section>';
-  var keys=[],dAvg=avg(A)-avg(B);
-  keys.push(esc(team(dAvg>=0?a:b))+' has scored '+f1(Math.abs(dAvg))+' more points per week this season.');
-  if(Math.abs(sA-sB)>4)keys.push(esc(team(sA<sB?a:b))+' is the steadier team. '+esc(team(sA<sB?b:a))+' swings more week to week, which makes it the boom-or-bust side.');
-  if(r.games.length)keys.push(r.w===r.l?'The all-time series is tied '+r.w+'-'+r.l+'.':esc(team(r.w>r.l?a:b))+' leads the all-time series '+Math.max(r.w,r.l)+'-'+Math.min(r.w,r.l)+'.');
-  else keys.push('First time these two have ever met.');
-  keys.push('Playoff odds right now: '+esc(team(a))+' '+pct(oA.playoff)+', '+esc(team(b))+' '+pct(oB.playoff)+'.');
-  h+='<section class="panel"><div class="ph"><div><div class="kicker">What to watch</div><h2>Keys to the game</h2></div></div><ul class="keys">'+keys.map(function(k){return '<li>'+k+'</li>'}).join('')+'</ul></section>';
-  if(last){var li=gi(last.s,last.w,a);h+='<section class="panel"><div class="ph"><div><div class="kicker">Last meeting</div><h2>'+sw(last.s,last.w)+'</h2></div></div><button type="button" class="row" data-game="'+li+'" style="grid-template-columns:minmax(0,1fr) auto 10px">'+whoS(last.m>last.o?a:b,(last.m>last.o?'beat ':'beat ')+team(last.m>last.o?b:a),28)+'<span class="val">'+f2(Math.max(last.m,last.o))+'–'+f2(Math.min(last.m,last.o))+'</span>'+CHEV+'</button></section>'}
+  h+=matchupStory(a,b);
   return h;
 }
 
