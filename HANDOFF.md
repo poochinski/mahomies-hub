@@ -16,6 +16,7 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — Jayson: League tab is only for fantasy football; Sportsbook awards stay in the Book. Removed the Sportsbook Champion row from `awardsView`; it's now a card at the top of Book › Leaders (above Best bettor). (Claude)
 - 2026-10-10 — **Season futures** (Claude; Jayson said yes, with a 250-Buck season cap). Sim in server/hub/build.js now also plays the playoff bracket + Toilet Bowl and returns `champ`, `sacko`, `pking`, `wins_ou {line, over}` per team in `odds.list`. `server/hub/cache.js` holds the shared `getHub()` (used by /api/hub and the Book). Book: `postFutures` (after `postLines`; also back-fills the current week before kickoff), `futuresFor` → `linesFor().futures`, `settleFutures` in `tick()`, `futures_used` on /book/me, setting `futures_cap` (250). Client: Specials tab has "This week / Season futures"; `futuresView`, `FUM`, `fuLine`, `fuRow`, `fuName`. Tests (scratchpad `booktest/fut.mjs`): 19 pass; Book 44, specials 25 still pass. NFL stat props (anytime TD) parked as a maybe; yardage = no.
 - 2026-10-10 — **v2.3 shipped** (Claude): footer says v2.3. The pre-v2.3 state is saved on branch `release-v2.2` (commit 014c753) if anything needs rolling back. Seven pushes: cleanup → team page/search/Back → League Wire → Me → tables → one Game page → Sportsbook batch 2 (details below).
 - 2026-10-10 — **v2.3 push 7: Sportsbook batch 2** (Claude; due before Tue Oct 13 6 AM).

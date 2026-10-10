@@ -436,9 +436,7 @@ function awardsView(){
   h+='<section class="hero aw-hero"><div class="eyebrow">'+(s===CUR()?'In progress · through Week '+D.league.last_scored:'Final')+'</div><h1>'+s+' awards</h1>'+info('awards');
   if(champ)h+='<div class="podium2"><button type="button" class="p2 gold" data-mgr="'+champ.uid+'"><span class="p2i">🏆</span>'+av(champ.uid,44)+'<b>'+esc(tnS(s,champ.uid))+'</b><small>Champion</small></button>'+(sacko?'<button type="button" class="p2 poo" data-mgr="'+sacko.uid+'"><span class="p2i">🚽</span>'+av(sacko.uid,44)+'<b>'+esc(tnS(s,sacko.uid))+'</b><small>Sacko</small></button>':'')+'</div>';
   else h+='<p class="sub">Leaders change every week until the season ends.</p>';
-  var bkc='';if(s===CUR()){if(LIVE&&!BK.lb&&!bookBusy)setTimeout(bookLoad,0);var lead=(BK.lb||[]).filter(function(x){return x.joined})[0];
-    if(lead)bkc='<button type="button" class="row aw-row" data-go="book"><span class="aw-ic">💵</span><span class="aw-m"><b>Sportsbook Champion</b><span class="aw-tm">'+av(lead.user_id,18)+esc(team(lead.user_id))+'</span><span class="aw-note">Most Mahomie Bucks (cash + open bets) at the end of the season. '+(s===CUR()?'Leader right now.':'')+'</span></span><span class="aw-vb"><span class="aw-v num">'+money(lead.bankroll)+'</span><small>Bucks</small></span></button>'}
-  h+='</section><section class="panel tight"><div class="rows">'+bkc+A.filter(function(a){return a.key!=='champ'&&a.key!=='sacko'}).map(function(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
+  h+='</section><section class="panel tight"><div class="rows">'+A.filter(function(a){return a.key!=='champ'&&a.key!=='sacko'}).map(function(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
     return '<button type="button" class="row aw-row" '+(gx>=0?'data-game="'+gx+'"':'data-mgr="'+a.uid+'"')+'><span class="aw-ic">'+(AW_ICON[a.key]||'⭐')+'</span><span class="aw-m"><b>'+esc(a.title)+'</b><span class="aw-tm">'+av(a.uid,18)+esc(tnS(s,a.uid))+'</span><span class="aw-note">'+esc(a.note)+'</span></span>'+awVal(a)+'</button>'}).join('')+'</div></section>';
   h+='<button type="button" class="share-btn wide" data-share-aw="'+s+'">Share '+s+' awards</button>';
   return h;
@@ -809,6 +807,8 @@ function book(){
   if(S.bseg==='leaders'){
     var lb=BK.lb||[];
     if(BK.me&&BK.me.commish)h+='<button type="button" class="cta" data-adm="bucks" style="margin:0 0 10px">💵 Commish: add or take away Bucks</button>';
+    var lead=lb.filter(function(x){return x.joined})[0];
+    if(lead)h+='<section class="panel bb"><div class="ph"><div><div class="kicker">'+CUR()+' · most Bucks at season\'s end wins it</div><h2>💵 Sportsbook Champion</h2></div></div><div class="row" style="border-top:0">'+who(lead.user_id,'Leading right now · '+lead.record,36)+'<span class="val">💵 '+money(lead.bankroll)+'</span></div></section>';
     h+=bestBettor();
     h+='<section class="panel"><div class="ph"><div><div class="kicker">Bucks + open bets · season leader = Sportsbook Champion</div><h2>Leaderboard</h2></div></div><div class="rows">'+
      lb.map(function(x){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(x.rank===1&&x.joined?' gold':'')+'">'+x.rank+'</span>'+who(x.user_id,x.joined?x.record+(x.in_play?' · '+money(x.in_play)+' in play':''):'Hasn\'t logged in yet',30)+'<span class="val">💵 '+money(x.bankroll)+'</span></div>'}).join('')+'</div></section>';
