@@ -19,7 +19,6 @@ function gi(s,w,u){for(var i=0;i<D.games.length;i++){var g=D.games[i];if(g.s===s
 function CUR(){return D.league.season}
 function ALLS(){return Object.keys(D.seasons).sort().reverse()}
 function PAST(){return ALLS().filter(function(s){return s!==CUR()&&D.seasons[s].champ})}
-function DONE(){var o=[];for(var w=1;w<=D.league.last_scored;w++)o.push(w);return o}
 var CHEV='<span class="chev" aria-hidden="true">›</span>';
 function f2(n){return Number(n).toFixed(2)}
 function f1(n){return Number(n).toFixed(1)}
@@ -135,10 +134,17 @@ function thisWeek(){
   built.forEach(function(r){r.html=r.head+(r.tags.length?'<div class="tw-tags">'+r.tags.join('')+'</div>':'')+'</button>'});
   return '<section class="panel tight"><div class="ph"><div><div class="kicker">'+(me?'The other games':'Every game')+' · tap for the live game</div><h2>This week</h2></div></div><div class="tw-list">'+built.map(function(r){return r.html}).join('')+'</div></section>';
 }
+// One line the High/Low tiles don't already say: the blowout, the nail-biter, an upset, a record.
 function recapOne(s,w){
-  var ws=weekScores(s,w);if(!ws.length)return '';
-  var top=ws[0],low=ws[ws.length-1];
-  return '<p class="tw-recap"><b>'+esc(tnS(s,top.u))+'</b> led the week with '+f2(top.p)+', while <b>'+esc(tnS(s,low.u))+'</b> brought up the rear at '+f2(low.p)+'.</p>';
+  var gs=weekGames(s,w).map(function(x){return x.g}).filter(function(g){return g.lose});if(!gs.length)return '';
+  var blow=gs.slice().sort(function(a,b){return b.m-a.m})[0],close=gs.slice().sort(function(a,b){return a.m-b.m})[0];
+  var ups=gs.filter(function(g){return w>1&&enteringPct(s,w,g.lose)-enteringPct(s,w,g.win)>=.3})[0];
+  var rec=null;gs.forEach(function(g){gameRecs(g).forEach(function(r){if(r.n<=3&&(!rec||r.n<rec.r.n))rec={g:g,r:r}})});
+  var t='<b>'+esc(tnS(s,blow.win))+'</b> ran away from '+esc(tnS(s,blow.lose))+' by '+f2(blow.m)+'. ';
+  if(close!==blow)t+='Nail-biter: <b>'+esc(tnS(s,close.win))+'</b> edged '+esc(tnS(s,close.lose))+' by '+f2(close.m)+'.';
+  if(ups)t+=' Upset: <b>'+esc(tnS(s,ups.win))+'</b> knocked off '+esc(tnS(s,ups.lose))+'.';
+  if(rec)t+=' Record book: #'+rec.r.n+' all-time '+RN[rec.r.k].toLowerCase()+'.';
+  return '<p class="tw-recap">'+t+'</p>';
 }
 /* ---------- LIVE GAME CENTER (v2.1): one matchup, player by player. Fantasy only, no odds. ---------- */
 var GC={id:null,data:null,timer:null};
@@ -244,7 +250,7 @@ function home(){
   if(pulseForWeek()&&PULSE.live)badge=' · <span class="live"><i></i>Live</span>';
   else if(pulseForWeek()&&PULSE.delayed)badge=' · Kickoff delayed';
   else if(pulseForWeek()&&PULSE.next)badge=' · <span class="kick">Next kickoff '+esc(PULSE.next)+'</span>';
-  var phase=pulseForWeek()?esc(PULSE.phase):('Week '+L.week);
+  var phase=pulseForWeek()?esc(PULSE.phase):(L.week>=L.playoff_start?'Playoffs':'Week '+L.week+' matchups');
   var h='<section class="hero hero-tight"><div class="eyebrow">'+CUR()+' · Week '+L.week+badge+'</div><h1>'+phase+'</h1>';
   if(my){
     var mineA=my.a===me,opp=mineA?my.b:my.a;
@@ -269,14 +275,12 @@ function home(){
   wk.forEach(function(x){var t=topP(CUR(),hw,x.u);if(t&&t.name&&(!potw||t.pts>potw.pts))potw={u:x.u,name:t.name,pts:t.pts}});
   if(top){
     h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Week '+hw+' final</div><h2>Last week</h2></div><button class="link" data-wk="'+hw+'">Recap &amp; scores →</button></div>'+recapOne(CUR(),hw)+'<div class="lw">'+
-     '<button type="button" class="lw-c t-y" data-game="'+gi(CUR(),hw,top.u)+'"><small>🔥 High score</small><strong class="num">'+f1(top.p)+'</strong><span>'+esc(team(top.u))+'</span></button>'+
-     '<button type="button" class="lw-c t-r" data-game="'+gi(CUR(),hw,rot.u)+'"><small>🧊 Low score</small><strong class="num">'+f1(rot.p)+'</strong><span>'+esc(team(rot.u))+'</span></button>'+
-     (potw?'<button type="button" class="lw-c t-b" data-game="'+gi(CUR(),hw,potw.u)+'"><small>⭐ Top player</small><strong class="num">'+f1(potw.pts)+'</strong><span>'+esc(potw.name)+'</span></button>':'')+
+     '<button type="button" class="lw-c t-y" data-game="'+gi(CUR(),hw,top.u)+'"><small>🔥 High score</small><strong class="num">'+f2(top.p)+'</strong><span>'+esc(team(top.u))+'</span></button>'+
+     '<button type="button" class="lw-c t-r" data-game="'+gi(CUR(),hw,rot.u)+'"><small>🧊 Low score</small><strong class="num">'+f2(rot.p)+'</strong><span>'+esc(team(rot.u))+'</span></button>'+
+     (potw?'<button type="button" class="lw-c t-b" data-game="'+gi(CUR(),hw,potw.u)+'"><small>⭐ Top player</small><strong class="num">'+f2(potw.pts)+'</strong><span>'+esc(potw.name)+'</span></button>':'')+
      '</div></section>';
   }
-  h+='<section class="block"><div class="bh"><div><div class="kicker">Shortcuts</div><h2>Explore</h2></div></div><div class="jump">'+
-   [['data-twih="1"','🕰️','This week in history','t-y'],['data-go="league:awards"','🏆','Awards','t-y'],['data-go="records"','📚','Record book','t-r']]
-    .map(function(j){return '<button type="button" class="jt '+j[3]+'" '+j[0]+'><span>'+j[1]+'</span><b>'+j[2]+'</b></button>'}).join('')+'</div></section>';
+  if(PAST().length)h+='<button type="button" class="twih-go" data-twih="1"><span>🕰️</span><b>Week '+L.week+' in past seasons</b><em>This week in history</em>'+CHEV+'</button>';
   return h+foot();
 }
 function weekSheet(s,w){
@@ -286,15 +290,6 @@ function weekSheet(s,w){
   return h+'<section class="panel">'+recapHtml(s,w)+resultsHtml(s,w)+'</section>';
 }
 function twihSheet(){return '<section class="hero"><div class="eyebrow">Week '+D.league.week+' in past seasons</div><h1>This week in history</h1></section>'+historyCard(D.league.week)}
-function matchCard(l,i){
-  var fa=l.spread>=0,fav=fa?l.a:l.b,sp=Math.abs(l.spread);
-  var side=function(u,pts,ml){return '<div class="mc-t">'+av(u,34)+'<span class="mc-n"><b>'+esc(team(u))+'</b><small>ML '+odds(ml)+'</small></span><span class="mc-s num">'+f2(pts)+'</span></div>'};
-  return '<button type="button" class="mcard" data-prev="'+l.id+'"><div class="mc-h"><span>Game '+(i+1)+'</span><span class="live"><i></i>Live</span></div>'+
-   side(l.a,l.live_a,l.ml_a)+side(l.b,l.live_b,l.ml_b)+
-   '<div class="mc-f"><span>'+esc(team(fav).split(' ').slice(0,2).join(' '))+' by '+f1(sp)+'</span><span>O/U '+f1(l.total)+'</span><span class="mc-go">Preview ›</span></div></button>'}
-function awardCard(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
-  return '<button type="button" class="acard a-'+a.key+'" '+(gx>=0?'data-game="'+gx+'"':'data-mgr="'+a.uid+'"')+'><span class="aw-ic">'+(AW_ICON[a.key]||'⭐')+'</span><span class="aw-t">'+esc(a.title)+'</span><span class="aw-v num">'+esc(a.val)+'</span><span class="aw-w">'+av(a.uid,20)+'<b>'+esc(team(a.uid))+'</b></span></button>'}
-function oddsBar(p){var pc=Math.round(p*1000)/10;return '<div class="ob2"><div class="ob2-t"><i style="width:'+Math.max(2,pc)+'%"></i></div><b>'+(pc>=99.95?'>99.9':pc<0.05?'<0.1':pc.toFixed(1))+'%</b></div>'}
 function resultsHtml(s,w,lim){var gs=weekGames(s,w).slice(0,lim||99);if(!gs.length)return '<p class="muted">No games found for this week.</p>';
   return '<div>'+gs.map(function(x){var g=x.g;return '<button type="button" class="res" data-game="'+x.i+'"><div>'+whoS(g.win,tnS(s,g.win)===team(g.win)?M(g.win).name:'as '+tnS(s,g.win),26)+'</div><span class="s">'+f2(g.wp)+'</span><div class="lose">'+whoS(g.lose,tnS(s,g.lose)===team(g.lose)?M(g.lose).name:'as '+tnS(s,g.lose),26)+'</div><span class="s" style="color:var(--faint)">'+f2(g.lp)+'</span></button>'}).join('')+'</div>'}
 function enteringPct(s,w,u){var a=0,b=0;D.games.forEach(function(x){if(x.s!==s||x.w>=w||x.k!=='Regular season')return;if(x.win===u)a++;else if(x.lose===u)b++});return a+b?a/(a+b):.5}
@@ -320,9 +315,9 @@ function mv(m){return '<span class="mv '+(m>0?'up':m<0?'dn':'eq')+'">'+(m>0?'▲
 function foot(){return '<p class="foot"><span class="dots"><i style="background:var(--gold)"></i><i style="background:var(--pink)" data-egg="1"></i><i style="background:var(--cyan)"></i><i style="background:var(--win)"></i></span>v'+D.version+' · Sleeper data as of '+esc(D.updated_label)+'</p>'}
 
 /* ---------- LEAGUE ---------- */
-var LSEGS=[['season','📊','Standings'],['odds','🎯','Playoff odds'],['awards','🏆','Awards'],['history','📜','History'],['alltime','👑','All-time'],['h2h','⚔️','Rivals'],['lab','🧪','Lab'],['@records','📚','Records']];
+var LSEGS=[['season','📊','Standings'],['odds','🎯','Playoff odds'],['awards','🏆','Awards'],['history','📜','History'],['alltime','👑','All-time'],['h2h','⚔️','Rivals'],['lab','🧪','Lab']];
 function league(){
-  var h='<div class="lnav">'+LSEGS.map(function(x){var go=x[0][0]==='@';return '<button type="button" class="ln-t'+(S.lseg===x[0]?' on':'')+'" '+(go?'data-go="'+x[0].slice(1)+'"':'data-lseg="'+x[0]+'"')+'><span>'+x[1]+'</span><b>'+x[2]+'</b></button>'}).join('')+'</div>';
+  var h='<div class="chips lchips">'+LSEGS.map(function(x){return '<button type="button" class="chip'+(S.lseg===x[0]?' on':'')+'" data-lseg="'+x[0]+'">'+x[1]+' '+x[2]+'</button>'}).join('')+'</div>';
   h+=({season:seasonView,odds:oddsView,history:historyView,alltime:alltimeView,h2h:h2hView,awards:awardsView,lab:labView}[S.lseg]||seasonView)();
   return h+foot();
 }
@@ -333,9 +328,8 @@ function seasonView(){
    st.map(function(x,i){return '<tr class="'+(x.uid===S.me?'me ':'')+(i===5?'cut':'')+'"><td class="tm"><button class="who" type="button" data-mgr="'+x.uid+'"><span class="rk" style="width:20px;height:20px;font-size:10px">'+x.seed+'</span><span class="tx"><b style="font-size:13px">'+esc(team(x.uid))+'</b></span></button></td><td><b>'+x.w+'-'+x.l+'</b></td><td>'+f1(x.pf)+'</td><td>'+x.ap+'</td><td class="'+(x.luck>0.4?'pos':x.luck<-0.4?'negv':'')+'">'+(x.luck>0?'+':'')+f1(x.luck)+'</td></tr>'}).join('')+
    '</tbody></table></div><p class="muted" style="font-size:11.5px;margin-top:9px;line-height:1.5">W-L includes the league-median game each week. All-play is your record if you played every team every week. Luck is head-to-head wins minus all-play expected wins. Dashed line = playoff cut (top 6).</p></section>';
   h+='<section class="panel"><div class="ph"><div><div class="kicker">Points, all-play, form, record</div><h2>Power rankings</h2></div>'+info('power')+'</div><div class="rows">'+
-   D.power.map(function(p){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(p.rank===1?' gold':'')+'">'+p.rank+'</span><div style="min-width:0">'+who(p.uid,p.rec+' · last 3: '+f1(p.last3)+' ppg',30)+'<div class="pbar"><i style="width:'+p.power+'%"></i></div></div><div style="display:grid;justify-items:end;gap:2px"><span class="val" style="font-size:16px">'+f1(p.power)+'</span>'+mv(p.move)+'</div></div>'}).join('')+
+   D.power.map(function(p){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(p.rank===1?' gold':'')+'">'+p.rank+'</span><div style="min-width:0">'+who(p.uid,'last 3 weeks: '+f1(p.last3)+' ppg',30)+'<div class="pbar"><i style="width:'+p.power+'%"></i></div></div><div style="display:grid;justify-items:end;gap:2px"><span class="val" style="font-size:16px">'+f1(p.power)+'</span>'+mv(p.move)+'</div></div>'}).join('')+
    '</div></section>';
-  h+='<section class="panel"><div class="ph"><div><div class="kicker">Browse any week</div><h2>'+CUR()+' weeks</h2></div><button class="link" data-season="'+CUR()+'">Open season ›</button></div><p class="muted" style="font-size:12.5px">Every result from this season, week by week.</p></section>';
   return h;
 }
 function oddsView(){
@@ -347,7 +341,9 @@ function oddsView(){
 }
 function pct(p){var v=p*100;return v>=99.95?'>99.9%':v<0.05?'–':v.toFixed(v<10?1:0)+'%'}
 function historyView(){
-  var h='';
+  var cs=D.seasons[CUR()],lead=cs&&cs.standings&&cs.standings[0];
+  var h=lead?'<section class="season"><div class="season-h"><b>'+CUR()+'</b><span>IN PROGRESS · THROUGH WEEK '+D.league.last_scored+'</span></div><div class="season-f"><span class="pill">1st place <b>'+esc(team(lead.uid))+'</b> '+lead.w+'-'+lead.l+'</span>'+
+    '<button type="button" class="open-season" data-season="'+CUR()+'">Standings &amp; every week so far ›</button></div></section>':'';
   PAST().forEach(function(s){
     var x=D.seasons[s];var reg=x.standings[0];var ts=x.standings.slice().sort(function(a,b){return b.pf-a.pf})[0];
     h+='<section class="season"><div class="season-h"><b>'+s+'</b><span>'+(s===D.league.first?'FIRST SEASON ON SLEEPER':'SEASON')+'</span></div><div class="podium">'+
@@ -1664,7 +1660,7 @@ function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');c
 function render(){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===S.tab);t.setAttribute('aria-current',t.dataset.tab===S.tab?'page':'false')});
   view.innerHTML=S.tab==='home'?home():S.tab==='league'?league():S.tab==='records'?records():S.tab==='book'?book():me();
-  $('#bucks').textContent=BK.me?money(BK.me.balance):'Log in';
+  $('#bucks').textContent=BK.me?money(BK.me.balance):'Book';
 }
 function go(tab,sub){S.tab=tab;if(tab==='league'&&sub)S.lseg=sub;closeSheetQuiet();render();window.scrollTo(0,0);try{history.replaceState(null,'','#'+tab)}catch(e){}}
 function closeSheetQuiet(){$('#sheet').classList.remove('open');$('#scrim').classList.remove('open')}

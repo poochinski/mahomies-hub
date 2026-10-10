@@ -16,6 +16,7 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.3 push 1: cleanup** (Claude; Jayson said do the whole audit list now). `recapOne` = blowout + nail-biter + upset + top-3 record (no longer repeats High/Low tiles). Explore → one `.twih-go` row. League `LSEGS` → `.chips.lchips` row (Records removed; it's a tab). Power rankings subtitle = last-3 ppg only. Standings' "2026 weeks" card removed; History view starts with the current season card. Header button shows "Book" when logged out. Last-week tiles 2 decimals. Removed dead `DONE/matchCard/awardCard/oddsBar`, ~85 unused CSS rules, the old React app (`src/`, `index.html`, `vite.config.js`) and Vite/React deps; `npm run build` is gone (Railway just runs `npm start`).
 - 2026-10-10 — **Yahoo history import, part 1** (Claude). The league played **2021 (10 teams) and 2022 (12 teams) on Yahoo**, PPR both years, then moved to Sleeper (12 teams since). Jayson wants those years in the app.
   - New page **/yahoo** (server-rendered, phone-sized). Actions are commish-only: the page reads the Book login from `localStorage['mh-auth']`.
     1. Paste the Yahoo app Client ID/Secret (saved in Postgres `yahoo_kv`; Railway vars `YAHOO_CLIENT_ID`/`YAHOO_CLIENT_SECRET` win if set).

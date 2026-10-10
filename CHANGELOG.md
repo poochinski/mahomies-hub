@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — v2.3 cleanup: Last week recap says what the tiles don't (blowout, nail-biter, upset, record); Explore replaced by one This week in history row; League menu is a chip row (Records lives in its tab); Power rankings no longer repeat the record; History starts with the current season; 💵 button says Book when logged out; game scores 2 decimals; removed the unused React app, Vite build and dead code/CSS. (Claude)
 - 2026-10-10 — Yahoo import parked for now (Yahoo still refuses access); notes in HANDOFF. (Claude)
 - 2026-10-10 — Yahoo connect now asks Yahoo for Fantasy Sports read access by name (scope fspt-r). (Claude)
 - 2026-10-10 — Yahoo page: plain-English message when Yahoo refuses (app missing Fantasy Sports permission). (Claude)

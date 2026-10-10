@@ -10,19 +10,13 @@ League HQ for **Rollin' with Mahomies**: league history, record book, season sta
 
 ```bash
 npm install
-npm run build
-SLEEPER_LEAGUE_ID=1312104253497540608 npm start
+npm start
 ```
 
-Then open the forwarded port 3000.
+Then open the forwarded port 3000. `npm run dev` restarts the server when a server file changes.
 
-For live-reload while editing, run these in two terminals:
-
-```bash
-SLEEPER_LEAGUE_ID=1312104253497540608 npm run dev:server   # API on port 3000
-npm run dev                                                # app on port 5173
-```
+The app page is `prototype/v2.0/` (app.html, app.css, app.js). Edit those files directly; there is no build step.
 
 ## Deploy
 
-Railway builds with `npm run build` and starts with `npm start` on every push to `main`.
+Railway installs and runs `npm start` on every push to `main` (no build step).
