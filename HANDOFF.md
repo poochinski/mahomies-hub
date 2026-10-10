@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 13:45 (Pacific) · **AI:** Claude
-**Current phase:** Yahoo history import, part 1 (connect + save raw data) live; waiting on Jayson to connect Yahoo. Then part 2 (turn it into seasons). Sportsbook batch 2 due before Tue Oct 13, 6 AM PT
-**Last commit:** "Yahoo history import, part 1: connect page + raw download"
+**Last updated:** 2026-10-10 16:00 (Pacific) · **AI:** Claude
+**Current phase:** v2.3 is live (the whole audit list + Sportsbook batch 2). Next: Jayson tests on his phone; check the Week 6 post Tue Oct 13 6 AM PT (lines + Specials); Yahoo import parked.
+**Last commit:** "v2.3: version number + docs"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,7 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.3 shipped** (Claude): footer says v2.3. The pre-v2.3 state is saved on branch `release-v2.2` (commit 014c753) if anything needs rolling back. Seven pushes: cleanup → team page/search/Back → League Wire → Me → tables → one Game page → Sportsbook batch 2 (details below).
 - 2026-10-10 — **v2.3 push 7: Sportsbook batch 2** (Claude; due before Tue Oct 13 6 AM).
   - Specials: `priceSpecials` / `gradeSpecial` / `americanWide` in server/book/engine.js (4.5% hold, cap +5000); `insertSpecials` runs inside `postLines`; `ensureSpecials` backfills a posted week that has no board yet (only before any kickoff); `specialsFor` → `linesFor().specials`; specials lock at the week's first kickoff (`liveWeek` updates matchup 0); `settleWeek` grades them from every team's final; labels "On Fire: X top score" etc. New table `book_specials`.
   - `GET /api/book/weekly` (best bettor). Client: Book "Specials" segment (`specialsView`, `spk`), slip/ticket support (`SPM`, `spLine`, `spOdds`, `vsTxt`), `bestBettor()` on Leaders, Sportsbook Champion row in Awards (current season, from the Book leaderboard).
