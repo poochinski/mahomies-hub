@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — Yahoo import parked for now (Yahoo still refuses access); notes in HANDOFF. (Claude)
 - 2026-10-10 — Yahoo connect now asks Yahoo for Fantasy Sports read access by name (scope fspt-r). (Claude)
 - 2026-10-10 — Yahoo page: plain-English message when Yahoo refuses (app missing Fantasy Sports permission). (Claude)
 - 2026-10-10 — Yahoo history import, part 1: commish page /yahoo connects Yahoo (read-only) and saves every piece of the 2021–2022 Yahoo seasons; turning it into app seasons comes next. (Claude)
