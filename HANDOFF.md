@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-10 13:00 (Pacific) · **AI:** Claude
 **Current phase:** v2.2 player cards + "everything clickable" (first pass) live; next: more drill-downs, then 2.2 Sportsbook batch 2 (before Tue Oct 13, 6 AM PT)
-**Last commit:** "Player photos on cards and Game Center"
+**Last commit:** "Full app audit (docs/AUDIT-2026-10-10.md)"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,7 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **Full audit** (Claude, Jayson asked for a page-by-page breakdown): `docs/AUDIT-2026-10-10.md` lists repeats, dead navigation, cut-off names, missing features (team page/roster, player search, league activity feed, schedule, one identity on Me) and code cleanup, with a suggested order. Waiting on Jayson to pick what to do first.
 - 2026-10-10 — **Player photos** (Claude, Jayson asked why there were none): `plPic()` loads Sleeper's CDN headshot `sleepercdn.com/content/nfl/players/thumb/{id}.jpg`, falls back to ESPN (`a.espncdn.com/i/headshots/nfl/players/full/{espn_id}.png`, Sleeper players `espn_id` kept as slim `e`) or Sleeper full-size, then initials; defenses use `sleepercdn.com/images/team_logos/nfl/{team}.png`. On the player card (76px) and Game Center rows (20px). Images can't be checked from Claude's sandbox; verify on the phone.
 - 2026-10-10 — **v2.2 Player cards + everything clickable, first pass** (Claude). Jayson: tap an NFL player anywhere → profile (no new tab); taps should open relevant info, not just the manager page (e.g. Bench Shame → the actual games/bench).
   - `GET /api/player/:pid` (server/player.js): bio (Sleeper players DB; slim now keeps age `a`, number `no`, years_exp `x`, college `c`, `ht`, `wt`), `on_now` (current roster), NFL seasons (this + 2 previous) from Sleeper's per-player stats endpoint `api.sleeper.app/stats/nfl/player/{id}?season=&grouping=week`, re-scored with OUR scoring settings (cached 30 min current / 7 days past), and league history from a whole-league index (all seasons: matchups, owners, drafts + picks, transactions; rebuilt every 10 min): per season owners in order, starts / weeks rostered, points started / on bench, draft pick, moves (trade / waiver with FAAB / add / drop), week-by-week list, best start.
