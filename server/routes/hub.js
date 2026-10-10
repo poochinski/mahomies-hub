@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { buildHub } from '../hub/build.js';
 import { kickoffs, describeWeek } from '../book/kickoffs.js';
 import { homeCard, gameCenter } from '../book/data.js';
+import { playerProfile } from '../player.js';
 import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
@@ -60,6 +61,12 @@ router.get('/live/:week/:mid', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try { res.json(await gameCenter(req.params.week, req.params.mid)); }
   catch (err) { console.error('live failed', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/player/:pid — player profile (bio, NFL seasons scored the league's way, league history).
+router.get('/player/:pid', async (req, res) => {
+  try { res.json(await playerProfile(req.params.pid)); }
+  catch (err) { console.error('player failed', err.message); res.status(500).json({ error: err.message }); }
 });
 
 export default router;

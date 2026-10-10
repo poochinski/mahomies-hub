@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 12:10 (Pacific) · **AI:** Claude
-**Current phase:** v2.1 Live Game Center live; next is 2.2 Sportsbook batch 2 (before Tue Oct 13, 6 AM PT)
-**Last commit:** "v2.1 Live Game Center + 0.00 before kickoff"
+**Last updated:** 2026-10-10 13:00 (Pacific) · **AI:** Claude
+**Current phase:** v2.2 player cards + "everything clickable" (first pass) live; next: more drill-downs, then 2.2 Sportsbook batch 2 (before Tue Oct 13, 6 AM PT)
+**Last commit:** "v2.2 Player cards + tappable names + Bench Shame drill-down"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,11 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.2 Player cards + everything clickable, first pass** (Claude). Jayson: tap an NFL player anywhere → profile (no new tab); taps should open relevant info, not just the manager page (e.g. Bench Shame → the actual games/bench).
+  - `GET /api/player/:pid` (server/player.js): bio (Sleeper players DB; slim now keeps age `a`, number `no`, years_exp `x`, college `c`, `ht`, `wt`), `on_now` (current roster), NFL seasons (this + 2 previous) from Sleeper's per-player stats endpoint `api.sleeper.app/stats/nfl/player/{id}?season=&grouping=week`, re-scored with OUR scoring settings (cached 30 min current / 7 days past), and league history from a whole-league index (all seasons: matchups, owners, drafts + picks, transactions; rebuilt every 10 min): per season owners in order, starts / weeks rostered, points started / on bench, draft pick, moves (trade / waiver with FAAB / add / drop), week-by-week list, best start.
+  - Client: capture-phase listener opens the card for any element with `data-pl` (works inside buttons). Names wired in: Game Center, box scores (starters + bench), trade grader (chips + detail), draft re-grade, Book props, Best player game record (rows + "Player card" button). Card has ‹ Back to the sheet you came from (Game Center reopens live). Week rows / best start open the game.
+  - Bench Shame: `/api/bench` weeks now carry `scored`, `should` (bench players the best lineup would start) and `sat` (starters it would sit). Team rows open a sheet: each week, who should have started instead of whom (names tappable), tap the week → box score.
+  - Couldn't hit Sleeper from Claude's sandbox: UI tested with sample data; live endpoint checked after deploy.
 - 2026-10-10 — **v2.1 Live Game Center** (Claude, Jayson said go).
   - Jayson: before a team plays, show **0.00** (not the projection) on Your game and This week; the projection stays small underneath (`ygScore`).
   - Tapping Your game or a This week row (Home/League, not the Book) opens the Game Center sheet (`gcOpen` in app.js; Book still opens the betting preview). Header scoreboard (points, projected final, playing/left, leader in green), a "needs X more" line for the team projected to lose (Monday night: "to win"), every starter side by side by slot (name, pos · NFL team, vs/@ opponent, game status: kickoff time / live clock + NFL score / Final / Bye, injury tag, empty slots in red), points big + projected final small, both benches, "Matchup preview & history" button (old preview), refreshes every 60 s while open.
@@ -47,6 +52,7 @@ Where things stand (Grok, 2026-10-10):
 - Nothing half-done.
 
 ## Next steps (in order)
+0. **More "clickable" passes** (Jayson wants everything to open relevant info; expand as the app grows): award rows → the game/week that won it; standings stats (PF, all-play, luck) → week-by-week breakdown; power-ranking score → the four ingredients; H2H cell → rivalry (exists); recap names → games; Last-week top player tile → player card; playoff odds row → that team's remaining schedule.
 1. ~~2.1 Live Game Center~~ done. Ideas for later: highlight players currently on the field, show big plays, push alerts.
 2. **2.2 Sportsbook batch 2** before **Tue Oct 13, 6 AM PT** lines (weekly specials, best bettor, Sportsbook Champion). First real settlement **Wed Oct 21, 3 AM PT**.
 3. Jayson: confirm Gridiron Gold sound on a real iPhone.

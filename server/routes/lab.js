@@ -74,6 +74,7 @@ function bestLineup(slots, pool) {
     for (const p of pool) if (!used.has(p.id) && ok.includes(p.pos) && (!best || p.pts > best.pts)) best = p;
     if (best) { used.add(best.id); total += best.pts; }
   }
+  bestLineup.used = used; // which players the best lineup used (read right after the call)
   return total;
 }
 
@@ -100,9 +101,14 @@ router.get('/bench', wrap(async (season) => {
       const pp = pointsMap(m);
       const pool = (m.players || []).map((id) => ({ id, pos: posOf(players, id), pts: pp[id] || 0 }));
       const lost = Math.max(0, bestLineup(slots, pool) - (m.points || 0));
+      const used = bestLineup.used, st = new Set((m.starters || []).map(String));
+      const pl = (id) => ({ id, name: nameOf(players, id), pos: posOf(players, id), pts: Math.round((pp[id] || 0) * 100) / 100 });
+      // Who should have started (bench players in the best lineup) and who they'd have replaced.
+      const should = lost > 0.005 ? [...used].filter((id) => !st.has(String(id))).map(pl).sort((a, b) => b.pts - a.pts) : [];
+      const sat = lost > 0.005 ? [...st].filter((id) => id && id !== '0' && !used.has(id)).map(pl).sort((a, b) => a.pts - b.pts) : [];
       const t = (by[uid] ||= { user_id: uid, lost: 0, worst: { lost: -1, week: 0 }, weeks: [] });
       t.lost += lost;
-      t.weeks.push({ week: w, lost: Math.round(lost * 100) / 100 });
+      t.weeks.push({ week: w, lost: Math.round(lost * 100) / 100, scored: Math.round((m.points || 0) * 100) / 100, should, sat });
       if (lost > t.worst.lost) t.worst = { lost: Math.round(lost * 100) / 100, week: w };
     }
   }

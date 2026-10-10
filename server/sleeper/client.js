@@ -38,6 +38,13 @@ export async function getPlayers() {
         id;
       slim[id] = { n: name, p: p.position || (p.fantasy_positions || [])[0] || '', t: p.team || '' };
       if (p.injury_status) slim[id].i = p.injury_status; // Out, IR, Doubtful, Questionable… (as of the daily pull)
+      // Bio for the player profile sheet (v2.2)
+      if (p.age) slim[id].a = p.age;
+      if (p.number != null) slim[id].no = p.number;
+      if (p.years_exp != null) slim[id].x = p.years_exp;
+      if (p.college) slim[id].c = p.college;
+      if (p.height) slim[id].ht = p.height;
+      if (p.weight) slim[id].wt = p.weight;
     }
     players = slim;
     playersAt = Date.now();

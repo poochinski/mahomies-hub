@@ -150,7 +150,7 @@ function gcLoad(){var m=/^w(\d+)m(\d+)$/.exec(GC.id||'');if(!m)return;var id=GC.
 function gcState(p){if(p.state==='in')return 'live';if(p.state==='post')return 'fin';if(p.state==='bye')return 'bye';return 'pre'}
 function gcCell(p,side){if(!p)return '<div class="gc-p '+side+'"></div>';if(p.empty)return '<div class="gc-p '+side+' gc-empty"><b>Empty slot</b><span>no player</span></div>';
   var st=gcState(p),inj=p.inj&&st==='pre'&&/^(out|ir|doubt|sus|pup|na|q)/i.test(p.inj)?'<em class="gc-inj">'+esc(String(p.inj).toUpperCase().slice(0,4))+'</em>':'';
-  return '<div class="gc-p '+side+'"><b>'+esc(p.name)+'</b><span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+'</span><span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+((p.sc||p.nfl_score)&&st!=='pre'?' · '+esc(p.sc||p.nfl_score):'')+inj+'</span></div>'}
+  return '<div class="gc-p '+side+'"><b'+(p.pid?' class="plk" data-pl="'+esc(p.pid)+'"':'')+'>'+esc(p.name)+'</b><span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+'</span><span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+((p.sc||p.nfl_score)&&st!=='pre'?' · '+esc(p.sc||p.nfl_score):'')+inj+'</span></div>'}
 function gcPts(p,side,hi){if(!p||p.empty)return '<div class="gc-v '+side+'"></div>';var st=gcState(p);
   return '<div class="gc-v '+side+(hi?' hi':'')+'"><b class="num">'+f1(p.pts)+'</b>'+(st!=='fin'&&st!=='bye'&&p.proj!=null?'<small>'+f1(p.proj)+'</small>':'')+'</div>'}
 function gcNeed(X,Y){var left=X.playing+X.left;if(!left)return '';var est=(Y.playing+Y.left)?Y.proj:Y.pts,need=est-X.pts;if(need<=0||X.proj>=est)return '';
@@ -174,6 +174,60 @@ function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})
   h+='<p class="gc-up" id="gcErr">Updated '+new Date(d.updated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' · refreshes every minute</p>';
   h+='<button type="button" class="ghost" data-gcprev="'+GC.id+'" style="width:100%;margin-top:6px">Matchup preview &amp; history</button>';
   return h+CLOSE.replace(/^/,'')+'</div>'}
+/* ---------- PLAYER CARD (v2.2): tap any NFL player's name anywhere ---------- */
+var PLB=null;
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl)return;e.stopPropagation();e.preventDefault();plOpen(t.dataset.pl)},true);
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bsh],[data-plback]');if(!t)return;e.stopPropagation();
+  if(t.dataset.bsh!=null){openSheet(benchSheet(+t.dataset.bsh));return}
+  if(t.dataset.plback!=null&&PLB){var b=PLB;PLB=null;if(b.gc&&GC.id)gcOpen(GC.id);else{openSheet(b.html)}}},true);
+function plOpen(pid){var open=$('#sheet').classList.contains('open'),body=$('#sheetBody');
+  if(open&&body&&!document.getElementById('plc'))PLB={html:body.innerHTML,gc:!!document.getElementById('gc')};else if(!open)PLB=null;
+  openSheet(plHtml(pid,null));
+  fetch('/api/player/'+encodeURIComponent(pid),{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){var el=document.getElementById('plc');if(el&&el.dataset.pid===String(pid))el.outerHTML=plHtml(pid,d)})
+   .catch(function(){var el=document.getElementById('plErr');if(el)el.textContent='Couldn\'t load this player right now.'})}
+function plStatLine(pos,t){var a=[],n=function(v,l){if(v)a.push('<b>'+(v%1?f1(v):v)+'</b> '+l)};
+  if(pos==='QB'){n(t.pass_yd,'pass yds');n(t.pass_td,'pass TD');n(t.pass_int,'INT');n(t.rush_yd,'rush yds');n(t.rush_td,'rush TD')}
+  else if(pos==='RB'){n(t.rush_att,'carries');n(t.rush_yd,'rush yds');n(t.rush_td,'rush TD');n(t.rec,'catches');n(t.rec_yd,'rec yds');n(t.rec_td,'rec TD')}
+  else if(pos==='WR'||pos==='TE'){n(t.rec_tgt,'targets');n(t.rec,'catches');n(t.rec_yd,'yds');n(t.rec_td,'TD');n(t.rush_yd,'rush yds')}
+  else if(pos==='K'){if(t.fga)a.push('<b>'+t.fgm+'/'+t.fga+'</b> FG');n(t.xpm,'XP')}
+  else if(pos==='DEF'){n(t.def_sack,'sacks');n(t.def_int,'INT');n(t.fum_rec,'fumble rec');n(t.def_td,'TD')}
+  return a.join(' · ')}
+function plHtml(pid,d){
+  var h='<div id="plc" data-pid="'+esc(pid)+'">'+(PLB?'<button type="button" class="link" data-plback="1" style="margin-bottom:6px">‹ Back</button>':'');
+  if(!d)return h+'<div class="kicker">Player</div><p class="muted" id="plErr" style="margin-top:8px">Loading his stats from Sleeper…</p>'+CLOSE+'</div>';
+  if(d.error)return h+'<p class="err">'+esc(d.error)+'</p>'+CLOSE+'</div>';
+  var b=d.bio,meta=[b.pos,b.team||'Free agent',b.number!=null?'#'+b.number:'',b.age?'Age '+b.age:'',b.exp!=null?(b.exp===0?'Rookie':'Year '+(b.exp+1)):'',b.college||''].filter(Boolean);
+  h+='<div class="ph" style="margin:0 0 6px"><div><div class="kicker">Player</div><h2>'+esc(b.name)+'</h2><p class="muted" style="font-size:12px;margin-top:2px">'+esc(meta.join(' · '))+'</p>'+
+   (b.inj?'<span class="pl-inj">'+esc(b.inj)+'</span>':'')+'</div></div>';
+  h+='<div class="pl-on">'+(d.on_now?av(d.on_now,22)+'<span>On <b>'+esc(team(d.on_now))+'</b> in our league</span>':'<span>Not on a team in our league right now</span>')+'</div>';
+  var cur=(d.nfl||[]).filter(function(x){return x.season===d.cur_season})[0];
+  var mine={};((d.league.seasons||[]).filter(function(s){return s.season===d.cur_season})[0]||{weeks:[]}).weeks.forEach(function(x){mine[x.w]=x});
+  if(cur){var mx=Math.max.apply(null,cur.weeks.map(function(x){return x.pts}).concat([1]));
+    h+='<section class="pl-sec"><div class="kicker">'+cur.season+' NFL season · scored our way</div><div class="pl-tiles"><div><b class="num">'+f1(cur.pts)+'</b><small>points</small></div><div><b class="num">'+f1(cur.ppg)+'</b><small>per game</small></div><div><b class="num">'+cur.gp+'</b><small>games</small></div></div>'+
+     '<p class="pl-line">'+plStatLine(b.pos,cur.totals)+'</p><div class="pl-bars">'+cur.weeks.map(function(x){var m=mine[x.w],c=m?(m.started?'pl-s':'pl-b'):'';
+       return '<div class="pl-bar '+c+'"><span class="num">'+f1(x.pts)+'</span><i style="height:'+Math.max(4,Math.round(x.pts/mx*64))+'px"></i><small>W'+x.w+'</small><small>'+esc(x.opp||'')+'</small></div>'}).join('')+'</div>'+
+     '<p class="pl-key"><i class="pl-s"></i>started in our league <i class="pl-b"></i>on a bench <i></i>not rostered / other</p></section>'}
+  var past=(d.nfl||[]).filter(function(x){return x.season!==d.cur_season});
+  if(past.length)h+='<section class="pl-sec"><div class="kicker">Earlier NFL seasons</div><div class="rows">'+past.map(function(x){return '<div class="row" style="grid-template-columns:52px minmax(0,1fr) auto"><span class="yr">'+x.season+'</span><span class="muted" style="font-size:12px">'+x.gp+' games · '+plStatLine(b.pos,x.totals)+'</span><span class="val" style="font-size:14px">'+f1(x.pts)+'<small>'+f1(x.ppg)+'/g</small></span></div>'}).join('')+'</div></section>';
+  var L=d.league||{},ss=L.seasons||[];
+  h+='<section class="pl-sec"><div class="kicker">In Rollin\' with Mahomies</div>';
+  if(!ss.length)h+='<p class="muted" style="font-size:13px">Never on a team in our league.</p>';
+  if(L.best){var bg=gi(L.best.season,L.best.w,L.best.uid);h+='<button type="button" class="pl-best"'+(bg>=0?' data-game="'+bg+'"':'')+'><small>Best start</small><b class="num">'+f1(L.best.pts)+'</b><span>for '+esc(tnS(L.best.season,L.best.uid))+' · '+L.best.season+' Wk '+L.best.w+'</span>'+(bg>=0?CHEV:'')+'</button>'}
+  ss.forEach(function(s){
+    var own=s.owners.map(function(u){return '<span class="pl-own">'+av(u,18)+esc(tnS(s.season,u))+'</span>'}).join('<span class="muted"> → </span>');
+    h+='<div class="pl-season"><div class="pl-sh"><b>'+s.season+'</b><span class="muted">'+s.starts+' starts / '+s.rostered+' weeks · '+f1(s.pts_started)+' pts started'+(s.pts_bench?' · '+f1(s.pts_bench)+' on bench':'')+'</span></div>'+
+     (own?'<div class="pl-owns">'+own+'</div>':'')+
+     s.draft.map(function(p){return '<div class="pl-ev">📋 Drafted round '+p.round+', pick '+p.pick_no+(p.uid?' by <b>'+esc(tnS(s.season,p.uid))+'</b>':'')+'</div>'}).join('')+
+     s.moves.map(function(m){var wd=m.at?new Date(m.at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'Wk '+m.week,txt;
+       if(m.type==='trade')txt='🤝 Traded'+(m.from?' from <b>'+esc(tnS(s.season,m.from))+'</b>':'')+(m.to?' to <b>'+esc(tnS(s.season,m.to))+'</b>':'');
+       else if(m.to&&m.from)txt='🔁 Moved from <b>'+esc(tnS(s.season,m.from))+'</b> to <b>'+esc(tnS(s.season,m.to))+'</b>';
+       else if(m.to)txt=(m.type==='waiver'?'🧲 Waiver claim':'➕ Added')+' by <b>'+esc(tnS(s.season,m.to))+'</b>'+(m.bid?' ($'+m.bid+' FAAB)':'');
+       else txt='➖ Dropped by <b>'+esc(tnS(s.season,m.from))+'</b>';
+       return '<div class="pl-ev"><span class="muted">'+wd+'</span> · '+txt+'</div>'}).join('')+
+     (s.weeks.length?'<details class="pl-wk"><summary>Week by week ('+s.weeks.length+')</summary>'+s.weeks.map(function(x){var g=x.uid?gi(s.season,x.w,x.uid):-1;
+       return '<button type="button" class="pl-wr"'+(g>=0?' data-game="'+g+'"':'')+'><span>Wk '+x.w+(x.playoff?' · playoffs':'')+'</span><span class="muted">'+esc(x.uid?tnS(s.season,x.uid):'')+'</span><span class="'+(x.started?'pl-s':'muted')+'">'+(x.started?'started':'bench')+'</span><b class="num">'+f1(x.pts)+'</b></button>'}).join('')+'</details>':'')+'</div>'});
+  h+='</section><p class="gc-up">League points use our league\'s scoring. NFL stats from Sleeper.</p>'+CLOSE+'</div>';
+  return h}
 /* ---------- Book math ---------- */
 function line(id){return D.lines.find(function(l){return l.id===id})}
 /* ---------- HOME ---------- */
@@ -363,11 +417,22 @@ function loadLab(){
   fetch('/api/'+S.lab+'?season='+S.labs).then(function(r){return r.json()}).then(function(d){
     if(S.lab+'|'+S.labs!==key)return;el=document.getElementById('labOut');if(!el)return;
     if(d.error){el.innerHTML='<p class="err">'+esc(d.error)+'</p>';return}
+    if(S.lab==='bench')BSH=d;
     el.innerHTML=S.lab==='bench'?benchHtml(d):S.lab==='trades'?tradesHtml(d):draftHtml(d)}).catch(function(){var e=document.getElementById('labOut');if(e)e.innerHTML='<p class="err">Couldn\'t reach the server.</p>'})
 }
 function benchHtml(d){
   return '<div class="ph"><div><div class="kicker">'+d.season+' · through Week '+d.through+'</div><h2>Bench Shame</h2></div>'+info('bench')+'</div><div class="rows">'+
-   d.teams.map(function(t,i){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+who(t.user_id,'Worst: '+f1(t.worst.lost)+' left in Wk '+t.worst.week,30)+'<span class="val">'+f1(t.lost)+'<small>pts benched</small></span></div>'}).join('')+'</div>'}
+   d.teams.map(function(t,i){return '<button type="button" class="row" data-bsh="'+i+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px"><span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+whoS(t.user_id,'Worst: '+f1(t.worst.lost)+' left in Wk '+t.worst.week,30)+'<span class="val">'+f1(t.lost)+'<small>pts benched</small></span>'+CHEV+'</button>'}).join('')+'</div>'+
+   '<p class="muted" style="font-size:11.5px;margin-top:8px">Tap a team to see every week: who should have started, and the game.</p>'}
+var BSH=null;
+function benchSheet(i){var d=BSH,t=d&&d.teams[i];if(!t)return '<p class="muted">Not found.</p>'+CLOSE;
+  var plx=function(p){return '<span class="plk" data-pl="'+esc(p.id)+'">'+nb(p.name)+'</span> <small class="muted">'+esc(p.pos)+' '+f1(p.pts)+'</small>'};
+  var wk=t.weeks.slice().sort(function(a,b){return b.week-a.week});
+  return '<div class="ph" style="margin:0"><div><div class="kicker">Bench Shame · '+d.season+'</div><h2>'+esc(team(t.user_id))+'</h2><p class="muted" style="font-size:12.5px;margin-top:2px">'+f1(t.lost)+' points left on the bench through Week '+d.through+'. Tap a week for the full box score.</p></div></div>'+
+   '<div class="rows">'+wk.map(function(x){var gx=gi(d.season,x.week,t.user_id);var body=x.lost>0.005?
+      '<div class="bs-l"><span class="bs-k">Should have started</span> '+(x.should||[]).map(plx).join(', ')+'</div>'+((x.sat||[]).length?'<div class="bs-l"><span class="bs-k">Instead of</span> '+x.sat.map(plx).join(', ')+'</div>':''):
+      '<div class="bs-l muted">Perfect lineup. Nothing left on the bench.</div>';
+     return '<button type="button" class="row bs-row"'+(gx>=0?' data-game="'+gx+'"':'')+'><div style="min-width:0"><b style="font-size:13.5px">Week '+x.week+'</b>'+(x.scored!=null?' <span class="muted" style="font-size:11.5px">scored '+f2(x.scored)+'</span>':'')+body+'</div><span class="val'+(x.lost>0.005?'':' muted')+'" style="font-size:15px">'+(x.lost>0.005?'−'+f1(x.lost):'0')+'</span></button>'}).join('')+'</div>'+CLOSE}
 /* ---------- TRADE GRADER v2 (list + full breakdown sheet) ---------- */
 var TRD=null;
 var SIDE_C=['#b38c14','#3b8fe8','#d9577a']; // validated (dark surface): gold, blue, rose — follow the side, never its rank
@@ -384,7 +449,7 @@ function tugBar(t){var tot=t.sides.reduce(function(a,s){return a+Math.max(0,s.us
   return '<div class="tug">'+t.sides.map(function(s,j){var w=tot>0?Math.max(0,s.used)/tot*100:100/t.sides.length;return '<i style="width:'+w+'%;background:'+SIDE_C[j%3]+'"></i>'}).join('')+'</div>'}
 function statusTag(t){if(t.status!=='ongoing')return '<span class="ttag">Final</span>';
   return '<span class="ttag on">Ongoing · '+t.verdict.weeks+' wk'+(t.verdict.weeks===1?'':'s')+' in</span>'}
-function gotList(s){var out=s.got.map(function(p){return '<span class="pchip">'+nb(p.name)+' <small>'+esc(p.pos)+'</small></span>'});
+function gotList(s){var out=s.got.map(function(p){return '<span class="pchip"'+(p.id?' data-pl="'+esc(p.id)+'"':'')+'>'+nb(p.name)+' <small>'+esc(p.pos)+'</small></span>'});
   s.picks_got.forEach(function(p){out.push('<span class="pchip pick">'+nb(pickTxt(p))+'</span>')});
   if(s.faab_got)out.push('<span class="pchip pick">$'+s.faab_got+'&nbsp;FAAB</span>');
   return out.join('')||'<span class="muted" style="font-size:12px">Nothing</span>'}
@@ -439,7 +504,7 @@ function tradeSheet(i){
     return '<div class="deal"><div class="deal-h">'+sideDot(j)+av(s.user_id,26)+'<b>'+esc(team(s.user_id))+'</b><span class="muted" style="font-size:11.5px">got</span></div>'+
      s.got.map(function(p){var note=p.weeks_on?'Started '+p.starts+' of '+p.weeks_on+' wk'+(p.weeks_on===1?'':'s')+' on the roster':'Hasn\'t played a week for them yet';
        if(p.gone)note+=' · off the roster from Wk '+p.gone;
-       return '<div class="dp"><div><b>'+nb(p.name)+'</b> <span class="muted" style="font-size:11.5px">'+esc(p.pos)+(p.nfl?' · '+esc(p.nfl):'')+'</span><span class="dp-sub">'+note+'</span></div><div class="dp-n"><b class="num">'+f1(p.used)+'</b><small>started</small>'+(p.bench?'<span>+'+f1(p.bench)+' bench</span>':'')+'</div></div>'}).join('')+
+       return '<div class="dp"><div><b'+(p.id?' class="plk" data-pl="'+esc(p.id)+'"':'')+'>'+nb(p.name)+'</b> <span class="muted" style="font-size:11.5px">'+esc(p.pos)+(p.nfl?' · '+esc(p.nfl):'')+'</span><span class="dp-sub">'+note+'</span></div><div class="dp-n"><b class="num">'+f1(p.used)+'</b><small>started</small>'+(p.bench?'<span>+'+f1(p.bench)+' bench</span>':'')+'</div></div>'}).join('')+
      s.picks_got.map(function(p){return '<div class="dp"><div><b>'+esc(pickTxt(p))+'</b><span class="dp-sub">Draft pick · not scored yet</span></div></div>'}).join('')+
      (s.faab_got?'<div class="dp"><div><b>$'+s.faab_got+' FAAB</b><span class="dp-sub">Waiver budget</span></div></div>':'')+
      (s.cut.length?'<p class="muted" style="font-size:11.5px;margin-top:4px">Also dropped to make room: '+s.cut.map(function(p){return nb(p.name)}).join(', ')+'</p>':'')+'</div>'}).join('')+'</section>';
@@ -484,7 +549,7 @@ function tradeInsights(t){
 
 function draftHtml(d){
   var row=function(p,bust){var mv=p.pick_no-p.rank;
-    return '<div class="row dr-row"><span class="dr-pk"><small>Rd '+p.round+'</small>#'+p.pick_no+'</span><div style="min-width:0"><b style="font-size:14px">'+nb(p.name)+'</b> <span class="muted" style="font-size:11px">'+esc(p.pos)+'</span>'+
+    return '<div class="row dr-row"><span class="dr-pk"><small>Rd '+p.round+'</small>#'+p.pick_no+'</span><div style="min-width:0"><b style="font-size:14px"'+(p.id?' class="plk" data-pl="'+esc(p.id)+'"':'')+'>'+nb(p.name)+'</b> <span class="muted" style="font-size:11px">'+esc(p.pos)+'</span>'+
      '<div class="dr-team">'+av(p.user_id,16)+esc(team(p.user_id))+'</div>'+
      '<div class="dr-mv">Drafted <b>#'+p.pick_no+'</b> → finished <b>#'+p.rank+'</b> <span class="'+(mv>=0?'up':'dn')+'">'+(mv>=0?'▲'+mv:'▼'+Math.abs(mv))+(Math.abs(mv)===1?' spot':' spots')+'</span></div></div>'+
      '<span class="aw-vb"><span class="val num" style="font-size:18px">'+f1(p.points)+'</span><small>season pts</small></span></div>'};
@@ -525,9 +590,10 @@ function records(){
   var top=recVal(k,list[0]),g0=recGame(k,list[0]),b0=g0<0?byeKey(k,list[0]):null;
   h+='<section class="hero rec-hero"><div class="eyebrow">All-time #1</div><div class="big">'+esc(recNum(k,top))+'</div><div class="rec-unit">'+esc(recUnit(k,top,list[0]))+'</div>'+
    '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':b0?'data-bye="'+b0+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
-   '<button type="button" class="share-btn" data-share-rec="1">Share</button>'+info('records')+'</section>';
+   '<button type="button" class="share-btn" data-share-rec="1">Share</button>'+(k==='player'&&list[0].pid?'<button type="button" class="share-btn" data-pl="'+esc(list[0].pid)+'">Player card</button>':'')+info('records')+'</section>';
   h+='<section class="panel tight rec-list"><div class="rows">'+
    list.slice(1,S.recMore?10:5).map(function(x,j){var i=j+1,r=recVal(k,x),gx=recGame(k,x),by=gx<0?byeKey(k,x):null,tap=gx>=0||by,inner='<span class="rk">'+(i+1)+'</span>'+(tap?whoS(r.u,r.sub+(by?' · playoff bye':''),28):who(r.u,r.sub,28))+'<span class="aw-vb"><span class="val">'+esc(recNum(k,r))+'</span><small>'+esc(recUnit(k,r,x))+'</small></span>';
+     if(k==='player'&&x.pid)return '<button type="button" class="row" data-pl="'+esc(x.pid)+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>';
      return tap?'<button type="button" class="row" '+(gx>=0?'data-game="'+gx+'"':'data-bye="'+by+'"')+' style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div>'+(list.length>5?'<button type="button" class="more" data-more="rec">'+(S.recMore?'Show top 5':'Show top '+list.length)+'</button>':'')+'</section>'+foot();
   return h;
@@ -609,7 +675,7 @@ function propsView(){var W=BK.wk;if(!W||!W.lines||!W.lines.length)return '<secti
   h+='<p class="muted" style="font-size:11.5px;margin:2px 2px 0">Over/under on one player\'s fantasy points this week (your league\'s scoring). Lines come from Sleeper\'s projections and move live during his game.</p>';
   ['a','b'].forEach(function(s){var u=s==='a'?l.a:l.b,ps=l.props.filter(function(p){return p.side===s});if(!ps.length)return;
     h+='<section class="panel tight"><div class="pr-h">'+av(u,22)+'<b>'+esc(team(u))+'</b><span>'+ps.length+' props</span></div>'+
-     ps.map(function(p){return '<div class="pr-row"><div style="min-width:0"><b>'+nb(p.name)+'</b> <small class="muted">'+esc(p.pos)+(p.nfl?' · '+esc(p.nfl):'')+'</small><div class="pr-sub">'+(p.live?'<span class="live"><i></i>'+f1(p.pts)+' pts so far</span>':'proj '+f1(p.proj)+(p.kick?' · '+whenTxt(p.kick):''))+'</div></div>'+
+     ps.map(function(p){return '<div class="pr-row"><div style="min-width:0"><b'+(p.pid?' class="plk" data-pl="'+esc(p.pid)+'"':'')+'>'+nb(p.name)+'</b> <small class="muted">'+esc(p.pos)+(p.nfl?' · '+esc(p.nfl):'')+'</small><div class="pr-sub">'+(p.live?'<span class="live"><i></i>'+f1(p.pts)+' pts so far</span>':'proj '+f1(p.proj)+(p.kick?' · '+whenTxt(p.kick):''))+'</div></div>'+
        obk(l,'prop','over','O '+f1(p.line),p.over,false,p.pid)+obk(l,'prop','under','U '+f1(p.line),p.under,false,p.pid)+'</div>'}).join('')+'</section>'});
   return h}
 function bookHero(){
@@ -1460,13 +1526,13 @@ function loadLineups(i){
 }
 function lineupHtml(g,d){
   var A=d.teams[0],B=d.teams[1],n=Math.max(A.starters.length,B.starters.length);
-  var pl=function(p,side){if(!p)return '<div class="pl '+side+'"></div>';return '<div class="pl '+side+'"><b>'+esc(p.name)+'</b><span>'+esc([p.pos,p.team].filter(Boolean).join(' · '))+'</span></div>'};
+  var pl=function(p,side){if(!p)return '<div class="pl '+side+'"></div>';return '<div class="pl '+side+'"><b'+(p.id?' class="plk" data-pl="'+esc(p.id)+'"':'')+'>'+esc(p.name)+'</b><span>'+esc([p.pos,p.team].filter(Boolean).join(' · '))+'</span></div>'};
   var h='<div class="ln head"><span class="pl a">'+esc(tnS(g.s,g.win))+'</span><span></span><span></span><span></span><span class="pl b">'+esc(tnS(g.s,g.lose))+'</span></div>';
   for(var j=0;j<n;j++){var a=A.starters[j],b=B.starters[j],ap=a?a.pts:0,bp=b?b.pts:0;
     h+='<div class="ln">'+pl(a,'a')+'<span class="pp'+(ap>bp?' hi':'')+'">'+(a?f1(ap):'')+'</span><span class="slot">'+esc((a||b).slot.replace('SUPER_FLEX','SF').replace('FLEX','FLX'))+'</span><span class="pp'+(bp>ap?' hi':'')+'">'+(b?f1(bp):'')+'</span>'+pl(b,'b')+'</div>'}
   h+='<div class="ln tot"><span class="pl a">Total</span><span class="pp hi">'+f2(A.points)+'</span><span class="slot"></span><span class="pp">'+f2(B.points)+'</span><span class="pl b"></span></div>';
   var bench=function(t,u){var tot=t.bench.reduce(function(x,p){return x+p.pts},0);
-    return '<details class="bench"><summary>'+esc(tnS(g.s,u))+' bench · '+f1(tot)+' pts</summary>'+t.bench.map(function(p){return '<div class="bn"><div class="pl a"><b>'+esc(p.name)+'</b><span>'+esc([p.pos,p.team].filter(Boolean).join(' · '))+'</span></div><span class="pp">'+f1(p.pts)+'</span></div>'}).join('')+'</details>'};
+    return '<details class="bench"><summary>'+esc(tnS(g.s,u))+' bench · '+f1(tot)+' pts</summary>'+t.bench.map(function(p){return '<div class="bn"><div class="pl a"><b'+(p.id?' class="plk" data-pl="'+esc(p.id)+'"':'')+'>'+esc(p.name)+'</b><span>'+esc([p.pos,p.team].filter(Boolean).join(' · '))+'</span></div><span class="pp">'+f1(p.pts)+'</span></div>'}).join('')+'</details>'};
   return h+bench(A,g.win)+bench(B,g.lose);
 }
 

@@ -759,3 +759,35 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .gc-br{display:grid;grid-template-columns:minmax(0,1fr) 50px;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
 .gc-br:first-of-type{margin-top:6px}
 .gc-up{font:10.5px var(--mono);color:var(--faint);text-align:center;margin:10px 0 0}
+
+/* Player card + clickable names (v2.2) — pl- / plk / bs- prefixes */
+.plk{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(76,236,255,.35);text-underline-offset:3px}
+.pchip[data-pl]{cursor:pointer;border-color:rgba(76,236,255,.35)}
+.pl-inj{display:inline-block;margin-top:6px;font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#ffb347;border:1px solid rgba(255,179,71,.5);border-radius:99px;padding:2px 8px}
+.pl-on{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--ground-2);margin-bottom:10px}.pl-on b{color:var(--ink)}
+.pl-sec{margin:12px 0}
+.pl-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}
+.pl-tiles div{display:grid;justify-items:center;padding:8px 4px;border:1px solid var(--line);border-radius:10px;background:var(--ground-2)}
+.pl-tiles b{font:700 20px var(--display);color:var(--gold)}.pl-tiles small{font:500 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pl-line{font-size:12px;color:var(--muted);line-height:1.5;margin:4px 0 8px}.pl-line b{color:var(--ink)}
+.pl-bars{display:flex;gap:4px;align-items:flex-end;overflow-x:auto;padding-bottom:4px}
+.pl-bar{display:grid;justify-items:center;gap:2px;min-width:30px;flex:1}
+.pl-bar span{font:600 9.5px var(--mono);color:var(--muted)}
+.pl-bar i{display:block;width:16px;border-radius:4px 4px 0 0;background:var(--line-2)}
+.pl-bar.pl-s i{background:var(--gold)}.pl-bar.pl-b i{background:var(--cyan);opacity:.55}
+.pl-bar small{font:9px var(--mono);color:var(--faint);white-space:nowrap}
+.pl-key{font-size:10.5px;color:var(--faint);display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0 0}
+.pl-key i{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--line-2);margin-right:4px;vertical-align:-1px}.pl-key i.pl-s{background:var(--gold)}.pl-key i.pl-b{background:var(--cyan);opacity:.55}
+.pl-best{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;width:100%;margin:6px 0 10px;padding:10px 12px;border:1px solid rgba(246,207,76,.35);border-radius:12px;background:rgba(246,207,76,.06);color:inherit;text-align:left}
+.pl-best small{grid-column:1/3;font:500 9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.pl-best b{font:700 22px var(--display);color:var(--ink)}.pl-best span{font-size:12.5px;color:var(--muted)}.pl-best .chev{grid-row:1/3;grid-column:3}
+.pl-season{padding:10px 0;border-top:1px solid var(--line)}
+.pl-sh{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.pl-sh b{font:700 15px var(--display)}.pl-sh span{font-size:11.5px}
+.pl-owns{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:6px 0}
+.pl-own{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:2px 8px 2px 2px;border:1px solid var(--line);border-radius:99px}
+.pl-ev{font-size:12.5px;color:var(--muted);margin:4px 0;line-height:1.45}.pl-ev b{color:var(--ink)}
+.pl-wk{margin-top:6px}.pl-wk summary{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);cursor:pointer}
+.pl-wr{width:100%;border:0;border-top:1px solid var(--line);background:none;color:inherit;text-align:left;font:inherit;display:grid;grid-template-columns:auto minmax(0,1fr) auto 44px;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:12px}
+.pl-wr[data-game]{cursor:pointer}.pl-wr .muted{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl-wr .pl-s{color:var(--gold)}.pl-wr b{text-align:right;font-size:13px}
+.bs-row{width:100%;text-align:left;color:inherit;font:inherit;grid-template-columns:minmax(0,1fr) auto!important;align-items:start}.bs-row[data-game]{cursor:pointer}
+.bs-l{font-size:12px;line-height:1.5;margin-top:3px;color:var(--ink)}.bs-k{font:500 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-right:2px}
