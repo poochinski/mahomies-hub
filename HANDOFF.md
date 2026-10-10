@@ -1,11 +1,15 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-09 18:30 (Pacific) · **AI:** Claude
-**Current phase:** v1.8 — Sportsbook is live in the app (login, bets, parlays, leaders, commish tools); Week 6 lines post Tue Oct 13 6 AM; next = specials + futures
-**Last commit:** "Gridiron Gold v2: casino cabinet + sound, Vegas-par payback, commish Bucks panel"
-**App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v1.7; old builds at /test/v1.6, /test/v1.5, /test/v1.0)
+**Last updated:** 2026-10-09 21:30 (Pacific) · **AI:** Claude
+**Current phase:** v2.0 starting — v1.8 frozen; front end now edited directly in prototype/v2.0/ (no build step). Plan: docs/V2-HANDOFF.md
+**Last commit:** "v2.0 start: editable front end in prototype/v2.0, v1.8 frozen, V2 handoff doc"
+**App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v2.0 base = same as v1.8; old builds at /test/v1.8, /test/v1.7, /test/v1.6, /test/v1.5, /test/v1.0)
 
 ## What we're working toward right now
+**v2.0.** Jayson is handing off to another AI until his Claude usage resets. Read `docs/V2-HANDOFF.md` (full picture: what's built, the v2 plan, where code lives, rules). First job: the **Home page rework** (2.0, Part 4 of that doc), then the Live Game Center (2.1).
+**Front end source is now `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step.** Everything below about v18.py / prototype/dist is history.
+
+(Older notes:)
 The app is live on Railway with real Sleeper data and the Sportsbook. Look = "Night"
 (neon night-street palette). **No Banana Bets branding anywhere** — this is its own app.
 VERSIONS: **v1.8 is current** (source prototype/v1.8/: app18.template.html is built by v18.py from the v1.7 template + v18_book.js; output prototype/dist/night.html). v1.7 saved at prototype/v1.7/night.html (/test/v1.7). v1.6 saved at prototype/v1.6/night.html (/test/v1.6) and branch release-v1.6. v1.5 saved at prototype/v1.5/night.html (/test/v1.5) and branch release-v1.5. Older: v1.5 (night theme only). v1.0 is saved in prototype/v1.0/
@@ -23,6 +27,7 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **v2.0 start** (Claude): v1.8 frozen (prototype/v1.8/night.html, /test/v1.8, branch release-v1.8). Live page split into editable files in prototype/v2.0/ (app.html + app.css + app.js + snapshot.json); server injects snapshot.json and serves /v2/*. Smoke-tested every tab, the slot and /test/v1.8 locally: no errors. docs/V2-HANDOFF.md + PDF written; BIBLE §17 added.
 - 2026-10-09 — **Gridiron Gold v2 + commish Bucks** (Claude). Jayson: "make it feel like you're actually playing at a casino", sounds you can turn up, odds "just like Vegas gaming laws", and commish add/subtract Bucks for himself and anyone.
   - **Look**: cabinet with chrome reel window, marquee with chasing bulbs, fixed jackpot plaques (GRAND/MAJOR/MINOR/MINI at your bet), payline number tabs, LED message bar, CREDIT/BET/WIN meters, big round SPIN, bet −/+, AUTO (10/25/50, stops on features/big wins), ⓘ paytable. Symbols are drawn SVG (title ring, trophy, helmet, football, A, K, MH WILD, FREE SPINS ticket, BONUS stopwatch) — no emoji. Fonts Bungee + Orbitron self-hosted in public/fonts (OFL licenses next to them).
   - **Feel**: reels scroll the real server strips and bounce-land one by one; tap SPIN again = slam stop; anticipation (glow + rising sound) when 2 tickets or 2 stopwatches are down; winning lines drawn and cycled with "Line 8 · 5 King · 38.89"; WIN meter rolls up (tap SPIN to skip); BIG ≥10× / MEGA ≥25× / EPIC ≥50× bet celebration with coin shower; feature splashes for free spins, retriggers, Two-Minute Drill; free spins auto-play.
@@ -199,9 +204,11 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
   confirmed, relay workflow decided. (Claude)
 
 ## In progress (not finished)
-- Nothing half-done. Needs a real-phone check by Jayson once Railway has the database.
+- Nothing half-done.
 
 ## Next steps (in order)
+0. **v2.0 Home rework** — docs/V2-HANDOFF.md Part 4 → 2.0 (Live badge fix, week-phase line, projections + players left, median tracker, lineup alert, standings strip, better matchup list, recap on Home, slimmer Explore).
+0b. **2.1 Live Game Center** (player-by-player during games).
 A. Jayson: try it on Week 5 now (small straight bet, a 2-pick parlay with a prop, open the ticket, share it), check Wednesday 3 AM settlement in My bets; open Me → Book controls → Book health.
 B. Sportsbook batch 2 (Week 6): weekly specials (On Fire / Ice Cold / low-score O-U), weekly best bettor, **Sportsbook Champion** in Awards / hall of fame.
 C. Batch 3 (Week 7): futures (title + Sacko odds from the season sim, repriced Tuesdays).
@@ -246,6 +253,11 @@ F. Verify Lab endpoints with real data on Railway.
 - Player names in the snapshot only for 16 players; full names come from /api/game on Railway.
 
 ## Files changed in the latest push
+- prototype/v2.0/ (new: app.html, app.css, app.js, snapshot.json), prototype/v1.8/night.html (frozen copy)
+- server/index.js (serves v2.0 + /test/v1.8)
+- docs/V2-HANDOFF.md + docs/Mahomies-Hub-v2-Handoff.pdf (new), BIBLE.md §11 note + §17, HANDOFF.md, CHANGELOG.md
+
+## Files changed in the push before
 - server/slots/engine.js (td 0.225, stops/gridAt, PAR, labels), server/slots/par.js (new), server/slots/slots.js (stops, strips, par in paytable), server/book/book.js (adjust can't go below 0)
 - prototype/v1.8/v18_slot.js + v18_slot.css (rewritten), v18_book.js (commish Bucks), v18_book2.css, app18.template.html; prototype/dist/night.html
 - public/fonts/ (Bungee, Orbitron woff2 + OFL licenses)

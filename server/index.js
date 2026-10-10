@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 // Mahomie's Hub server: serves /api (incl. the Sportsbook) and the app page (v1.8 build).
 import dns from 'node:dns';
 import express from 'express';
@@ -17,7 +18,18 @@ dns.setDefaultResultOrder('ipv4first');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const proto = path.join(root, 'prototype');
-const APP_PAGE = path.join(proto, 'dist', 'night.html'); // v1.8
+// v2.0 source of truth: prototype/v2.0/ (app.html + app.css + app.js, edited directly, no build step).
+// snapshot.json is the bundled Sleeper data used until /api/hub answers; it's put into app.html here.
+const V2 = path.join(proto, 'v2.0');
+let appHtml = null;
+function appPage() {
+  if (!appHtml || process.env.NODE_ENV !== 'production') {
+    const html = fs.readFileSync(path.join(V2, 'app.html'), 'utf8');
+    const data = fs.readFileSync(path.join(V2, 'snapshot.json'), 'utf8').replace(/<\//g, '<\\/');
+    appHtml = html.replace('__DATA__', () => data);
+  }
+  return appHtml;
+}
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -67,6 +79,8 @@ app.get('/manifest.webmanifest', (_req, res) => {
 app.use(express.static(path.join(root, 'public'), { index: false }));
 
 // Older builds, kept in case we need to go back.
+app.use('/v2', express.static(V2, { index: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
+app.get('/test/v1.8', (_req, res) => res.sendFile(path.join(proto, 'v1.8', 'night.html')));
 app.get('/test/v1.7', (_req, res) => res.sendFile(path.join(proto, 'v1.7', 'night.html')));
 app.get('/test/v1.6', (_req, res) => res.sendFile(path.join(proto, 'v1.6', 'night.html')));
 app.get('/test/v1.5', (_req, res) => res.sendFile(path.join(proto, 'v1.5', 'night.html')));
@@ -76,7 +90,7 @@ app.get('/test/v1.0/light', (_req, res) => res.sendFile(path.join(proto, 'v1.0',
 // Every other address opens the app (never cached, so updates show up right away).
 app.get('*', (_req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.sendFile(APP_PAGE);
+  res.type('html').send(appPage());
 });
 
 app.listen(PORT, () => console.log(`Mahomie's Hub running on port ${PORT}`));

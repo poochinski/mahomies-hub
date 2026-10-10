@@ -449,6 +449,8 @@ POST /api/commish/*                 sync, lines, settle, awards (commish only)
 
 ## 11. Roadmap
 
+> **2026-10-09:** Phases 0–5 are largely built (v1.8). The v2.0 plan in `docs/V2-HANDOFF.md` Part 4 and §17 now sets the order.
+
 | Phase | Name | Goal | Done when |
 |---|---|---|---|
 | 0 | Setup | Repo, Codespace, Railway, Postgres, PWA shell deployed | A blank Mahomie's Hub app installs on Jayson's phone from Railway |
@@ -573,3 +575,16 @@ The repo must be **public** for the links to work. GitHub can take up to ~5 minu
 3. Open the next AI and paste the starter prompt from section 15.
 4. Check its summary matches what you remember, then say go.
 5. Order: Claude → ChatGPT → Grok → back to Claude when its usage resets.
+
+---
+
+## 17. Version 2.0 (started 2026-10-09)
+
+**Front end source is now `prototype/v2.0/`** — `app.html` (shell), `app.css` (styles), `app.js` (all code), `snapshot.json` (bundled data until `/api/hub` loads). Edit these files directly; there is **no build step** any more. `server/index.js` puts `snapshot.json` into `app.html` when serving and serves `/v2/app.css` + `/v2/app.js`.
+- The v1.x build scripts (`prototype/v1.8/v18.py` etc.) used paths that only existed in Claude's workspace. They are history now; don't run them.
+- v1.8 is frozen at `prototype/v1.8/night.html` (`/test/v1.8`) and branch `release-v1.8`. `prototype/dist/` is the old v1.8 output; leave it alone.
+- Version numbers: each meaningful batch bumps the minor version (2.0 → 2.1 …). Show it in the footer (`D.version` comes from `server/hub/build.js`). Before a big change, freeze the current page as `prototype/v2.x/` + a `/test/v2.x` route + a `release-v2.x` branch.
+- Plan and feature order for v2: `docs/V2-HANDOFF.md` Part 4 (2.0 Home rework → 2.1 Live Game Center → 2.2 Sportsbook batch 2 → 2.3 futures + playoff lines → 2.4 League Wire → 2.5 engagement → 2.6 commish + extras).
+- Pushing: any AI with GitHub access commits straight to `main` (author `Jayson <editfilminc@gmail.com>`); Railway auto-deploys every push to main in ~2 minutes. AIs without push access give full files + Codespaces git commands (§12 rule 4).
+- After each push: check `/api/health` and the changed screen at 390px.
+- Railway variables actually used: `DATABASE_URL` (required), `SLEEPER_LEAGUE_ID`, `COMMISH_USER_ID` (both default in code). `SESSION_SECRET`, `TZ`, `BOOK_HOLD` in §13 are not read by the code today.
