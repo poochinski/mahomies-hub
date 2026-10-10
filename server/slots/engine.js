@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 export const SYMBOLS = {
   RING: { label: 'Ring', icon: '💍' }, TROPHY: { label: 'Trophy', icon: '🏆' }, STADIUM: { label: 'Stadium', icon: '🏟️' },
   PLAYBOOK: { label: 'Playbook', icon: '📋' }, BALL: { label: 'Football', icon: '🏈' }, CAP: { label: 'Cap', icon: '🧢' },
-  WILD: { label: 'MH Wild', icon: 'MH' }, TICKET: { label: 'Free Spins', icon: '🎟️' }, DRAFT: { label: 'Draft Card', icon: '📜' }
+  WILD: { label: 'MH Wild', icon: 'MH' }, TICKET: { label: 'Free Spins', icon: '🎟️' }, DRAFT: { label: 'Two-Minute Drill', icon: '⏱️' }
 };
 
 // Pays per LINE bet for 3 / 4 / 5 in a row from the left.
@@ -41,9 +41,35 @@ export const LINES = [
   [0, 0, 1, 2, 2], [2, 2, 1, 0, 0], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1]
 ];
 
-// Draft Day bonus board: 12 prospects, values × TOTAL bet. Pick 3, then a Combine multiplier.
-export const BOARD = [1, 2, 2, 3, 3, 4, 5, 6, 8, 10, 15, 25];
-export const COMBINE = [[1, 50], [2, 35], [3, 15]]; // [multiplier, weight]
+// Two-Minute Drill bonus (hold-and-spin style, our own football take):
+// a 3×3 grid where every square re-spins each drive, plus a side "TOUCHDOWN" reel.
+// When the side reel lands TOUCHDOWN, everything on the grid is collected.
+// Values are × TOTAL bet. Start with 8 drives; EXTRA DRIVE squares add one (max 20).
+export const DRILL = {
+  drives: 8, maxDrives: 20, td: 0.26,
+  cell: [['blank', 54], ['val', 37], ['jp', 6], ['extra', 3]],
+  values: [0.2, 0.3, 0.5, 0.5, 1, 1, 1.5, 2, 3, 5],
+  jackpots: [['MINI', 5, 62], ['MINOR', 15, 28], ['MAJOR', 50, 9], ['GRAND', 250, 1]]
+};
+function pickW(list, r, wIdx) { const tot = list.reduce((a, x) => a + x[wIdx], 0); let x = r(tot); for (const it of list) { if (x < it[wIdx]) return it; x -= it[wIdx]; } return list[list.length - 1]; }
+export function drillRun(r = rand) {
+  const frames = []; let total = 0, drives = DRILL.drives;
+  for (let d = 0; d < drives && d < DRILL.maxDrives; d++) {
+    const cells = [];
+    for (let i = 0; i < 9; i++) {
+      const t = pickW(DRILL.cell, r, 1)[0];
+      if (t === 'val') cells.push({ t, v: DRILL.values[r(DRILL.values.length)] });
+      else if (t === 'jp') { const j = pickW(DRILL.jackpots, r, 2); cells.push({ t, jp: j[0], v: j[1] }); }
+      else if (t === 'extra') { cells.push({ t }); drives = Math.min(DRILL.maxDrives, drives + 1); }
+      else cells.push({ t });
+    }
+    const td = r(1000) < DRILL.td * 1000;
+    const got = td ? cells.reduce((a, c) => a + (c.v || 0), 0) : 0;
+    total += got;
+    frames.push({ drive: d + 1, drives, cells, td, got: Math.round(got * 100) / 100 });
+  }
+  return { frames, total: Math.round(total * 100) / 100 };
+}
 
 export const rand = (n) => crypto.randomInt(n);
 
@@ -72,12 +98,4 @@ export function evaluate(grid) {
   const bonus = [0, 1, 2].every((r) => grid[r].includes('DRAFT'));
   const linePay = wins.reduce((a, w) => a + w.pay, 0);
   return { wins, linePay, tickets, scatter, freeSpins: tickets >= 3 ? FREE_SPINS : 0, bonus, total: linePay + scatter };
-}
-
-export function newBoard(r = rand) {
-  const b = BOARD.slice();
-  for (let i = b.length - 1; i > 0; i--) { const j = r(i + 1); [b[i], b[j]] = [b[j], b[i]]; }
-  const tot = COMBINE.reduce((a, c) => a + c[1], 0); let x = r(tot), combine = 1;
-  for (const [m, w] of COMBINE) { if (x < w) { combine = m; break; } x -= w; }
-  return { values: b, combine, picks: [] };
 }

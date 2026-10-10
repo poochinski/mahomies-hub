@@ -1,6 +1,6 @@
 /* ---------- GRIDIRON GOLD: hidden slot machine (tap the pink dot on the Sportsbook page) ---------- */
 var SL={open:false,busy:false,bet:10,state:null,pt:null,grid:null,last:null,bonus:null,msg:''};
-var SYM={RING:'💍',TROPHY:'🏆',STADIUM:'🏟️',PLAYBOOK:'📋',BALL:'🏈',CAP:'🧢',TICKET:'🎟️',DRAFT:'📜'};
+var SYM={RING:'💍',TROPHY:'🏆',STADIUM:'🏟️',PLAYBOOK:'📋',BALL:'🏈',CAP:'🧢',TICKET:'🎟️',DRAFT:'⏱️'};
 var SYM_ORDER=['RING','TROPHY','STADIUM','PLAYBOOK','BALL','CAP','TICKET','DRAFT','WILD'];
 function symHtml(s){return s==='WILD'?'<img src="/brand-96.png" alt="MH wild" class="sl-wild">':'<span>'+(SYM[s]||'?')+'</span>'}
 function slotRoot(){var el=document.getElementById('slot');if(!el){el=document.createElement('div');el.id='slot';el.className='slot';document.body.appendChild(el)}return el}
@@ -10,7 +10,7 @@ function openSlot(){
   SL.open=true;SL.msg='';var el=slotRoot();el.classList.add('open');document.body.style.overflow='hidden';
   if(!SL.grid)SL.grid=[0,1,2,3,4].map(function(r){return ['CAP','BALL','PLAYBOOK'].map(function(x,i){return SYM_ORDER[(r*2+i)%6]})});
   slotRender();
-  Promise.all([api('/slots/state'),SL.pt?Promise.resolve(SL.pt):api('/slots/paytable')]).then(function(r){SL.state=r[0];SL.pt=r[1];if(SL.state.free_bet)SL.bet=SL.state.free_bet;SL.bonus=SL.state.bonus;slotRender();if(SL.bonus)bonusRender()}).catch(function(e){SL.msg=e.message;slotRender()})}
+  Promise.all([api('/slots/state'),SL.pt?Promise.resolve(SL.pt):api('/slots/paytable')]).then(function(r){SL.state=r[0];SL.pt=r[1];if(SL.state.free_bet)SL.bet=SL.state.free_bet;SL.bonus=SL.state.bonus;slotRender();if(SL.bonus)drillStart(SL.bonus)}).catch(function(e){SL.msg=e.message;slotRender()})}
 function closeSlot(){if(SL.busy)return;SL.open=false;var el=slotRoot();el.classList.remove('open');document.body.style.overflow='';bookLoad()}
 function reelsHtml(spinning){return '<div class="sl-reels">'+SL.grid.map(function(col,r){return '<div class="sl-reel" data-reel="'+r+'"><div class="sl-strip">'+col.map(function(s,row){return '<div class="sl-cell" data-cell="'+r+'-'+row+'">'+symHtml(s)+'</div>'}).join('')+'</div></div>'}).join('')+'</div>'}
 function slotRender(){
@@ -54,30 +54,51 @@ function afterSpin(r){
   SL.msg=msg;SL.busy=false;slotRender();
   Object.keys(cells).forEach(function(k){var c=document.querySelector('[data-cell="'+k+'"]');if(c)c.classList.add('hit')});
   if(r.free_awarded&&!r.free)splash('🎟️','10 FREE SPINS','Every win pays ×'+((SL.pt&&SL.pt.free_mult)||3));
-  if(r.bonus){SL.bonus=r.bonus;setTimeout(function(){splash('📜','DRAFT DAY','Pick 3 prospects from the board',function(){bonusRender()})},r.free_awarded?1800:400)}
+  if(r.bonus){SL.bonus=r.bonus;SL.busy=true;setTimeout(function(){splash('⏱️','TWO-MINUTE DRILL','Score a TOUCHDOWN to collect the board',function(){SL.busy=false;drillStart(r.bonus)})},r.free_awarded?1800:400)}
 }
 function splash(icon,title,sub,then){var el=slotRoot(),d=document.createElement('div');d.className='sl-splash';d.innerHTML='<div><div class="sp-i">'+icon+'</div><div class="sp-t">'+title+'</div><div class="sp-s">'+esc(sub)+'</div></div>';el.appendChild(d);
   setTimeout(function(){d.classList.add('out');setTimeout(function(){d.remove();if(then)then()},350)},1500)}
-/* Draft Day bonus */
-function bonusRender(){var b=SL.bonus;if(!b)return;var el=slotRoot(),ov=document.getElementById('slBonus');if(!ov){ov=document.createElement('div');ov.id='slBonus';ov.className='sl-bonus';el.appendChild(ov)}
-  var picked={};(b.picks||[]).forEach(function(p){picked[p.index]=p.value});var done=!!b.done;
-  ov.innerHTML='<div class="bn-h"><div class="sl-title">DRAFT <b>DAY</b></div><div class="sl-sub">'+(done?'Draft complete':'Pick '+b.need+' more prospect'+(b.need===1?'':'s'))+' · bet '+b.bet+'</div></div>'+
-   '<div class="bn-board">'+Array.apply(null,{length:b.size||12}).map(function(_,i){var v=picked[i],rev=done&&b.board?b.board[i]:null;
-     return '<button type="button" class="bn-card'+(v!=null?' got':rev!=null?' miss':'')+'" data-slpick="'+i+'"'+(v!=null||done||SL.busy?' disabled':'')+'>'+(v!=null?'<b>'+m2(v*b.bet)+'</b><small>×'+v+'</small>':rev!=null?'<b>'+m2(rev*b.bet)+'</b>':'<span>🏈</span><small>Pick '+(i+1)+'</small>')+'</button>'}).join('')+'</div>'+
-   '<div class="bn-foot">'+(done?'<div class="bn-comb"><small>Picks</small><b>'+m2(b.sum*b.bet)+'</b><small>Combine</small><b class="hot" id="bnMult">×'+b.combine+'</b><small>Total</small><b class="hot">'+m2(b.total)+'</b></div><button type="button" class="sl-spin" data-slcollect="1">Collect '+m2(b.total)+'</button>':
-     '<p class="sl-sub">Every prospect is worth 1× to 25× your bet. After 3 picks, the Combine adds a ×1, ×2 or ×3 multiplier.</p>')+'</div>'}
-function bonusPick(i){if(SL.busy||!SL.bonus)return;SL.busy=true;
-  api('/slots/pick',{body:{index:i}}).then(function(r){SL.busy=false;var b=SL.bonus;b.picks=r.picks;b.need=r.need;
-    if(r.done){b.done=true;b.board=r.board;b.sum=r.sum;b.combine=r.combine;b.total=r.total;SL.state.balance=r.balance;
-      bonusRender();var m=document.getElementById('bnMult');if(m){var k=0,seq=['×1','×2','×3'],iv=setInterval(function(){m.textContent=seq[k++%3]},90);setTimeout(function(){clearInterval(iv);m.textContent='×'+r.combine},1400)}}
-    else bonusRender()}).catch(function(e){SL.busy=false;toast(e.message)})}
-function bonusClose(){var ov=document.getElementById('slBonus');if(ov)ov.remove();var b=SL.bonus;SL.bonus=null;SL.last={win:b&&b.total||0};SL.msg=b&&b.total?'Draft Day paid '+m2(b.total)+' Bucks':'';slotRender()}
+/* Two-Minute Drill bonus (hold-and-spin style): 3×3 board + TOUCHDOWN side reel */
+var DR=null;
+function drCell(c,bet){if(!c||c.t==='blank')return '<div class="dr-c blank"><span>🏈</span></div>';
+  if(c.t==='val')return '<div class="dr-c val"><b>'+m2(c.v*bet)+'</b></div>';
+  if(c.t==='jp')return '<div class="dr-c jp jp-'+c.jp.toLowerCase()+'"><b>'+c.jp+'</b><small>'+m2(c.v*bet)+'</small></div>';
+  return '<div class="dr-c extra"><b>EXTRA</b><small>DRIVE</small></div>'}
+function drFake(){var r=Math.random();return r<.5?{t:'blank'}:r<.85?{t:'val',v:[0.5,1,2,3,5][Math.floor(Math.random()*5)]}:r<.95?{t:'jp',jp:['MINI','MINOR','MAJOR'][Math.floor(Math.random()*3)],v:5}:{t:'extra'}}
+function drillStart(b){var el=slotRoot(),ov=document.getElementById('slBonus');if(!ov){ov=document.createElement('div');ov.id='slBonus';ov.className='sl-bonus';el.appendChild(ov)}
+  DR={b:b,i:-1,collected:0,cells:Array.apply(null,{length:9}).map(function(){return {t:'blank'}}),td:null,drives:b.frames.length?b.frames[0].drives:8,done:false,timer:null};
+  drillRender();DR.timer=setTimeout(drillNext,900)}
+function drillRender(msg){var b=DR.b,ov=document.getElementById('slBonus');if(!ov)return;var f=DR.i>=0?b.frames[DR.i]:null;
+  ov.innerHTML='<div class="bn-h"><div class="sl-title">TWO-MINUTE <b>DRILL</b></div><div class="sl-sub">Land a TOUCHDOWN to collect everything on the board · bet '+b.bet+'</div></div>'+
+   '<div class="dr-jps">'+b.jackpots.map(function(j){return '<div class="jp-'+j.name.toLowerCase()+'"><small>'+j.name+'</small><b>'+m2(j.x*b.bet)+'</b></div>'}).join('')+'</div>'+
+   '<div class="dr-meter"><div><small>Drive</small><b>'+(f?f.drive:0)+' of '+(f?f.drives:DR.drives)+'</b></div><div><small>Collected</small><b class="hot" id="drCol">'+m2(DR.collected)+'</b></div></div>'+
+   '<div class="dr-field"><div class="dr-grid">'+DR.cells.map(function(c,i){return '<div class="dr-slot" data-dc="'+i+'">'+drCell(c,b.bet)+'</div>'}).join('')+'</div>'+
+   '<div class="dr-side"><div class="dr-td'+(DR.td===true?' yes':DR.td===false?' no':'')+'" id="drTd">'+(DR.td===true?'<span>🏈</span><b>TOUCH<br>DOWN!</b>':DR.td===false?'<b>INCOM&shy;PLETE</b>':'<b>?</b>')+'</div></div></div>'+
+   '<div class="sl-msg" id="drMsg">'+(msg||'')+'</div>'+
+   (DR.done?'<div class="bn-comb"><small>Drives</small><b>'+b.frames.length+'</b><small>Touchdowns</small><b>'+b.frames.filter(function(x){return x.td}).length+'</b><small>Total</small><b class="hot">'+m2(b.total)+'</b></div><button type="button" class="sl-spin" data-slcollect="1">Collect '+m2(b.total)+'</button>':
+     '<button type="button" class="sl-pt" data-drskip="1" style="display:block;margin:6px auto 0">Skip to the end</button>')}
+function drillNext(){if(!DR)return;DR.i++;var b=DR.b;if(DR.i>=b.frames.length){DR.done=true;drillRender('Drill over · '+m2(b.total)+' Bucks');return}
+  var f=b.frames[DR.i];DR.td=null;
+  // spin the 9 squares, then land them one by one
+  DR.cells=DR.cells.map(drFake);drillRender();[].forEach.call(document.querySelectorAll('.dr-slot'),function(s){s.classList.add('spin')});
+  var k=0,land=function(){if(!DR)return;if(k<9){DR.cells[k]=f.cells[k];var s=document.querySelector('[data-dc="'+k+'"]');if(s){s.classList.remove('spin');s.innerHTML=drCell(f.cells[k],b.bet);s.classList.add('land')}k++;DR.timer=setTimeout(land,70);return}
+    var extra=f.cells.filter(function(c){return c.t==='extra'}).length;
+    var td=document.getElementById('drTd');if(td){td.className='dr-td spin';td.innerHTML='<b>…</b>'}
+    DR.timer=setTimeout(function(){DR.td=f.td;if(f.td){DR.collected=Math.round((DR.collected+f.got*b.bet)*100)/100}
+      drillRender(f.td?'TOUCHDOWN! +'+m2(f.got*b.bet):extra?'+'+extra+' EXTRA DRIVE'+(extra>1?'S':''):'Incomplete');
+      if(f.td)[].forEach.call(document.querySelectorAll('.dr-slot'),function(s){if(!s.querySelector('.blank'))s.classList.add('hit')});
+      DR.timer=setTimeout(drillNext,f.td?1700:1000)},550)};
+  DR.timer=setTimeout(land,350)}
+function drillSkip(){if(!DR)return;clearTimeout(DR.timer);var b=DR.b,f=b.frames[b.frames.length-1];DR.i=b.frames.length-1;DR.cells=f?f.cells:DR.cells;DR.td=f?f.td:null;DR.collected=b.total;DR.done=true;drillRender('Drill over · '+m2(b.total)+' Bucks')}
+function bonusClose(){if(DR)clearTimeout(DR.timer);var ov=document.getElementById('slBonus');if(ov)ov.remove();var b=SL.bonus;SL.bonus=null;DR=null;
+  api('/slots/bonus-seen',{method:'POST'}).catch(function(){});
+  api('/slots/state').then(function(st){SL.state=st;SL.last={win:b&&b.total||0};SL.msg=b?'Two-Minute Drill paid '+m2(b.total)+' Bucks':'';slotRender()}).catch(function(){slotRender()})}
 function paytableSheet(){var pt=SL.pt;if(!pt)return;var lb=SL.bet/9,el=slotRoot(),ov=document.createElement('div');ov.className='sl-ptab';
   ov.innerHTML='<div class="bn-h"><div class="sl-title">PAY<b>TABLE</b></div><div class="sl-sub">At '+SL.bet+' Bucks a spin (9 lines). Payback about 95% over time.</div></div>'+
    '<div class="pt-rows">'+['WILD','RING','TROPHY','STADIUM','PLAYBOOK','BALL','CAP'].map(function(s){var p=pt.pays[s];return '<div class="pt-r"><div class="pt-s">'+symHtml(s)+'</div><div class="pt-v"><span>3× '+m2(p[0]*lb)+'</span><span>4× '+m2(p[1]*lb)+'</span><span>5× '+m2(p[2]*lb)+'</span></div></div>'}).join('')+'</div>'+
    '<div class="pt-txt"><p><b>MH logo is wild</b> (reels 2–4): it stands in for any picture except 🎟️ and 📜.</p>'+
    '<p><b>🎟️ Free Spins:</b> 3, 4 or 5 tickets anywhere pay '+pt.ticket_pays.map(function(x){return m2(x*SL.bet)}).join(' / ')+' and start '+pt.free_spins+' free spins. Every free-spin win pays ×'+pt.free_mult+'. More tickets during free spins add 10 more.</p>'+
-   '<p><b>📜 Draft Day bonus:</b> a draft card on reels 1, 2 and 3 opens the draft board. Pick 3 of 12 prospects (each worth 1× to 25× your bet), then the Combine multiplies your total by ×1, ×2 or ×3.</p>'+
+   '<p><b>⏱️ Two-Minute Drill:</b> a stopwatch on reels 1, 2 and 3 starts the drill: '+pt.drill.drives+' drives on a 3×3 board. Every drive, all 9 squares spin and land on Bucks, jackpot coins ('+pt.drill.jackpots.map(function(j){return j.name+' '+m2(j.x*SL.bet)}).join(' · ')+'), EXTRA DRIVE (+1, up to '+pt.drill.max+') or nothing. When the side reel lands <b>TOUCHDOWN!</b> you collect everything on the board.</p>'+
    '<p>Wins pay left to right on the 9 lines; only the best win on each line counts. Spins come out of your Mahomie Bucks: going broke still means you\'re done for the season.</p></div>'+
    '<button type="button" class="sl-pt" data-slptx="1">Back to the game</button>';
   el.appendChild(ov)}
@@ -88,7 +109,7 @@ document.addEventListener('click',function(e){
   if(d.slx){closeSlot();return}
   if(d.slbet){SL.bet=+d.slbet;slotRender();return}
   if(d.slspin){slotSpin();return}
-  if(d.slpick!==undefined){bonusPick(+d.slpick);return}
+  if(d.drskip){drillSkip();return}
   if(d.slcollect){bonusClose();return}
   if(d.slpt){paytableSheet();return}
   if(d.slptx){var p=document.querySelector('.sl-ptab');if(p)p.remove();return}
