@@ -75,12 +75,7 @@ function medianLine(me){
 function warnLine(s){if(!s)return '';var bits=s.warn.map(function(w){return esc(w.name)+(w.pos?' ('+esc(w.pos)+')':'')+' '+(w.why==='bye'?'is on bye':w.why==='no team'?'has no NFL team':'is '+esc(String(w.why).toUpperCase()))});
   if(s.empty)bits.push(s.empty+' empty starting slot'+(s.empty>1?'s':''));
   return bits.length?'<div class="yg-warn">⚠️ Lineup check: '+bits.join(' · ')+' <span>Fix it in Sleeper.</span></div>':''}
-function standStrip(me){var sts=(D.seasons[CUR()]||{}).standings||[];if(sts.length<8)return '';var st=sts.slice().sort(function(a,b){return a.seed-b.seed}),m=st.find(function(x){return x.uid===me});if(!m)return '';
-  var po=(D.league.playoff_teams||6),gb=function(a,b){return ((a.w-b.w)+(b.l-a.l))/2},fmt=function(x){return (x%1?x.toFixed(1):String(x))},line;
-  if(m.seed<=po){var nx=st[po];var d=gb(m,nx);line=d>0?fmt(d)+' game'+(d===1?'':'s')+' up on '+ord(po+1):'tied with '+ord(po+1)+' (points decide)'}
-  else{var ls=st[po-1];var d2=gb(ls,m);line=d2>0?fmt(d2)+' game'+(d2===1?'':'s')+' back of '+ord(po):'tied with '+ord(po)+' (points decide)'}
-  var o=(D.odds.list||[]).find(function(x){return x.uid===me});
-  return '<button type="button" class="yg-strip" data-go="league:season"><span><small>Place</small><b>'+ord(m.seed)+'</b></span><span><small>Playoff line</small><b>'+line+'</b></span>'+(o?'<span><small>Playoff odds</small><b>'+pct(o.playoff)+'</b></span>':'')+'</button>'}
+function myOdds(me){var o=(D.odds.list||[]).find(function(x){return x.uid===me});return o?'<span class="yg-po">'+pct(o.playoff)+' playoff odds</span>':''}
 function ygScore(s){
   if(!s)return '<b class="yg-s num">0.00</b>';
   if(!s.on&&s.proj!=null)return '<div class="yg-sc"><b class="yg-s num dim">'+f1(s.proj)+'</b><small>proj</small></div>';
@@ -113,10 +108,9 @@ function home(){
     var pick=savedTeam()?'':'<button type="button" class="yg-pick" data-tab="me">Pick your team</button>';
     h+='<div class="yourgame">'+pick+
      '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+
-     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
+     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+(savedTeam()?myOdds(me):'')+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
      '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span>'+ygMeta(sOpp)+'</div>'+ygScore(sOpp)+'</div>'+
      '</button>'+(savedTeam()?warnLine(sg?sMe:null)+medianLine(me):'')+'</div>';
-    if(savedTeam())h+=standStrip(me);
   } else if(!savedTeam()){
     h+='<button type="button" class="yourgame" data-tab="me"><div class="yg-k">Your game</div><div class="yg-n"><b>Pick your team</b><span>Then this card shows your matchup.</span></div></button>';
   } else {

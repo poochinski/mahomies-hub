@@ -367,10 +367,9 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .yourgame .wp-bar{height:6px}
 .yg-med,.yg-warn{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:var(--muted);font:12px/1.45 var(--body)}
 .yg-med b{color:var(--ink)}.yg-med em{font-style:normal;font-weight:600}.yg-med em.ok{color:var(--win)}.yg-med em.no{color:var(--loss)}.yg-med span{font:10.5px var(--mono);color:var(--faint)}
+.yg-n .yg-po{color:var(--gold)}
 .yg-warn{color:#ffb347;font-weight:600}.yg-warn span{font-weight:400;color:var(--muted)}
-.yg-strip{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;width:100%;margin-top:8px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(13,10,21,.45);color:inherit;text-align:left}
-.yg-strip span{display:grid;min-width:0}.yg-strip small{font:500 9px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
-.yg-strip b{font:600 13px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.yg-strip span:last-child{text-align:right}
+
 .games{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .gl{display:grid;gap:4px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:var(--ground-2);color:inherit;text-align:left;min-width:0}
 .gl-t{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;align-items:center;color:var(--muted)}

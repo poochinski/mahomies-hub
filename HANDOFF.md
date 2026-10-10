@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-09 23:30 (Pacific) · **AI:** Claude
 **Current phase:** v2.0 Home rework — parts 1–3 live; part 4 (This week list, recap, Explore) next
-**Last commit:** "v2.0 Home part 3 + box score fix"
+**Last commit:** "Home: playoff odds as one line on the card, strip removed"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -13,6 +13,7 @@ This push changes **your game card** only. Before a team has played, the big num
 Jayson wants to see it on his phone and may ask to put the old card back. Revert commit message: "v2.0 Home: your game card shows projected score instead of 0.00".
 
 ## Done (newest first)
+- 2026-10-09 — Jayson: the standings strip was too much. Removed it; Your game now shows one gold line under your record: "7.3% playoff odds" (`myOdds()`). Games-back info lives on the Standings page. (Claude)
 - 2026-10-09 — **Home part 3 + box score fix** (Claude). Jayson kept the new game card (no revert).
   - Inside Your game: **Lineup check** (orange) for my starters who haven't played and are Out / Doubtful / IR / suspended, on bye, or have no NFL team, plus empty slots ("Fix it in Sleeper"). Injury tags = Sleeper `injury_status` from the daily players pull (`server/sleeper/client.js` slim field `i`; `weekState` players carry `inj`; `homeCard` sends `warn_a/b`, `empty_a/b` on /api/pulse).
   - **Median game line** (only when `D.league.median`): every team's projected final (final pts if done, else live/pregame projection) ranked; "projected 4th of 12 · on track for the extra win" or "2.0 pts short of the top 6 (top-6 line ≈ 123.4)"; after the week "finished 4th · extra win ✓". Tap → new "Median game" How-it-works topic.
