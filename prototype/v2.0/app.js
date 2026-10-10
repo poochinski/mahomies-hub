@@ -107,25 +107,32 @@ function seriesTag(a,b){
   var lead=r.w>r.l?a:b,name=team(lead).replace(/^The /,'');
   return name+' '+( /[sz]$/i.test(name)?'lead':'leads')+' '+Math.max(r.w,r.l)+'–'+Math.min(r.w,r.l);
 }
+// Upset size: how many more wins the trailing team has than the team ahead (0 = not an upset).
 function upsetOn(a,b,sa,sb){
-  if(!sa||!sb||(sa.fin&&sb.fin)||!sa.on||!sb.on||sa.pts===sb.pts)return false;
+  if(!sa||!sb||(sa.fin&&sb.fin)||!sa.on||!sb.on||sa.pts===sb.pts)return 0;
   var ahead=sa.pts>sb.pts?a:b,trail=sa.pts>sb.pts?b:a,wa=winsOf(ahead),wb=winsOf(trail);
-  return wa!=null&&wb!=null&&wa<wb;
+  return wa!=null&&wb!=null&&wa<wb?(wb-wa)+Math.min(.99,Math.abs(sa.pts-sb.pts)/1000):0;
 }
+// Who's winning right now: final score when both are done, points once anyone has played; nobody before kickoff.
+function twLeader(sa,sb){if(!sa||!sb||!(sa.on||sb.on)||sa.pts===sb.pts)return '';return sa.pts>sb.pts?'a':'b'}
 function twRow(l){
   var sa=slateOrHist(l,'a'),sb=slateOrHist(l,'b'),tags=[],know=!!(pulseForWeek()&&PULSE.games&&PULSE.games.length);
   var ser=seriesTag(l.a,l.b);if(ser)tags.push('<span class="tw-tag">'+esc(ser)+'</span>');
   if(know&&sa.fin&&sb.fin)tags.push('<span class="tw-tag tw-tag-final">Final</span>');
-  else if(know&&upsetOn(l.a,l.b,sa,sb))tags.push('<span class="tw-tag tw-tag-up">Upset brewing</span>');
-  var side=function(u,s){var meta=s.on&&!s.fin?ygMeta(s):'';return '<div class="tw-side">'+av(u,28)+'<div class="tw-n"><b>'+esc(team(u))+'</b>'+meta+'</div>'+ygScore(s)+'</div>'};
-  return {fin:know&&sa.fin&&sb.fin?1:0,gap:twGap(sa,sb),id:l.id,
-    html:'<button type="button" class="tw-row" data-prev="'+l.id+'">'+side(l.a,sa)+side(l.b,sb)+(tags.length?'<div class="tw-tags">'+tags.join('')+'</div>':'')+'</button>'};
+  var lead=twLeader(sa,sb);
+  var side=function(u,s,k){var meta=s.on&&!s.fin?ygMeta(s):'';return '<div class="tw-side'+(lead===k?' tw-lead':'')+'">'+av(u,28)+'<div class="tw-n"><b>'+esc(team(u))+'</b>'+meta+'</div>'+ygScore(s)+'</div>'};
+  return {fin:know&&sa.fin&&sb.fin?1:0,gap:twGap(sa,sb),id:l.id,up:know?upsetOn(l.a,l.b,sa,sb):0,tags:tags,
+    head:'<button type="button" class="tw-row" data-prev="'+l.id+'">'+side(l.a,sa,'a')+side(l.b,sb,'b')};
 }
 function thisWeek(){
   var lines=(D.lines||[]).slice();if(!lines.length)return '';
   var me=savedTeam(),rows=lines.filter(function(l){return !me||(l.a!==me&&l.b!==me)});
   if(!rows.length)rows=lines;
   var built=rows.map(twRow).sort(function(a,b){return (a.fin-b.fin)||(a.gap-b.gap)||(a.id<b.id?-1:a.id>b.id?1:0)});
+  // Only the single biggest upset of the week gets the tag, so it stays special.
+  var best=null;built.forEach(function(r){if(r.up>0&&(!best||r.up>best.up))best=r});
+  if(best)best.tags.push('<span class="tw-tag tw-tag-up">Upset brewing</span>');
+  built.forEach(function(r){r.html=r.head+(r.tags.length?'<div class="tw-tags">'+r.tags.join('')+'</div>':'')+'</button>'});
   return '<section class="panel tight"><div class="ph"><div><div class="kicker">'+(me?'The other games':'Every game')+' · tap for preview</div><h2>This week</h2></div></div><div class="tw-list">'+built.map(function(r){return r.html}).join('')+'</div></section>';
 }
 function recapOne(s,w){

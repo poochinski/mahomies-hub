@@ -385,6 +385,7 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .tw-n .yg-st{font:11px var(--mono)}
 .tw-row .yg-s{font-size:22px}
 .tw-tags{display:flex;flex-wrap:wrap;gap:4px}
+.tw-side.tw-lead .yg-s{color:var(--win)}.tw-side.tw-lead .tw-n b{color:var(--ink)}.tw-side:not(.tw-lead) .tw-n b{color:var(--ink)}
 .tw-tag{font:500 10px var(--mono);letter-spacing:.02em;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 7px;line-height:1.3;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .tw-tag-final{color:var(--gold);border-color:rgba(246,207,76,.4)}
 .tw-tag-up{color:#ffb347;border-color:rgba(255,179,71,.45)}
