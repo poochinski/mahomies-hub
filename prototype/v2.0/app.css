@@ -367,7 +367,6 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .yourgame .wp-bar{height:6px}
 .yg-med,.yg-warn{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:var(--muted);font:12px/1.45 var(--body)}
 .yg-med b{color:var(--ink)}.yg-med em{font-style:normal;font-weight:600}.yg-med em.ok{color:var(--win)}.yg-med em.no{color:var(--loss)}.yg-med span{font:10.5px var(--mono);color:var(--faint)}
-.yg-n .yg-po{color:var(--gold)}
 .yg-warn{color:#ffb347;font-weight:600}.yg-warn span{font-weight:400;color:var(--muted)}
 
 .games{display:grid;grid-template-columns:1fr 1fr;gap:6px}

@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-09 23:30 (Pacific) · **AI:** Claude
 **Current phase:** v2.0 Home rework — parts 1–3 live; part 4 (This week list, recap, Explore) next
-**Last commit:** "Home: playoff odds as one line on the card, strip removed"
+**Last commit:** "Home: playoff odds removed from Your game"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -13,6 +13,7 @@ This push changes **your game card** only. Before a team has played, the big num
 Jayson wants to see it on his phone and may ask to put the old card back. Revert commit message: "v2.0 Home: your game card shows projected score instead of 0.00".
 
 ## Done (newest first)
+- 2026-10-09 — Jayson: playoff odds don't belong in the weekly game card. Removed entirely. **Open question:** where playoff odds should live in the Home / weekly breakdown — decide with Jayson later. (Claude)
 - 2026-10-09 — Jayson: the standings strip was too much. Removed it; Your game now shows one gold line under your record: "7.3% playoff odds" (`myOdds()`). Games-back info lives on the Standings page. (Claude)
 - 2026-10-09 — **Home part 3 + box score fix** (Claude). Jayson kept the new game card (no revert).
   - Inside Your game: **Lineup check** (orange) for my starters who haven't played and are Out / Doubtful / IR / suspended, on bye, or have no NFL team, plus empty slots ("Fix it in Sleeper"). Injury tags = Sleeper `injury_status` from the daily players pull (`server/sleeper/client.js` slim field `i`; `weekState` players carry `inj`; `homeCard` sends `warn_a/b`, `empty_a/b` on /api/pulse).
@@ -46,6 +47,7 @@ Jayson wants to see it on his phone and may ask to put the old card back. Revert
 - App admin is Jayson (Sleeper user Poochinski, `862901935416655872`). Sleeper league owner is MattGomez. Those are different.
 
 ## What we talked about / ideas parked
+- Where to show playoff odds on Home / a weekly breakdown (not on Your game). Jayson wants to revisit.
 - Full v2 order after Home: 2.1 Live Game Center, 2.2 weekly specials + Sportsbook Champion, 2.3 title/Sacko futures + playoff-week lines, 2.4 League Wire, 2.5 push + share cards + Hall of Fame voting, 2.6 start/sit (commish first), Book accuracy, survivor, dues ledger.
 - Early-season Book lines can be very wide. Review after Week 8.
 - Start/Sit helper may stay admin-only.

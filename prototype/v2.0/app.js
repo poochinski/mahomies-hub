@@ -75,7 +75,6 @@ function medianLine(me){
 function warnLine(s){if(!s)return '';var bits=s.warn.map(function(w){return esc(w.name)+(w.pos?' ('+esc(w.pos)+')':'')+' '+(w.why==='bye'?'is on bye':w.why==='no team'?'has no NFL team':'is '+esc(String(w.why).toUpperCase()))});
   if(s.empty)bits.push(s.empty+' empty starting slot'+(s.empty>1?'s':''));
   return bits.length?'<div class="yg-warn">⚠️ Lineup check: '+bits.join(' · ')+' <span>Fix it in Sleeper.</span></div>':''}
-function myOdds(me){var o=(D.odds.list||[]).find(function(x){return x.uid===me});return o?'<span class="yg-po">'+pct(o.playoff)+' playoff odds</span>':''}
 function ygScore(s){
   if(!s)return '<b class="yg-s num">0.00</b>';
   if(!s.on&&s.proj!=null)return '<div class="yg-sc"><b class="yg-s num dim">'+f1(s.proj)+'</b><small>proj</small></div>';
@@ -108,7 +107,7 @@ function home(){
     var pick=savedTeam()?'':'<button type="button" class="yg-pick" data-tab="me">Pick your team</button>';
     h+='<div class="yourgame">'+pick+
      '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+
-     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+(savedTeam()?myOdds(me):'')+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
+     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
      '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span>'+ygMeta(sOpp)+'</div>'+ygScore(sOpp)+'</div>'+
      '</button>'+(savedTeam()?warnLine(sg?sMe:null)+medianLine(me):'')+'</div>';
   } else if(!savedTeam()){

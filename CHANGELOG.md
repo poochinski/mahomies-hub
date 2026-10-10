@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Home: playoff odds removed from Your game entirely (placement to be decided later). (Claude)
 - 2026-10-09 — Home: removed the standings strip (too much); your playoff odds are now one gold line under your record on the Your game card. (Claude)
 - 2026-10-09 — v2.0 Home part 3: median-game line (projected place of 12 + top-6 line), lineup check (OUT/Doubtful/IR, bye, empty slot), standings strip (place, playoff line, playoff odds). Fixed box-score lineups squashing the right-hand team (CSS clash with the slot machine's `.slot` class). (Claude)
 - 2026-10-09 — **v2.0 Home, part 2**: Your game card shows a projected score instead of 0.00 before a team plays, plus the projected final and who's still left once the game has started. "Pick your team" if this phone hasn't chosen one. Easy to undo if it doesn't look right. (Grok)
