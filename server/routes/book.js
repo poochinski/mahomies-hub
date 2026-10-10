@@ -50,6 +50,7 @@ router.post('/book/admin/adjust', wrap(async (req) => ({ balance: await book.adj
 router.post('/book/admin/reset-pin', wrap(async (req) => { await book.resetPin(String(req.body?.user_id), await commish(req)); return { ok: true }; }));
 router.post('/book/admin/setting', wrap(async (req) => book.setSetting(String(req.body?.key), req.body?.value, await commish(req))));
 router.post('/book/admin/tick', wrap(async (req) => { await commish(req); return book.tick(); }));
+router.get('/book/admin/health', wrap(async (req) => { await commish(req); return book.health(); }));
 router.get('/book/admin/log', wrap(async (req) => { await commish(req); return book.recentLog(Number(req.query.limit) || 50); }));
 
 export default router;

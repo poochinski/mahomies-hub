@@ -103,7 +103,7 @@ export async function weekState(L, week, maxAgeMs = 60 * 1000) {
   for (const m of ms) {
     // Each starter counts by how many points his position usually scores in PPR,
     // so a kicker's game finishing moves the odds less than a quarterback's.
-    let rem = 0, all = 0, first = Infinity; const out = [];
+    let rem = 0, all = 0, first = Infinity; const out = []; const plist = [];
     // Live projected final, the way Sleeper shows it: points already scored, plus each
     // starter's Sleeper projection for the part of his game still to play.
     const pp = m.players_points || {}; let live = 0, pre = 0, have = 0, starters = 0;
@@ -115,6 +115,8 @@ export async function weekState(L, week, maxAgeMs = 60 * 1000) {
       const got = Number(pp[pid] || 0), pj = proj[pid];
       if (pj != null) have++;
       const g = k.gameOf[teamOf(pid)];
+      plist.push({ pid, pos: posOf(pid), nfl: teamOf(pid) || '', name: players[pid]?.n || pid, pts: got, proj: pj ?? null,
+        progress: g ? g.progress : 1, kick: g ? g.at : null, state: g ? g.state : 'bye' });
       if (!g) { out.push(`${pid}:${teamOf(pid) || '?'}`); live += got; continue; }
       pre += pj || 0;
       live += g.progress >= 1 ? got : got + (pj || 0) * (1 - g.progress);
@@ -124,7 +126,7 @@ export async function weekState(L, week, maxAgeMs = 60 * 1000) {
     // Only trust Sleeper's projection when it covers most of the lineup.
     const useProj = starters > 0 && have / starters >= 0.7;
     rosters[m.roster_id] = { pts: pts(m), rem: all ? rem / all : 0, first, out, slots: (m.starters || []).length,
-      proj_live: useProj ? Math.round(live * 10) / 10 : null, proj_pre: useProj ? Math.round(pre * 10) / 10 : null };
+      proj_live: useProj ? Math.round(live * 10) / 10 : null, proj_pre: useProj ? Math.round(pre * 10) / 10 : null, players: plist };
     if (m.matchup_id != null) starts[m.matchup_id] = Math.min(starts[m.matchup_id] ?? Infinity, first);
   }
   for (const mid of Object.keys(starts)) starts[mid] = new Date(Number.isFinite(starts[mid]) ? starts[mid] : k.first.getTime());
@@ -161,4 +163,12 @@ export async function projections(L, week, maxAgeMs = 10 * 60 * 1000) {
     if (hit) return hit.data;
     return {};
   }
+}
+
+// Every player's fantasy points this week, from every roster's matchup (for grading player props).
+export async function playerPoints(L, week, maxAgeMs = 0) {
+  const ms = await matchups(L.leagueId, week, maxAgeMs);
+  const out = {};
+  for (const m of ms) for (const [pid, v] of Object.entries(m.players_points || {})) out[String(pid)] = Number(v || 0);
+  return out;
 }

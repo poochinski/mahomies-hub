@@ -129,3 +129,8 @@ CREATE TABLE IF NOT EXISTS book_log (
 ALTER TABLE lines ADD COLUMN IF NOT EXISTS sd_a NUMERIC(6,2);
 ALTER TABLE lines ADD COLUMN IF NOT EXISTS sd_b NUMERIC(6,2);
 ALTER TABLE bet_legs ADD COLUMN IF NOT EXISTS live BOOLEAN NOT NULL DEFAULT false;
+
+-- 2026-10-09: player props (over/under on one player's fantasy points). The leg keeps the
+-- fantasy matchup in line_id (one pick per matchup in a parlay) plus the player.
+ALTER TABLE bet_legs ADD COLUMN IF NOT EXISTS player_id TEXT;
+ALTER TABLE bet_legs ADD COLUMN IF NOT EXISTS player_name TEXT;

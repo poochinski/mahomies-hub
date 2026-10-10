@@ -23,6 +23,15 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Sportsbook batch 1** (Claude). Jayson's calls: broke = out for the season (no re-buys); player props IN (parlay-able); tickets show the bettor.
+  - **Player props**: over/under on any starting QB/RB/WR/TE's fantasy points. Line = Sleeper projection scored with league settings (live: pts so far + proj for the rest of his game), x.5, -110/-110; off the board when his game is ~over, bye, or proj < 3. Can't take the under on your own player. Bet legs keep the fantasy matchup in line_id (so parlays stay one-pick-per-matchup) + player_id/player_name (new columns). Graded Wednesday from every roster's players_points (void if the player isn't on any roster). engine.js `propPrice`/`gradeProp`, book.js `propsFor`.
+  - **Game cards**: sportsbook grid (Spread · Total · Money per team row, O on top / U on bottom), live progress bar, "Opened …" line, "Player props (N) ›" link.
+  - **Props tab** (matchup picker, players grouped by fantasy team).
+  - **Bet slip**: up to 8 picks; Singles (each its own bet, same amount each) or Parlay (2–4, one per matchup, combined odds); **Review → Confirm & place** screen with total risk / to win / balance after; odds-moved handling re-shows the slip with new prices.
+  - **Tickets**: casino-style paper ticket with the MH logo, ticket #, time, bettor (team + manager), legs, risk/to win/payout, OPEN/LIVE/WON/LOST stamp, barcode; opens after placing and from any bet in My bets or the feed; **Share ticket** makes a PNG.
+  - **My bets / feed** shown as ticket stubs. Rules tab removed (now in "How it works").
+  - **Book health** (commish, Me tab): database, Sleeper, lines, open bets, settlement time, ESPN clocks, Sleeper projections, last clock-job run + recent errors (`GET /api/book/admin/health`).
+  - Tests: Book suite 44 checks + props suite 10 checks pass (scripts in Claude's scratchpad booktest/; fixtures built from real league data, not committed).
 - 2026-10-09 — **Sportsbook uses Sleeper's live projections** (Claude). Jayson saw "proj 116.2" in the Book while Sleeper showed 128.97 with Irving's points in. data.js `projections()` pulls Sleeper's player projections (api.sleeper.app/projections/nfl/{season}/{week}, unofficial but what the Sleeper app uses), scored with the league's own scoring settings, cached 10 min. `weekState()` now builds each lineup's live projected final = points scored + projection × share of each starter's game left (used when projections cover ≥70% of the lineup; otherwise falls back to the history projection). Live odds use it; the "proj" under each team in the Book now shows this live number (pregame: Sleeper's current projection). Tuesday lines blend 60% Sleeper lineup projection + 40% history (history only if Sleeper has none). Lines already posted stay frozen. Env override for tests: SLEEPER_PROJ_BASE.
 - 2026-10-09 — **Betting stays in the Book** (Jayson: "a fantasy companion/history/stats/hall of fame app first; betting is a fun side game"). Home "Your game" now shows each team's record + standing (e.g. 4-4 · 7th place) instead of a Sportsbook win %, no win bar, no "Bet →" link. Matchup previews opened anywhere except the Book tab drop the win chance and betting line (form, keys, history stay). (Claude)
 - 2026-10-09 — Record book: full game details wrap instead of "..." (regular font so they take fewer lines), and every number has a label (won by, points, pts in a loss/win, season pts, wins/losses in a row); streaks show "8 · wins in a row" instead of "8 W". "How it works" button no longer stretches full width. (Claude)
@@ -178,15 +187,15 @@ Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 - Nothing half-done. Needs a real-phone check by Jayson once Railway has the database.
 
 ## Next steps (in order)
-A. Jayson: confirm `/api/health` shows the database connected, log in to the Book
-   as The Water Boyz to claim the commish team + PIN, and tell the league to log in.
-   Tue Oct 13 6 AM: check Week 6 lines posted (if not: Me → Book controls → Post lines).
-B. Weekly specials (On Fire = top score of the week / Ice Cold = lowest / low-score O-U), priced by simulation.
-C. Futures (Champion / Sacko) repriced Tuesdays.
-D. Playoff weeks (15–17) lines: only bracket games; not built yet (Book stops after Wk 14 for now).
-E. Verify Lab endpoints with real data on Railway.
+A. Jayson: try it on Week 5 now (small straight bet, a 2-pick parlay with a prop, open the ticket, share it), check Wednesday 3 AM settlement in My bets; open Me → Book controls → Book health.
+B. Sportsbook batch 2 (Week 6): weekly specials (On Fire / Ice Cold / low-score O-U), weekly best bettor, **Sportsbook Champion** in Awards / hall of fame.
+C. Batch 3 (Week 7): futures (title + Sacko odds from the season sim, repriced Tuesdays).
+D. Maybe later: tail a bet from the feed, reactions, cash out.
+E. Playoff weeks (15–17) lines: only bracket games; not built yet.
+F. Verify Lab endpoints with real data on Railway.
 
 ## Decisions made (and why)
+- **Sportsbook rules (Jayson, 2026-10-09):** going broke = done for the season, no re-buys. Player props are in and can be parlayed (one pick per fantasy matchup still applies). Tickets/shares show the bettor's team (+ manager name). Every bet needs a confirm step.
 - **App identity (Jayson, 2026-10-09):** fantasy companion / history / stats / hall of fame first. Sportsbook numbers (win %, lines, odds) only appear inside the Book tab.
 - **Book details decided while building (Claude, 2026-10-09):** you can bet the over on your own game but not the under; bets can be cancelled until their game locks; 5 wrong PINs = 15-minute lock; phones stay logged in 180 days; parlays pay at most 10,000 back; lines keep the v1.5 projection formula (BIBLE §7) instead of Sleeper player projections; if ESPN kickoff times can't be read, betting pauses rather than guessing.
 - **Live betting replaces locks (Jayson, 2026-10-09):** a matchup goes live at its first starter's kickoff; odds then move with the score; betting stops only when every starter is done. (DB column `lines.locked` now means "started".)

@@ -66,6 +66,8 @@ var EXPLAIN={
  book:{t:'How the odds work',b:[
   ['Pregame lines','Posted Tuesday 6 AM. Each team\'s projection is 60% Sleeper\'s projection for the lineup as it\'s set that morning and 40% league history (last 3 weeks, season average, last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
   ['Live odds','Once the first player in a matchup kicks off, the odds go live and update about every minute: projected final = points already scored + Sleeper\'s projection for every starter still to play (the same projected totals Sleeper shows). The "proj" under each team is that live number. The further ahead a team gets, the worse its price.'],
+  ['Player props','Over/under on one player\'s fantasy points this week, scored your league\'s way. The line is Sleeper\'s projection (live during his game: points so far + projection for the rest), always x.5 so there are no pushes, -110 both ways. You can\'t take the under on your own player.'],
+  ['Singles and parlays','Your slip holds up to 8 picks. Singles = each pick is its own bet. Parlay = 2–4 picks, one per fantasy matchup, all have to win; odds multiply. Every bet gets a confirm screen, then a ticket you can share.'],
   ['Off the board','If a moneyline would be shorter than -1000 (nearly a sure thing), it comes off the board. Spreads and totals stay open.'],
   ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],
   ['Settling','Wednesday 3 AM, after Sleeper\'s stat corrections. Exact ties on a spread or total push (stake back).']]}

@@ -106,7 +106,7 @@ export function worseThan(market, pick, seen, now_) {
   if (seen.point != null && now_.point != null) {
     const a = Number(seen.point), b = Number(now_.point);
     if (market === 'spread' && b < a) return true;
-    if (market === 'total' && (pick === 'over' ? b > a : b < a)) return true;
+    if ((market === 'total' || market === 'prop') && (pick === 'over' ? b > a : b < a)) return true;
   }
   return false;
 }
@@ -180,4 +180,23 @@ export function gradeBet(stake, legs, maxPayout = Infinity) {
 export function betOdds(legs) {
   const dec = legs.reduce((x, l) => x * decimal(l.odds), 1);
   return { dec: Math.round(dec * 10000) / 10000, american: legs.length === 1 ? legs[0].odds : toAmerican(dec) };
+}
+
+// ---------- player props ----------
+// Over/under on one player's fantasy points this week, priced at -110 both ways.
+// Line = Sleeper's projection (live: points so far + projection for the rest of his game),
+// rounded to x.5 so there are no pushes. Off the board when his game is basically over,
+// he's on bye, or he's projected under 3 points before kickoff.
+export const PROP_MIN = 3;
+export function propPrice(p) {
+  if (!p || p.state === 'bye' || p.proj == null) return null;
+  if (p.progress >= 0.95) return null;
+  if (p.progress === 0 && p.proj < PROP_MIN) return null;
+  const exp = Number(p.pts || 0) + Number(p.proj) * (1 - p.progress);
+  return { line: Math.floor(exp) + 0.5, over: -110, under: -110, live: p.progress > 0, exp: r1(exp) };
+}
+export function gradeProp(pick, point, pts) {
+  if (pts == null) return 'void';
+  const x = pick === 'over' ? Number(pts) - Number(point) : Number(point) - Number(pts);
+  return Math.abs(x) < 1e-9 ? 'push' : x > 0 ? 'won' : 'lost';
 }

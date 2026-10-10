@@ -224,7 +224,8 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 ### Markets at launch
 1. **Spread** (-110 both sides), **Moneyline**, **Total (over/under)** on every matchup.
 2. **Weekly specials:** On Fire (who scores the most), Ice Cold (who scores the least), over/under on the week's lowest score. Priced from each team's projection + swing via simulation, with the same 4.5% hold.
-3. **Parlays:** 2–4 legs from spreads/moneylines/totals/specials; no two legs from the same matchup; payout = product of decimal odds; all legs must win.
+3. **Parlays:** 2–4 legs from spreads/moneylines/totals/player props/specials; no two legs from the same fantasy matchup; payout = product of decimal odds; all legs must win.
+3b. **Player props (built 2026-10-09):** over/under on a starting QB/RB/WR/TE's fantasy points; line = Sleeper projection (live during his game), x.5, -110 both sides; no under on your own player.
 4. **Futures:** League Champion and Sacko odds from the playoff/season simulation, repriced every Tuesday.
 
 ### Weekly timeline (Pacific)
@@ -431,6 +432,7 @@ POST /api/book/bets/:id/cancel       before the game locks (auth) (built)
 GET  /api/book/leaderboard           every active manager's bankroll (built)
 GET  /api/book/feed?limit=           latest bets, all managers (built)
 POST /api/book/admin/post-lines      { week, force } (commish) · /admin/settle { week, force } · /admin/line/:id { spread,total,ml_a,ml_b,note | void }
+GET  /api/book/admin/health          Book health checks (commish)
 POST /api/book/admin/adjust          { user_id, amount, note } · /admin/reset-pin { user_id } · /admin/setting { key, value } · /admin/tick
 GET  /api/book/admin/log             job runs + commish actions (commish)
 GET  /api/awards/:season

@@ -19,10 +19,7 @@ s=s[:a]+s[b:]
 # book block
 a=s.index("/* ---------- BOOK ---------- */"); b=s.index("/* ---------- ME / PROFILE ---------- */")
 s=s[:a]+book+"\n"+s[b:]
-# preview link: only when the hub has that week's line
-rep("""(sc||'<button type="button" class="prev-link" data-bkprev="'+l.id+'">Preview ›</button>')""",
-    """(sc||(line('w'+W.week+'m'+l.matchup_id)?'<button type="button" class="prev-link" data-prev="w'+W.week+'m'+l.matchup_id+'">Preview ›</button>':''))""")
-rep("""  if(S.picks.length)h+='<button type="button" class="slipbar\"""","""  if(S.picks.length)h+='<div style="height:60px"></div><button type="button" class="slipbar\"""")
+# (v1.8b: preview link + slip spacer now live in v18_book.js)
 # old slip
 a=s.index("function slipHtml(){\n  var p=S.slip"); b=s.index("function toast(t)")
 s=s[:a]+s[b:]
@@ -169,6 +166,7 @@ css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500
 """
 css+=open('/home/claude/data/v18_trades.css').read()
 css+=AW_CSS
+css+=open('/home/claude/data/v18_book2.css').read()
 # RENAME (Jayson 2026-10-09: no Banana Bets branding in this app)
 LOGO='<img class="mark" src="/brand-96.png" alt="" width="34" height="34">'
 a=s.index('<svg class="mark"'); b=s.index('</svg>',a)+6; s=s[:a]+LOGO+s[b:]
@@ -200,6 +198,23 @@ for a_,b_ in [
   ("""'<p class="margin">Win chance from the Sportsbook</p>'+info('preview')+'</section>';""","""'<p class="margin">Win chance from the Sportsbook</p>':'')+info('preview')+'</section>';"""),
   ("""  h+='<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>The line</h2>""","""  if(fromBook)h+='<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>The line</h2>"""),
   ("if(d.prev){openSheet(previewSheet(d.prev)+CLOSE);return}","if(d.prev){openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE);return}"),
+  ]:
+    assert s.count(a_)==1,(s.count(a_),a_[:70])
+    s=s.replace(a_,b_)
+# BOOK2 pass: slip modes, review/confirm, tickets, props tab, health (Jayson 2026-10-09)
+for a_,b_ in [
+  ("if(d.bk){var a=d.bk.split('|');if(!AUTH){S.picks=[{line:a[0],mkt:a[1],side:a[2]}];render();openLogin();return}togglePick(a[0],a[1],a[2]);return}",
+   "if(d.bk){var a=d.bk.split('|');if(!AUTH){S.picks=[{line:a[0],mkt:a[1],side:a[2],pid:a[3]}];render();openLogin();return}togglePick(a[0],a[1],a[2],a[3]);return}"),
+  ("if(d.slip){openSheet(slipHtml());return}","if(d.slip){S.review=false;openSheet(slipHtml());slipCheck();return}\n  if(d.smode){S.slipMode=d.smode;openSheet(slipHtml());slipCheck();return}\n  if(t.id==='review'){var pb=slipProblem();if(pb){var er=$('#slipErr');if(er)er.innerHTML=pb;return}S.review=true;openSheet(slipHtml());return}\n  if(t.id==='backSlip'){S.review=false;openSheet(slipHtml());slipCheck();return}\n  if(d.tkt){openSheet(ticketSheet([+d.tkt]));return}\n  if(d.tshare){shareTickets(d.tshare.split(',').map(Number));return}\n  if(d.props){S.bseg='props';S.propLine=d.props;closeSheetQuiet();render();window.scrollTo(0,0);return}"),
+  ("if(d.unpick!==undefined){S.picks.splice(+d.unpick,1);render();if(S.picks.length)openSheet(slipHtml());else closeSheetQuiet();return}",
+   "if(d.unpick!==undefined){S.picks.splice(+d.unpick,1);S.review=false;render();if(S.picks.length){openSheet(slipHtml());slipCheck()}else closeSheetQuiet();return}"),
+  ("if(d.stake){S.stake=+d.stake;openSheet(slipHtml());return}","if(d.stake){S.stake=+d.stake;openSheet(slipHtml());slipCheck();return}"),
+  ("if(t.id==='place'){placeBet(t);return}","if(t.id==='place'){placeBets(t);return}"),
+  ("if(d.bcancel){t.disabled=true;api('/bets/'+d.bcancel+'/cancel',{method:'POST'}).then(function(){toast('Bet cancelled, Bucks returned');bookLoad()})",
+   "if(d.bcancel){t.disabled=true;api('/bets/'+d.bcancel+'/cancel',{method:'POST'}).then(function(){closeSheetQuiet();toast('Bet cancelled, Bucks returned');bookLoad()})"),
+  ("if(d.adm){openSheet(admSheet(d.adm,d.arg));if(d.adm==='log')loadLog();return}","if(d.adm){openSheet(admSheet(d.adm,d.arg));if(d.adm==='log')loadLog();if(d.adm==='health')loadHealth();return}"),
+  ("  if(e.target.id==='h2a'){S.h2a=e.target.value;render()}","  if(e.target.id==='propSel'){S.propLine=e.target.value;render()}\n  if(e.target.id==='h2a'){S.h2a=e.target.value;render()}"),
+  ("bseg:'lines',picks:[],stake:25,","bseg:'lines',picks:[],stake:25,slipMode:'single',review:false,propLine:null,"),
   ]:
     assert s.count(a_)==1,(s.count(a_),a_[:70])
     s=s.replace(a_,b_)

@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../db.js';
 import { COMMISH_USER_ID } from '../config.js';
-import { priceWeek, legTerms, gradeLeg, gradeBet, betOdds, money, livePrice, worseThan, swing } from './engine.js';
+import { priceWeek, legTerms, gradeLeg, gradeBet, betOdds, money, livePrice, worseThan, swing, propPrice, gradeProp } from './engine.js';
 import { kickoffs, postTime, settleTime, fmtPT } from './kickoffs.js';
 import * as sl from './data.js';
 
@@ -208,6 +208,19 @@ export const refreshLocks = (season, week, opt) => liveWeek(season, week, opt);
 
 const isStarted = (line) => line.locked || (line.lock_at && new Date(line.lock_at) <= now());
 
+// Player props for one matchup: every starting QB/RB/WR/TE in either lineup.
+function propsFor(row, st, L) {
+  const out = [];
+  for (const [side, rid, uid] of [['a', row.roster_a, row.team_a], ['b', row.roster_b, row.team_b]]) {
+    for (const p of st?.rosters?.[rid]?.players || []) {
+      if (!['QB', 'RB', 'WR', 'TE'].includes(p.pos)) continue;
+      const pr = propPrice(p); if (!pr) continue;
+      out.push({ pid: p.pid, name: p.name, pos: p.pos, nfl: p.nfl, side, owner: uid, pts: p.pts, proj: p.proj, kick: p.kick, ...pr });
+    }
+  }
+  return out.sort((x, y) => y.exp - x.exp);
+}
+
 // The price right now: the frozen line before kickoff, live odds after.
 // Returns { ...line numbers, started, finished, live, rem_a, rem_b }.
 function priceNow(row, st) {
@@ -254,7 +267,8 @@ export async function linesFor(week, { season = null } = {}) {
       lock_at: r.lock_at, started: p.started, locked: p.started, status: r.status, note: r.note,
       score_a: r.final_a != null ? Number(r.final_a) : live[r.roster_a] ?? null,
       score_b: r.final_b != null ? Number(r.final_b) : live[r.roster_b] ?? null,
-      bets: H[r.id]?.n || 0
+      bets: H[r.id]?.n || 0,
+      props: r.status === 'open' && st ? propsFor(r, st, L) : []
     }; })
   };
 }
@@ -293,9 +307,10 @@ export async function editLine(id, body, by) {
 function label(leg, line, teams) {
   const nm = (u) => teams[u]?.team || '?';
   const odds = (o) => (o > 0 ? `+${o}` : `${o}`);
+  if (leg.market === 'prop') return `${leg.player_name || 'Player'} ${leg.pick === 'over' ? 'over' : 'under'} ${Number(leg.point)} pts`;
   if (leg.market === 'ml') return `${nm(leg.pick === 'a' ? line.team_a : line.team_b)} to win (${odds(leg.odds)})`;
   if (leg.market === 'spread') { const p = Number(leg.point); return `${nm(leg.pick === 'a' ? line.team_a : line.team_b)} ${p === 0 ? 'PK' : p > 0 ? '+' + p : p}`; }
-  return `${leg.pick === 'over' ? 'Over' : 'Under'} ${Number(leg.point)} · ${nm(line.team_a)} vs ${nm(line.team_b)}`;
+  return `${leg.pick === 'over' ? 'Over' : 'Under'} ${Number(leg.point)} total`;
 }
 
 /**
@@ -312,7 +327,7 @@ export async function placeBet(userId, legsIn, stakeIn) {
   const parlay = legsIn.length > 1;
   if (parlay && (legsIn.length < s.parlay_min_legs || legsIn.length > s.parlay_max_legs)) throw new BookError(`Parlays are ${s.parlay_min_legs}–${s.parlay_max_legs} picks`);
   const ids = legsIn.map((l) => String(l.line_id));
-  if (new Set(ids).size !== ids.length) throw new BookError('A parlay can only use one pick per game');
+  if (new Set(ids).size !== ids.length) throw new BookError('A parlay can only use one pick per fantasy matchup');
 
   const lines = await q('SELECT * FROM lines WHERE id = ANY($1)', [ids]);
   const byId = Object.fromEntries(lines.map((l) => [l.id, l]));
@@ -330,6 +345,17 @@ export async function placeBet(userId, legsIn, stakeIn) {
     const vs = `${L.teams[fresh.team_a]?.team} vs ${L.teams[fresh.team_b]?.team}`;
     if (fresh.status !== 'open') throw new BookError('That game is off the board');
     if (!fresh.lock_at) throw new BookError("Can't confirm kickoff times right now. Try again in a minute.", 503);
+    if (li.market === 'prop') {
+      if (li.pick !== 'over' && li.pick !== 'under') throw new BookError('Unknown bet type');
+      const pr = propsFor(fresh, st, L).find((x) => x.pid === String(li.player_id || ''));
+      if (!pr) throw new BookError("That player prop is off the board right now");
+      const mine2 = pr.owner === userId;
+      if (mine2 && li.pick === 'under') throw new BookError("You can't bet the under on your own player");
+      const terms = { point: pr.line, odds: li.pick === 'over' ? pr.over : pr.under, live: pr.live, player_id: pr.pid, player_name: pr.name };
+      if (worseThan('prop', li.pick, { odds: li.odds, point: li.point }, terms)) throw new BookError('Odds moved. Check the new price and place it again.', 409);
+      legs.push({ line: fresh, market: 'prop', pick: li.pick, ...terms });
+      continue;
+    }
     const p = priceNow(fresh, st);
     if (p.finished) throw new BookError(`${vs} is over. Waiting on the final score.`);
     if (p.unpriced) throw new BookError(`Can't price ${vs} live right now. Try again in a minute.`, 503);
@@ -357,7 +383,7 @@ export async function placeBet(userId, legsIn, stakeIn) {
     if (stake > bal) throw new BookError(`Not enough Bucks (you have ${bal})`);
     const { rows: [b] } = await c.query(`INSERT INTO bets(user_id, season, week, kind, stake, dec_odds, odds, to_win, lock_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [userId, season, week, parlay ? 'parlay' : 'single', stake, dec, odds, toWin, lockAt]);
-    for (const l of legs) await c.query('INSERT INTO bet_legs(bet_id, line_id, market, pick, point, odds, live) VALUES ($1,$2,$3,$4,$5,$6,$7)', [b.id, l.line.id, l.market, l.pick, l.point, l.odds, !!l.live]);
+    for (const l of legs) await c.query('INSERT INTO bet_legs(bet_id, line_id, market, pick, point, odds, live, player_id, player_name) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)', [b.id, l.line.id, l.market, l.pick, l.point, l.odds, !!l.live, l.player_id || null, l.player_name || null]);
     await c.query("INSERT INTO bankroll_ledger(user_id, season, amount, kind, bet_id, note) VALUES ($1,$2,$3,'stake',$4,$5)", [userId, season, -stake, b.id, `Bet #${b.id}`]);
     return b;
   });
@@ -461,13 +487,14 @@ export async function settleWeek(season, week, { force = false, by = null } = {}
   const pts = await sl.pointsFor(L, week, 0);
   const lines = await q("SELECT * FROM lines WHERE season=$1 AND week=$2 AND status='open'", [season, week]);
   for (const l of lines) if (!(pts[l.roster_a] > 0) || !(pts[l.roster_b] > 0)) throw new BookError(`Missing final score for ${l.id}; not settling`);
+  const ppts = await sl.playerPoints(L, week, 0).catch(() => ({}));
   let graded = 0;
   await tx(async (c) => {
     for (const l of lines) {
       const fa = pts[l.roster_a], fb = pts[l.roster_b];
       await c.query("UPDATE lines SET status='final', final_a=$2, final_b=$3, locked=true, updated_at=now() WHERE id=$1", [l.id, fa, fb]);
       const { rows: legs } = await c.query("SELECT * FROM bet_legs WHERE line_id=$1 AND result='open'", [l.id]);
-      for (const g of legs) await c.query('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, gradeLeg(g, fa, fb)]);
+      for (const g of legs) await c.query('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, g.market === 'prop' ? gradeProp(g.pick, g.point, ppts[g.player_id]) : gradeLeg(g, fa, fb)]);
     }
     const { rows: bets } = await c.query("SELECT id FROM bets WHERE season=$1 AND week=$2 AND status='open'", [season, week]);
     for (const b of bets) { await gradeOne(b.id, c); graded++; }
@@ -478,6 +505,7 @@ export async function settleWeek(season, week, { force = false, by = null } = {}
 }
 
 // ---------- the clock job (every 10 minutes) ----------
+let lastTick = null;
 export async function tick() {
   if (!pool) return { skipped: 'no database' };
   if (!ready) await initBook();
@@ -505,6 +533,7 @@ export async function tick() {
   // 3) Keep lock flags current for open weeks.
   const open = await q('SELECT season, week FROM book_weeks WHERE settled_at IS NULL');
   for (const o of open) await refreshLocks(o.season, o.week).catch((e) => out.errors.push(`locks wk ${o.week}: ${e.message}`));
+  lastTick = out;
   if (out.posted.length || out.settled.length || out.errors.length) await log('tick', out);
   return out;
 }
@@ -528,3 +557,31 @@ export async function status() {
 }
 
 export async function recentLog(limit = 50) { return q('SELECT * FROM book_log ORDER BY id DESC LIMIT $1', [limit]); }
+
+// Commish "Book health" card: is everything the Book depends on working right now?
+export async function health() {
+  const L = await sl.league();
+  const w = await currentWeek();
+  const out = { season: L.season, nfl_week: L.nflWeek, last_tick: lastTick, checks: [] };
+  const add = (name, ok, detail) => out.checks.push({ name, ok, detail });
+  add('Database', true, 'Connected');
+  add('Sleeper', true, `${L.teams ? Object.keys(L.teams).length : 0} managers, Week ${L.nflWeek}`);
+  if (w) {
+    const [bw] = await q('SELECT * FROM book_weeks WHERE season=$1 AND week=$2', [w.season, w.week]);
+    const lines = await q('SELECT status, locked FROM lines WHERE season=$1 AND week=$2', [w.season, w.week]);
+    const open = await q("SELECT COUNT(*)::int n, COALESCE(SUM(stake),0)::float s FROM bets WHERE season=$1 AND week=$2 AND status='open'", [w.season, w.week]);
+    add('Lines', lines.length > 0, `Week ${w.week}: ${lines.length} games (${lines.filter((l) => l.locked).length} started, ${lines.filter((l) => l.status !== 'open').length} final/void)`);
+    add('Open bets', true, `${open[0].n} bets, ${money(open[0].s)} Bucks riding`);
+    add('Settlement', true, bw?.settled_at ? `Settled ${fmtPT(bw.settled_at)}` : bw?.settle_at ? `Settles ${fmtPT(bw.settle_at)}` : 'Time not set yet');
+    try {
+      const st = await liveWeek(w.season, w.week);
+      const rs = Object.values(st?.rosters || {});
+      const withProj = rs.filter((r) => r.proj_live != null).length;
+      add('NFL game clocks (ESPN)', true, `${st.k.games.length} games, ${st.k.games.filter((g) => g.state === 'in').length} live now`);
+      add('Sleeper projections', withProj > 0, withProj ? `${withProj} of ${rs.length} lineups projected` : 'Not available — live odds use the history projection');
+    } catch (e) { add('Live data', false, e.message); }
+  } else add('Lines', false, 'No week posted yet');
+  const errs = await q("SELECT at, detail FROM book_log WHERE kind='tick' AND detail->'errors' <> '[]'::jsonb ORDER BY id DESC LIMIT 3");
+  out.recent_errors = errs.map((e) => ({ at: e.at, errors: e.detail?.errors || [] }));
+  return out;
+}
