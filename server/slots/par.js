@@ -70,12 +70,12 @@ export function parSheet() {
   for (let a = 0; a < lens[0]; a++) { g[0] = win[0][a];
     for (let b = 0; b < lens[1]; b++) { g[1] = win[1][b];
       for (let c = 0; c < lens[2]; c++) { g[2] = win[2][c];
-        const bonus = g[0].includes(D) && g[1].includes(D) && g[2].includes(D);
         for (let d = 0; d < lens[3]; d++) { g[3] = win[3][d];
           for (let e = 0; e < lens[4]; e++) { g[4] = win[4][e];
             n++;
             const lp = lineEval();
-            let t = 0; for (let r = 0; r < 5; r++) for (let k = 0; k < 3; k++) if (g[r][k] === T) t++;
+            let t = 0, dd = 0; for (let r = 0; r < 5; r++) for (let k = 0; k < 3; k++) { if (g[r][k] === T) t++; else if (g[r][k] === D) dd++; }
+            const bonus = dd >= 3;
             const sc = t >= 3 ? TICKET_PAYS[Math.min(t, 5) - 3] : 0;
             lineSum += lp; scatterSum += sc;
             if (lp > maxLine) maxLine = lp;

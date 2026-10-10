@@ -1078,19 +1078,19 @@ function slotSpin(){
   api('/slots/spin',{body:{bet:SL.bet}}).then(function(r){SL.res=r;var wait=SL.slam?0:Math.max(0,560-(Date.now()-t0));setTimeout(function(){ggSchedule(r)},wait)})
    .catch(function(e){GR.forEach(function(r){r.mode='idle';r.v=0;r.p=Math.round(r.p);if(r.el)r.el.classList.remove('blur')});aHum(false);SL.spinning=false;SL.auto=0;
      api('/slots/state').then(function(s){SL.state=s;SL.cred=s.balance;ggMeters()}).catch(function(){ggMeters()});ggMeters();ggMsg(e.message,'bad');aPlay('deny')})}
-function ggAntic(g){var a=[false,false,false,false,false],tk=0;
-  for(var i=0;i<5;i++){if(i>=2&&tk>=2)a[i]=true;tk+=g[i].filter(function(s){return s==='TICKET'}).length}
-  if(g[0].indexOf('DRAFT')>=0&&g[1].indexOf('DRAFT')>=0)a[2]=true;return a}
+function ggAntic(g){var a=[false,false,false,false,false],tk=0,dr=0;
+  for(var i=0;i<5;i++){if(i>=2&&(tk>=2||dr>=2))a[i]=true;tk+=g[i].filter(function(s){return s==='TICKET'}).length;dr+=g[i].filter(function(s){return s==='DRAFT'}).length}
+  return a}
 function ggSchedule(r){SL.stopT.forEach(clearTimeout);SL.stopT=[];if(SL.slam){ggSlamStop();return}
   var ant=ggAntic(r.grid),t=0;
   for(var i=0;i<5;i++){if(i)t+=230;if(ant[i]){(function(i,ts){SL.stopT.push(setTimeout(function(){if(GR[i].el)GR[i].el.classList.add('antic');aPlay('antic')},ts))})(i,t);t+=1300}
     (function(i,ts){SL.stopT.push(setTimeout(function(){reelStop(GR[i],r.stops[i])},ts))})(i,t)}}
 function ggSlam(){if(SL.slam)return;SL.slam=true;aPlay('click');if(SL.res)ggSlamStop()}
 function ggSlamStop(){SL.stopT.forEach(clearTimeout);SL.stopT=[];var r=SL.res;GR.forEach(function(g,i){if(g.mode==='spin')reelStop(g,r.stops[i],true)})}
-function reelLanded(r){var res=SL.res;if(!res)return;var col=res.grid[r.i],sp=col.indexOf('TICKET')>=0||(r.i<3&&col.indexOf('DRAFT')>=0);
+function reelLanded(r){var res=SL.res;if(!res)return;var col=res.grid[r.i],sp=col.indexOf('TICKET')>=0||col.indexOf('DRAFT')>=0;
   aPlay('stop',r.i);if(sp){SL.scat=(SL.scat||0);aPlay('scat',r.i)}
   try{if(navigator.vibrate)navigator.vibrate(sp?18:7)}catch(e){}
-  if(sp)col.forEach(function(s,row){if(s==='TICKET'||(s==='DRAFT'&&r.i<3)){var c=cellEl(r.i,row);if(c)c.classList.add('pop')}});
+  if(sp)col.forEach(function(s,row){if(s==='TICKET'||s==='DRAFT'){var c=cellEl(r.i,row);if(c)c.classList.add('pop')}});
   SL.landed++;if(SL.landed===5){aHum(false);setTimeout(ggDone,140)}}
 function ggPops(off){[].forEach.call(document.querySelectorAll('#ggReels .gc.pop'),function(c){c.classList.remove('pop')})}
 function ggClearMarks(){[].forEach.call(document.querySelectorAll('#ggReels .gc.win,#ggReels .gc.dim'),function(c){c.classList.remove('win','dim')});var sv=document.getElementById('ggLines');if(sv)sv.innerHTML=''}
@@ -1111,7 +1111,7 @@ function ggDone(){var r=SL.res;SL.spinning=false;var st=SL.state;
   st.free_left=r.free_left;st.free_bet=r.free_left>0?r.bet:null;st.balance=r.balance;
   var items=r.wins.map(function(w){return {line:w.line,cells:w.cells,label:'Line '+(w.line+1)+' · '+w.n+' '+GG_N[w.sym]+' · '+gb(w.pay)}});
   if(r.tickets>=3){var tc=[];r.grid.forEach(function(col,ri){col.forEach(function(s,row){if(s==='TICKET')tc.push([ri,row])})});items.push({line:-1,cells:tc,label:r.tickets+' tickets'+(r.scatter?' pay '+gb(r.scatter):'')+' · free spins!'})}
-  if(r.bonus){var dc=[];[0,1,2].forEach(function(ri){r.grid[ri].forEach(function(s,row){if(s==='DRAFT')dc.push([ri,row])})});items.push({line:-1,cells:dc,label:'Two-Minute Drill!'})}
+  if(r.bonus){var dc=[];r.grid.forEach(function(col,ri){col.forEach(function(s,row){if(s==='DRAFT')dc.push([ri,row])})});items.push({line:-1,cells:dc,label:'Two-Minute Drill!'})}
   SL.items=items;ggMeters();
   var next=function(){st.free_won=r.free_won;ggCycle();ggMeters();ggAfter(r)};
   if(r.win>0){ggShowAll(items);ggMsg('Win '+gb(r.win),'hot');var x=r.win/r.bet;
@@ -1252,7 +1252,7 @@ function paytableSheet(){var pt=SL.pt;if(!pt)return;var bet=SL.bet,lb=bet/9,el=s
    '<div class="pt-grid">'+['WILD','RING','TROPHY','STADIUM','PLAYBOOK','BALL','CAP'].map(function(s){var p=pt.pays[s];return '<div class="pt-c">'+gc(s)+'<div class="pt-v"><span><em>5</em>'+gb(p[2]*lb)+'</span><span><em>4</em>'+gb(p[1]*lb)+'</span><span><em>3</em>'+gb(p[0]*lb)+'</span></div><small>'+GG_N[s]+'</small></div>'}).join('')+'</div>'+
    '<div class="pt-sp">'+gc('WILD')+'<div><b>MH Wild</b><p>Reels 2, 3 and 4. Stands in for every picture except the ticket and the stopwatch. Five wilds in a row pays the top prize: '+gb(pt.pays.WILD[2]*lb)+'.</p></div></div>'+
    '<div class="pt-sp">'+gc('TICKET')+'<div><b>Free Spins</b><p>3, 4 or 5 tickets anywhere pay '+pt.ticket_pays.map(function(x){return gb(x*bet)}).join(' / ')+' and start '+pt.free_spins+' free spins at your bet. Every free-spin win pays ×'+pt.free_mult+'. 3 more tickets add 10 more.</p></div></div>'+
-   '<div class="pt-sp">'+gc('DRAFT')+'<div><b>Two-Minute Drill</b><p>A stopwatch on reels 1, 2 and 3 starts the bonus: '+pt.drill.drives+' drives on a 3×3 board. Each drive the squares spin to Bucks, jackpot coins (GRAND '+gb(250*bet)+' · MAJOR '+gb(50*bet)+' · MINOR '+gb(15*bet)+' · MINI '+gb(5*bet)+'), +1 DRIVE (up to '+pt.drill.max+') or nothing. When the play reel lands TOUCHDOWN you collect everything on the board.</p></div></div>'+
+   '<div class="pt-sp">'+gc('DRAFT')+'<div><b>Two-Minute Drill</b><p>3 or more stopwatches anywhere on the screen start the bonus: '+pt.drill.drives+' drives on a 3×3 board. Each drive the squares spin to Bucks, jackpot coins (GRAND '+gb(250*bet)+' · MAJOR '+gb(50*bet)+' · MINOR '+gb(15*bet)+' · MINI '+gb(5*bet)+'), +1 DRIVE (up to '+pt.drill.max+') or nothing. When the play reel lands TOUCHDOWN you collect everything on the board.</p></div></div>'+
    '<div class="pt-h">The 9 paylines</div><div class="pt-lines">'+pt.lines.map(mini).join('')+'</div>'+
    '<div class="pt-h">The math (par sheet)</div><div class="pt-par">'+
     [['Payback',(par.rtp?(par.rtp*100).toFixed(1):'92.5')+'%','Theoretical, over the long run. That\'s the Las Vegas Strip average (Nevada\'s legal minimum is 75%).'],

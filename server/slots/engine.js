@@ -13,20 +13,20 @@ export const SYMBOLS = {
 
 // Pays per LINE bet for 3 / 4 / 5 in a row from the left.
 export const PAYS = {
-  WILD: [60, 300, 1500], RING: [35, 140, 500], TROPHY: [20, 80, 250], STADIUM: [14, 40, 125],
-  PLAYBOOK: [7, 20, 75], BALL: [6, 14, 50], CAP: [4, 11, 35]
+  WILD: [60, 300, 1500], RING: [30, 120, 450], TROPHY: [18, 70, 225], STADIUM: [12, 36, 110],
+  PLAYBOOK: [6, 18, 65], BALL: [5, 13, 45], CAP: [4, 9, 30]
 };
 // Scatter pays × TOTAL bet for 3 / 4 / 5 tickets anywhere (plus 10 free spins).
 export const TICKET_PAYS = [3, 15, 75];
 export const FREE_SPINS = 10, FREE_MULT = 3;
 
-// Reel strips (symbol counts). Wilds only on reels 2–4; draft cards only on reels 1–3.
+// Reel strips (symbol counts). Wilds only on reels 2–4; one stopwatch (Two-Minute Drill scatter) on every reel.
 const COUNTS = [
-  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, TICKET: 1, DRAFT: 2 },
-  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, WILD: 2, TICKET: 1, DRAFT: 2 },
-  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, WILD: 2, TICKET: 1, DRAFT: 2 },
-  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, WILD: 2, TICKET: 1 },
-  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, TICKET: 1 }
+  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, TICKET: 1, DRAFT: 1 },
+  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, WILD: 2, TICKET: 1, DRAFT: 1 },
+  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, WILD: 2, TICKET: 1, DRAFT: 1 },
+  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, WILD: 2, TICKET: 1, DRAFT: 1 },
+  { RING: 2, TROPHY: 3, STADIUM: 4, PLAYBOOK: 6, BALL: 7, CAP: 8, TICKET: 1, DRAFT: 1 }
 ];
 // Spread each symbol evenly around the strip so stacks look natural.
 function buildStrip(counts, seed) {
@@ -81,7 +81,7 @@ export const gridAt = (stops) => STRIPS.map((strip, reel) => [0, 1, 2].map((k) =
 export function spinGrid(r = rand) { return gridAt(spinStops(r)); }
 
 // PAR sheet (re-run `node server/slots/par.js` after changing any pay, strip or drill number, and update this).
-export const PAR = { rtp: 0.9251, hit: 0.3529, free_odds: 158, bonus_odds: 187, drill_avg: 31.3, screens: 41354775 };
+export const PAR = { rtp: 0.9253, hit: 0.3760, free_odds: 156, bonus_odds: 156, drill_avg: 31.3, screens: 40247296 };
 
 // grid[reel][row]. Returns line wins, scatter count/pay, bonus trigger. All pays in multiples of TOTAL bet.
 export function evaluate(grid) {
@@ -98,10 +98,9 @@ export function evaluate(grid) {
     if (best) wins.push(best);
   });
   let tickets = 0, drafts = 0;
-  grid.forEach((col, reel) => col.forEach((s) => { if (s === 'TICKET') tickets++; if (s === 'DRAFT' && reel < 3) drafts++; }));
+  grid.forEach((col, reel) => col.forEach((s) => { if (s === 'TICKET') tickets++; if (s === 'DRAFT') drafts++; }));
   const scatter = tickets >= 3 ? TICKET_PAYS[Math.min(tickets, 5) - 3] : 0;
-  // Draft Day needs a draft card on each of reels 1, 2 and 3.
-  const bonus = [0, 1, 2].every((r) => grid[r].includes('DRAFT'));
+  const bonus = drafts >= 3; // 3 or more stopwatches anywhere (Jayson, 2026-10-09)
   const linePay = wins.reduce((a, w) => a + w.pay, 0);
   return { wins, linePay, tickets, scatter, freeSpins: tickets >= 3 ? FREE_SPINS : 0, bonus, total: linePay + scatter };
 }
