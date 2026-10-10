@@ -86,7 +86,9 @@ export function priceMatchup(pa, pb, sda, sdb, hold = HOLD) {
  */
 export function livePrice(line, st, hold = HOLD) {
   const ra = Math.max(0, Math.min(1, st.rem_a)), rb = Math.max(0, Math.min(1, st.rem_b));
-  const ea = st.pts_a + Number(line.proj_a) * ra, eb = st.pts_b + Number(line.proj_b) * rb;
+  // Expected finals: Sleeper's live projected totals when we have them, else our own projection × share left.
+  const ea = st.exp_a != null ? st.exp_a : st.pts_a + Number(line.proj_a) * ra;
+  const eb = st.exp_b != null ? st.exp_b : st.pts_b + Number(line.proj_b) * rb;
   const sd = Math.hypot(Number(line.sd_a || DEFAULT_SD) * Math.sqrt(ra), Number(line.sd_b || DEFAULT_SD) * Math.sqrt(rb));
   if (ra + rb < 0.005 || sd < 0.5) return null;
   const p = phi((ea - eb) / sd);
@@ -94,7 +96,7 @@ export function livePrice(line, st, hold = HOLD) {
   return {
     exp_a: r1(ea), exp_b: r1(eb), spread: half(ea - eb), total: half(ea + eb),
     ml_a: ml(p * (1 + hold)), ml_b: ml((1 - p) * (1 + hold)), wp_a: Math.round(p * 1000) / 1000,
-    rem_a: Math.round(ra * 1000) / 1000, rem_b: Math.round(rb * 1000) / 1000
+    rem_a: Math.round(ra * 1000) / 1000, rem_b: Math.round(rb * 1000) / 1000, source: st.exp_a != null && st.exp_b != null ? 'sleeper' : 'history'
   };
 }
 
@@ -115,12 +117,16 @@ export function worseThan(market, pick, seen, now_) {
  *   cur    = { uid: [scores before this week] }
  *   prev   = { uid: [last season regular-season scores] }
  */
-export function priceWeek(week, pairs, cur, prev) {
+export function priceWeek(week, pairs, cur, prev, sleeperProj = {}) {
   const avgs = Object.values(cur).filter((s) => s.length).map(mean);
   const lgAvg = mean(avgs);
   return pairs.map((m) => {
     const ca = cur[m.a] || [], cb = cur[m.b] || [], pa_ = prev[m.a] || [], pb_ = prev[m.b] || [];
-    return { ...m, ...priceMatchup(project(ca, pa_, lgAvg, week), project(cb, pb_, lgAvg, week), swing(ca, pa_), swing(cb, pb_)) };
+    // Blend in Sleeper's projection for the lineup as it's set now (60%) when we have one for both teams.
+    let ja = project(ca, pa_, lgAvg, week), jb = project(cb, pb_, lgAvg, week);
+    const sa = sleeperProj[m.a], sb = sleeperProj[m.b];
+    if (sa > 0 && sb > 0) { ja = 0.6 * sa + 0.4 * ja; jb = 0.6 * sb + 0.4 * jb; }
+    return { ...m, ...priceMatchup(ja, jb, swing(ca, pa_), swing(cb, pb_)), blended: sa > 0 && sb > 0 };
   });
 }
 

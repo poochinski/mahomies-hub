@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Sportsbook: live projected totals + live odds from Sleeper's player projections; Tuesday lines blend Sleeper 60/40 with history. (Claude)
 - 2026-10-09 — Home + non-Book previews no longer show win % or betting lines; Your game shows record + place. (Claude)
 - 2026-10-09 — Record book: full details + unit labels under every number. (Claude)
 - 2026-10-09 — Draft re-grade: clearer rows (drafted → finished, spots gained/lost, labeled points). (Claude)

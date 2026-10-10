@@ -153,7 +153,10 @@ export async function postLines(week, { force = false, by = null } = {}) {
   const pairs = await sl.pairsFor(L, week);
   if (!pairs.length) throw new BookError(`Sleeper has no Week ${week} matchups yet`);
   const { cur, prev } = await sl.scoresBefore(L, week);
-  const priced = priceWeek(week, pairs, cur, prev);
+  // Sleeper's projections for each lineup as currently set (blended 60/40 with league history).
+  const sp = {};
+  try { const ws = await sl.weekState(L, week); for (const [rid, x] of Object.entries(ws.rosters)) if (x.proj_pre > 0 && L.owner[rid]) sp[L.owner[rid]] = x.proj_pre; } catch { /* history only */ }
+  const priced = priceWeek(week, pairs, cur, prev, sp);
   let k = null; try { k = await kickoffs(season, week); } catch { /* lock times filled in later */ }
   await tx(async (c) => {
     if (have.length) {
@@ -168,7 +171,7 @@ export async function postLines(week, { force = false, by = null } = {}) {
         [`${season}-w${week}-m${m.matchup_id}`, season, week, m.matchup_id, m.a, m.b, m.roster_a, m.roster_b, m.proj_a, m.proj_b, m.spread, m.total, m.ml_a, m.ml_b, m.wp_a, m.sd_a, m.sd_b]);
     }
   });
-  await log('post_lines', { season, week, lines: priced.length, force }, by);
+  await log('post_lines', { season, week, lines: priced.length, force, sleeper_projections: priced.filter((m) => m.blended).length }, by);
   await refreshLocks(season, week, { fresh: true }).catch(() => {});
   return linesFor(week);
 }
@@ -213,7 +216,8 @@ function priceNow(row, st) {
   if (row.status !== 'open' || !base.started) return base;
   const A = st?.rosters?.[row.roster_a], B = st?.rosters?.[row.roster_b];
   if (!A || !B) return { ...base, live: true, unpriced: true };
-  const lp = livePrice(row, { pts_a: A.pts, pts_b: B.pts, rem_a: A.rem, rem_b: B.rem });
+  const both = A.proj_live != null && B.proj_live != null;
+  const lp = livePrice(row, { pts_a: A.pts, pts_b: B.pts, rem_a: A.rem, rem_b: B.rem, exp_a: both ? A.proj_live : null, exp_b: both ? B.proj_live : null });
   if (!lp) return { ...base, live: true, finished: true, rem_a: 0, rem_b: 0 };
   return { ...base, ...lp, live: true };
 }
@@ -243,7 +247,8 @@ export async function linesFor(week, { season = null } = {}) {
       proj_a: Number(r.proj_a), proj_b: Number(r.proj_b), spread: p.spread, total: p.total,
       ml_a: p.ml_a, ml_b: p.ml_b, spread_price: r.spread_price, total_price: r.total_price, wp_a: p.wp_a,
       open: { spread: Number(r.spread), total: Number(r.total), ml_a: r.ml_a, ml_b: r.ml_b },
-      live: p.live, finished: p.finished, unpriced: !!p.unpriced, exp_a: p.exp_a ?? null, exp_b: p.exp_b ?? null,
+      live: p.live, finished: p.finished, unpriced: !!p.unpriced, exp_a: p.exp_a ?? null, exp_b: p.exp_b ?? null, proj_source: p.source || null,
+      now_a: st?.rosters?.[r.roster_a]?.proj_live ?? null, now_b: st?.rosters?.[r.roster_b]?.proj_live ?? null,
       left: p.live && p.rem_a != null ? Math.round(50 * (p.rem_a + p.rem_b)) : null,
       out_a: st?.rosters?.[r.roster_a]?.out || [], out_b: st?.rosters?.[r.roster_b]?.out || [], rem_a: p.rem_a ?? null, rem_b: p.rem_b ?? null,
       lock_at: r.lock_at, started: p.started, locked: p.started, status: r.status, note: r.note,

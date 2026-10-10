@@ -939,8 +939,9 @@ function blocked(l,mkt,side){var me=AUTH&&AUTH.user_id;if(!me||(l.a!==me&&l.b!==
 function picked(id,mkt,side){return S.picks.some(function(p){return p.line===id&&p.mkt===mkt&&p.side===side})}
 function obk(l,mkt,side,label,sub,fav){if(mkt==='ml'&&(side==='a'?l.ml_a:l.ml_b)==null){label='Off';fav=false}var lk=isLk(l)||(mkt==='ml'&&(side==='a'?l.ml_a:l.ml_b)==null),dis=lk||blocked(l,mkt,side);
   return '<button type="button" class="ob'+(fav?' fav':'')+(picked(l.id,mkt,side)?' sel':'')+'" data-bk="'+l.id+'|'+mkt+'|'+side+'"'+(dis?' disabled':'')+(blocked(l,mkt,side)?' title="You can\'t bet against yourself"':'')+'>'+esc(label)+(sub!=null?'<small>'+odds(sub)+'</small>':'')+'</button>'}
+function projShown(l,s){var e=s==='a'?l.exp_a:l.exp_b,n=s==='a'?l.now_a:l.now_b,f=s==='a'?l.proj_a:l.proj_b;return l.live&&e!=null?e:n!=null?n:f}
 function sideRowB(l,s){var u=s==='a'?l.a:l.b,sp=s==='a'?-l.spread:l.spread,ml=s==='a'?l.ml_a:l.ml_b,sc=s==='a'?l.score_a:l.score_b;
-  return '<div class="mu-t">'+who(u,(sc!=null&&(l.live||l.status!=='open')?f2(sc)+' pts · ':'')+'proj '+f1(s==='a'?l.proj_a:l.proj_b)+(function(o){return o&&o.length?' · '+o.length+' slot'+(o.length>1?'s':'')+' not playing':''})(s==='a'?l.out_a:l.out_b),30)+obk(l,'spread',s,spr(sp),l.spread_price,sp<0)+obk(l,'ml',s,odds(ml),null,sp<0)+'</div>'}
+  return '<div class="mu-t">'+who(u,(sc!=null&&(l.live||l.status!=='open')?f2(sc)+' pts · ':'')+'proj '+f1(projShown(l,s))+(function(o){return o&&o.length?' · '+o.length+' slot'+(o.length>1?'s':'')+' not playing':''})(s==='a'?l.out_a:l.out_b),30)+obk(l,'spread',s,spr(sp),l.spread_price,sp<0)+obk(l,'ml',s,odds(ml),null,sp<0)+'</div>'}
 function bookHero(){
   if(AUTH&&BK.me){var open=BK.me.bets.filter(function(b){return b.status==='open'});
     return '<section class="hero bk-hero"><div class="eyebrow">Mahomie\'s Sportsbook · '+esc(team(BK.me.user_id))+'</div><div class="bank">💵 '+money2(BK.me.balance)+'</div><p class="sub" style="margin-top:6px">Mahomie Bucks to bet · '+open.length+' open bet'+(open.length===1?'':'s')+(open.length?' ('+money2(BK.me.in_play)+' in play)':'')+'</p></section>'}
@@ -1163,8 +1164,8 @@ var EXPLAIN={
   ['Steals','Players who have outscored their draft spot the most (late picks playing like early ones).'],
   ['Busts','Early picks whose points rank is furthest below where they went.']]},
  book:{t:'How the odds work',b:[
-  ['Pregame lines','Posted Tuesday 6 AM from each team\'s projection (45% last 3 weeks, 35% season average, 20% last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
-  ['Live odds','Once the first player in a matchup kicks off, the odds go live: expected final = points so far + projection × share of each lineup still to play (from NFL game clocks, weighted by position). The further ahead a team gets, the worse its price.'],
+  ['Pregame lines','Posted Tuesday 6 AM. Each team\'s projection is 60% Sleeper\'s projection for the lineup as it\'s set that morning and 40% league history (last 3 weeks, season average, last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
+  ['Live odds','Once the first player in a matchup kicks off, the odds go live and update about every minute: projected final = points already scored + Sleeper\'s projection for every starter still to play (the same projected totals Sleeper shows). The "proj" under each team is that live number. The further ahead a team gets, the worse its price.'],
   ['Off the board','If a moneyline would be shorter than -1000 (nearly a sure thing), it comes off the board. Spreads and totals stay open.'],
   ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],
   ['Settling','Wednesday 3 AM, after Sleeper\'s stat corrections. Exact ties on a spread or total push (stake back).']]}

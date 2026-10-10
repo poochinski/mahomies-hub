@@ -245,7 +245,7 @@ raw   = 0.45 * avg(last 3 of cur) + 0.35 * avg(cur) + 0.20 * avg(prev)   (no pre
 k     = 0.35 through Week 6, 0.15 after             -- pull toward the league average early in the year
 projection = (1 - k) * raw + k * league_avg
 ```
-Sleeper player projections are a possible later upgrade (their projections API isn't official).
+**Since 2026-10-09:** when Sleeper projections cover the lineup, the posted projection = 0.6 × Sleeper's projection for the lineup as set Tuesday morning + 0.4 × the history formula above. Live odds use Sleeper's live projected total (points scored + projection for what's left). Source: api.sleeper.app/projections (unofficial; falls back to history if it fails).
 
 **Step 2 — Uncertainty**
 ```

@@ -64,8 +64,8 @@ var EXPLAIN={
   ['Steals','Players who have outscored their draft spot the most (late picks playing like early ones).'],
   ['Busts','Early picks whose points rank is furthest below where they went.']]},
  book:{t:'How the odds work',b:[
-  ['Pregame lines','Posted Tuesday 6 AM from each team\'s projection (45% last 3 weeks, 35% season average, 20% last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
-  ['Live odds','Once the first player in a matchup kicks off, the odds go live: expected final = points so far + projection × share of each lineup still to play (from NFL game clocks, weighted by position). The further ahead a team gets, the worse its price.'],
+  ['Pregame lines','Posted Tuesday 6 AM. Each team\'s projection is 60% Sleeper\'s projection for the lineup as it\'s set that morning and 40% league history (last 3 weeks, season average, last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
+  ['Live odds','Once the first player in a matchup kicks off, the odds go live and update about every minute: projected final = points already scored + Sleeper\'s projection for every starter still to play (the same projected totals Sleeper shows). The "proj" under each team is that live number. The further ahead a team gets, the worse its price.'],
   ['Off the board','If a moneyline would be shorter than -1000 (nearly a sure thing), it comes off the board. Spreads and totals stay open.'],
   ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],
   ['Settling','Wednesday 3 AM, after Sleeper\'s stat corrections. Exact ties on a spread or total push (stake back).']]}

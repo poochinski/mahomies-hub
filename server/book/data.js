@@ -21,7 +21,8 @@ export async function league({ fresh = false } = {}) {
     season: String(lg.season), leagueId: LEAGUE_ID, prevId: lg.previous_league_id || null,
     P: Number(st.playoff_week_start) || 15, lastScored: Number(st.last_scored_leg) || 0,
     nflWeek: Number(state.week) || 0, nflSeason: String(state.season), seasonType: state.season_type,
-    owner, teams, active: Object.keys(owner).map((r) => owner[r]).filter(Boolean)
+    owner, teams, active: Object.keys(owner).map((r) => owner[r]).filter(Boolean),
+    scoring: lg.scoring_settings || {}
   };
 }
 
@@ -95,7 +96,7 @@ export async function lockTimes(L, week) {
  */
 const POS_W = { QB: 19, RB: 13, WR: 13, TE: 9, K: 8, DEF: 7 }; // typical PPR points by position
 export async function weekState(L, week, maxAgeMs = 60 * 1000) {
-  const [k, ms, players] = await Promise.all([kickoffs(L.season, week, { maxAgeMs }), matchups(L.leagueId, week, maxAgeMs), getPlayers().catch(() => ({}))]);
+  const [k, ms, players, proj] = await Promise.all([kickoffs(L.season, week, { maxAgeMs }), matchups(L.leagueId, week, maxAgeMs), getPlayers().catch(() => ({})), projections(L, week)]);
   const teamOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? pid : players[pid]?.t || null);
   const posOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? 'DEF' : players[pid]?.p || '');
   const rosters = {}, starts = {};
@@ -103,18 +104,61 @@ export async function weekState(L, week, maxAgeMs = 60 * 1000) {
     // Each starter counts by how many points his position usually scores in PPR,
     // so a kicker's game finishing moves the odds less than a quarterback's.
     let rem = 0, all = 0, first = Infinity; const out = [];
+    // Live projected final, the way Sleeper shows it: points already scored, plus each
+    // starter's Sleeper projection for the part of his game still to play.
+    const pp = m.players_points || {}; let live = 0, pre = 0, have = 0, starters = 0;
     for (const pid0 of m.starters || []) {
       const pid = String(pid0 || '');
       const w = POS_W[posOf(pid)] || 12; all += w;
       if (!pid || pid === '0') { out.push('empty'); continue; }
+      starters++;
+      const got = Number(pp[pid] || 0), pj = proj[pid];
+      if (pj != null) have++;
       const g = k.gameOf[teamOf(pid)];
-      if (!g) { out.push(`${pid}:${teamOf(pid) || '?'}`); continue; }
+      if (!g) { out.push(`${pid}:${teamOf(pid) || '?'}`); live += got; continue; }
+      pre += pj || 0;
+      live += g.progress >= 1 ? got : got + (pj || 0) * (1 - g.progress);
       rem += w * (1 - g.progress);
       first = Math.min(first, g.at.getTime());
     }
-    rosters[m.roster_id] = { pts: pts(m), rem: all ? rem / all : 0, first, out, slots: (m.starters || []).length };
+    // Only trust Sleeper's projection when it covers most of the lineup.
+    const useProj = starters > 0 && have / starters >= 0.7;
+    rosters[m.roster_id] = { pts: pts(m), rem: all ? rem / all : 0, first, out, slots: (m.starters || []).length,
+      proj_live: useProj ? Math.round(live * 10) / 10 : null, proj_pre: useProj ? Math.round(pre * 10) / 10 : null };
     if (m.matchup_id != null) starts[m.matchup_id] = Math.min(starts[m.matchup_id] ?? Infinity, first);
   }
   for (const mid of Object.keys(starts)) starts[mid] = new Date(Number.isFinite(starts[mid]) ? starts[mid] : k.first.getTime());
   return { rosters, starts, k };
+}
+
+/**
+ * Sleeper's own player projections for a week, scored with THIS league's scoring
+ * settings, so they match the projected totals people see in the Sleeper app.
+ * Returns { player_id: projected points }. Cached 10 minutes. Empty object if unavailable.
+ */
+const PROJ = (process.env.SLEEPER_PROJ_BASE || 'https://api.sleeper.app').replace(/\/$/, '');
+const projCache = new Map();
+export async function projections(L, week, maxAgeMs = 10 * 60 * 1000) {
+  const key = `${L.season}|${week}`; const hit = projCache.get(key);
+  if (hit && Date.now() - hit.at < maxAgeMs) return hit.data;
+  try {
+    const pos = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'].map((p) => `position[]=${p}`).join('&');
+    const res = await fetch(`${PROJ}/projections/nfl/${L.season}/${week}?season_type=regular&${pos}`, {
+      headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.8' }, signal: AbortSignal.timeout(20000)
+    });
+    if (!res.ok) throw new Error(`Sleeper projections ${res.status}`);
+    const rows = await res.json();
+    const sc = L.scoring || {}; const out = {};
+    for (const r of Array.isArray(rows) ? rows : []) {
+      const st = r.stats || {}; let pts = 0, hits = 0;
+      for (const [k, v] of Object.entries(st)) if (sc[k] != null && typeof v === 'number') { pts += v * sc[k]; hits++; }
+      if (!hits) pts = Number(st.pts_ppr ?? st.pts_half_ppr ?? st.pts_std ?? 0);
+      out[String(r.player_id)] = Math.round(pts * 100) / 100;
+    }
+    projCache.set(key, { at: Date.now(), data: out });
+    return out;
+  } catch (e) {
+    if (hit) return hit.data;
+    return {};
+  }
 }
