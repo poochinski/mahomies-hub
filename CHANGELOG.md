@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Gridiron Gold v2: casino cabinet look (drawn symbols, marquee lights, LED meters, paylines, slam stop, anticipation, rollups, BIG/MEGA/EPIC wins), synthesized sounds with a volume slider, new Two-Minute Drill board; payback set to the Las Vegas Strip average (92.5%, exact par sheet); commish Bucks panel for any team incl. yourself. (Claude)
 - 2026-10-09 — Gridiron Gold: Draft Day bonus replaced by the Two-Minute Drill (hold-and-spin board + TOUCHDOWN collect reel, MINI/MINOR/MAJOR/GRAND jackpots), ≈95% payback. (Claude)
 - 2026-10-09 — Hidden Easter egg: Gridiron Gold slot machine (pink footer dot on the Book tab), free spins + bonus, server-side, ≈95% payback. (Claude)
 - 2026-10-09 — Sportsbook batch 1: player props, sportsbook game grid, Singles/Parlay slip with confirm screen, casino tickets with share image, ticket-stub My bets/feed, Book health card. (Claude)

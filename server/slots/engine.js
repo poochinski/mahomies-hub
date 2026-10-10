@@ -1,11 +1,13 @@
 // "Gridiron Gold" — the hidden fantasy-football slot (Easter egg on the Sportsbook page).
 // 5 reels × 3 rows, 9 fixed paylines. Every outcome is decided here on the server.
-// Tuned by simulation (server/slots/sim.js) to pay back about 95% over time.
+// Payback is set to the Las Vegas Strip average: 92.51% theoretical (exact, from server/slots/par.js).
+// Like a Nevada machine, every spin is an independent random stop on fixed reel strips
+// (crypto RNG, no memory of past spins, no 'due' wins), and the screen shows the real strip.
 import crypto from 'node:crypto';
 
 export const SYMBOLS = {
-  RING: { label: 'Ring', icon: '💍' }, TROPHY: { label: 'Trophy', icon: '🏆' }, STADIUM: { label: 'Stadium', icon: '🏟️' },
-  PLAYBOOK: { label: 'Playbook', icon: '📋' }, BALL: { label: 'Football', icon: '🏈' }, CAP: { label: 'Cap', icon: '🧢' },
+  RING: { label: 'Title Ring', icon: '💍' }, TROPHY: { label: 'Trophy', icon: '🏆' }, STADIUM: { label: 'Helmet', icon: '🏈' },
+  PLAYBOOK: { label: 'Football', icon: '🏈' }, BALL: { label: 'Ace', icon: 'A' }, CAP: { label: 'King', icon: 'K' },
   WILD: { label: 'MH Wild', icon: 'MH' }, TICKET: { label: 'Free Spins', icon: '🎟️' }, DRAFT: { label: 'Two-Minute Drill', icon: '⏱️' }
 };
 
@@ -46,7 +48,7 @@ export const LINES = [
 // When the side reel lands TOUCHDOWN, everything on the grid is collected.
 // Values are × TOTAL bet. Start with 8 drives; EXTRA DRIVE squares add one (max 20).
 export const DRILL = {
-  drives: 8, maxDrives: 20, td: 0.26,
+  drives: 8, maxDrives: 20, td: 0.225,
   cell: [['blank', 54], ['val', 37], ['jp', 6], ['extra', 3]],
   values: [0.2, 0.3, 0.5, 0.5, 1, 1, 1.5, 2, 3, 5],
   jackpots: [['MINI', 5, 62], ['MINOR', 15, 28], ['MAJOR', 50, 9], ['GRAND', 250, 1]]
@@ -73,9 +75,13 @@ export function drillRun(r = rand) {
 
 export const rand = (n) => crypto.randomInt(n);
 
-export function spinGrid(r = rand) {
-  return STRIPS.map((strip) => { const i = r(strip.length); return [0, 1, 2].map((k) => strip[(i + k) % strip.length]); });
-}
+// One independent random stop per reel. The screen shows strip[stop], strip[stop+1], strip[stop+2].
+export const spinStops = (r = rand) => STRIPS.map((strip) => r(strip.length));
+export const gridAt = (stops) => STRIPS.map((strip, reel) => [0, 1, 2].map((k) => strip[(stops[reel] + k) % strip.length]));
+export function spinGrid(r = rand) { return gridAt(spinStops(r)); }
+
+// PAR sheet (re-run `node server/slots/par.js` after changing any pay, strip or drill number, and update this).
+export const PAR = { rtp: 0.9251, hit: 0.3529, free_odds: 158, bonus_odds: 187, drill_avg: 31.3, screens: 41354775 };
 
 // grid[reel][row]. Returns line wins, scatter count/pay, bonus trigger. All pays in multiples of TOTAL bet.
 export function evaluate(grid) {

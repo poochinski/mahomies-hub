@@ -148,6 +148,7 @@ function book(){
   }
   if(S.bseg==='leaders'){
     var lb=BK.lb||[];
+    if(BK.me&&BK.me.commish)h+='<button type="button" class="cta" data-adm="bucks" style="margin:0 0 10px">💵 Commish: add or take away Bucks</button>';
     h+='<section class="panel"><div class="ph"><div><div class="kicker">Bucks + open bets</div><h2>Leaderboard</h2></div></div><div class="rows">'+
      lb.map(function(x){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(x.rank===1&&x.joined?' gold':'')+'">'+x.rank+'</span>'+who(x.user_id,x.joined?x.record+(x.in_play?' · '+money(x.in_play)+' in play':''):'Hasn\'t logged in yet',30)+'<span class="val">💵 '+money(x.bankroll)+'</span></div>'}).join('')+'</div></section>';
     var fd=BK.feed||[];
@@ -243,17 +244,38 @@ function logout(){api('/logout',{method:'POST'}).catch(function(){});AUTH=null;s
 function admPanel(){
   if(!(BK.me&&BK.me.commish))return '';
   return '<section class="panel"><div class="ph"><div><div class="kicker">Commish only</div><h2>Book controls</h2></div></div><div class="rows">'+
-   [['health','Book health','Is everything working? Lines, live data, settlement, errors.'],['post','Post lines now','Use if Tuesday\'s automatic post didn\'t happen.'],['line','Move or void a line','Change a number before the game locks, or take it off the board.'],
-    ['settle','Settle a week','Grade bets now (normally automatic Wednesday 3 AM).'],['bucks','Add or remove Bucks','Every change goes in the ledger with your reason.'],
+   [['bucks','💵 Add or take away Bucks','Any team, you included. Shows everyone\'s balance; every change goes in the ledger.'],['health','Book health','Is everything working? Lines, live data, settlement, errors.'],['post','Post lines now','Use if Tuesday\'s automatic post didn\'t happen.'],['line','Move or void a line','Change a number before the game locks, or take it off the board.'],
+    ['settle','Settle a week','Grade bets now (normally automatic Wednesday 3 AM).'],
     ['pin','Reset a PIN','For anyone locked out or who picked the wrong team.'],['log','Book log','What the clock job and the commish did.']]
    .map(function(x){return '<button type="button" class="row" data-adm="'+x[0]+'" style="grid-template-columns:minmax(0,1fr) 10px"><div><b style="font-size:14px">'+x[1]+'</b><p class="muted" style="font-size:12px;margin-top:2px">'+x[2]+'</p></div>'+CHEV+'</button>'}).join('')+'</div></section>'}
+/* commish Bucks (v1.8.3): every team with its balance, quick amounts, live preview */
+var BKU={u:null,amt:'',note:''};
+function bucksBody(){var lb=(BK.lb||[]).slice().sort(function(a,b){return team(a.user_id).localeCompare(team(b.user_id))}),me=AUTH&&AUTH.user_id;
+  if(!BKU.u||!lb.some(function(x){return x.user_id===BKU.u}))BKU.u=me||(lb[0]&&lb[0].user_id);
+  if(me)lb.sort(function(a,b){return (b.user_id===me)-(a.user_id===me)});
+  var sel=lb.filter(function(x){return x.user_id===BKU.u})[0],amt=Number(BKU.amt)||0;
+  return '<div class="bkx-list">'+lb.map(function(x){return '<button type="button" class="bkx-t'+(x.user_id===BKU.u?' on':'')+'" data-bkpick="'+x.user_id+'"><span><b>'+esc(team(x.user_id))+'</b>'+(x.user_id===me?' <em>(you)</em>':'')+(x.joined?'':' <small>not started</small>')+'</span><span class="num"><b>'+m2(x.cash)+'</b>'+(x.in_play?'<small>+'+m2(x.in_play)+' in play</small>':'')+'</span></button>'}).join('')+'</div>'+
+   (sel?'<div class="bkx-amt"><div class="kicker" style="margin-bottom:6px">Amount for '+esc(team(sel.user_id))+'</div><div class="bkx-chips">'+[-500,-100,-50,-10,10,50,100,500].map(function(v){return '<button type="button" class="bkx-c'+(v<0?' neg':'')+(amt===v?' on':'')+'" data-bkamt="'+v+'">'+(v>0?'+':'−')+Math.abs(v)+'</button>'}).join('')+'</div>'+
+    '<label class="fld"><span>Or type an amount (minus takes away)</span><input id="aAmt" type="text" inputmode="numbers-and-punctuation" placeholder="e.g. 250 or -100" value="'+esc(BKU.amt)+'" data-bkin="amt"></label>'+
+    '<div class="bkx-chips" style="margin-top:8px">'+['Prize','Correction','Commish bonus','Penalty'].map(function(n){return '<button type="button" class="bkx-c'+(BKU.note===n?' on':'')+'" data-bknote="'+n+'">'+n+'</button>'}).join('')+'</div>'+
+    '<label class="fld"><span>Reason</span><input id="aNote" type="text" value="'+esc(BKU.note)+'" data-bkin="note"></label>'+
+    '<p class="bkx-prev" id="bkPrev">'+bucksPrev(sel)+'</p><p class="err" id="aErr"></p>'+
+    '<button type="button" class="cta" data-admgo="bucks"'+(amt&&BKU.note.trim()?'':' disabled')+' id="bkGo">'+(amt>0?'Add '+m2(amt)+' Bucks':amt<0?'Take away '+m2(-amt)+' Bucks':'Save')+'</button></div>':'')}
+function bucksPrev(sel){var a=Number(BKU.amt)||0;if(!sel)return '';return esc(team(sel.user_id))+': <b class="num">'+m2(sel.cash)+'</b> → <b class="num" style="color:'+(a<0?'var(--loss)':a>0?'var(--win)':'inherit')+'">'+m2(Math.round((sel.cash+a)*100)/100)+'</b>'+(sel.cash+a<0?' <span class="err">(can\'t go below 0)</span>':'')}
+function bucksRefresh(){var b=$('#sheetBody');if(!b)return;var y=$('#sheet').scrollTop;openSheet(admSheet('bucks'));$('#sheet').scrollTop=y}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bkpick],[data-bkamt],[data-bknote]');if(!t)return;var d=t.dataset;
+  if(d.bkpick){BKU.u=d.bkpick;BKU.amt='';}else if(d.bkamt){BKU.amt=String(d.bkamt)}else if(d.bknote){BKU.note=d.bknote}
+  bucksRefresh();if(d.bkpick){var am=document.querySelector('.bkx-amt');if(am)try{am.scrollIntoView({block:'start',behavior:'smooth'})}catch(x){}}});
+document.addEventListener('input',function(e){var t=e.target;if(!t.dataset||!t.dataset.bkin)return;BKU[t.dataset.bkin]=t.value;
+  var sel=(BK.lb||[]).filter(function(x){return x.user_id===BKU.u})[0],a=Number(BKU.amt)||0,g=$('#bkGo'),p=$('#bkPrev');
+  if(p)p.innerHTML=bucksPrev(sel);if(g){g.disabled=!(a&&BKU.note.trim());g.textContent=a>0?'Add '+m2(a)+' Bucks':a<0?'Take away '+m2(-a)+' Bucks':'Save'}});
 function teamSelect(id){return '<select id="'+id+'">'+(BK.lb||[]).map(function(x){return '<option value="'+x.user_id+'">'+esc(team(x.user_id))+'</option>'}).join('')+'</select>'}
 function fld(id,label,val,type){return '<label class="fld"><span>'+label+'</span><input id="'+id+'" type="'+(type||'text')+'"'+(type==='number'?' inputmode="decimal" step="any"':'')+' value="'+esc(val==null?'':val)+'"></label>'}
 function admSheet(k,arg){var nw=(BK.status&&BK.status.next&&BK.status.next.week)||D.league.week,ow=BK.wk&&BK.wk.week;
   var hd=function(t,s){return '<div class="ph" style="margin:0"><div><div class="kicker">Commish · Book controls</div><h2>'+t+'</h2>'+(s?'<p class="muted" style="font-size:12.5px;margin-top:2px">'+s+'</p>':'')+'</div></div>'};
   if(k==='post')return hd('Post lines','Lines freeze for the whole week once posted.')+fld('aWeek','Week',nw,'number')+'<label class="chk"><input type="checkbox" id="aForce"> Replace lines already posted (only if nobody has bet yet)</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="post">Post lines</button>'+CLOSE;
   if(k==='settle')return hd('Settle a week','Uses Sleeper\'s current scores. Normally runs itself Wednesday 3 AM.')+fld('aWeek','Week',ow||'','number')+'<label class="chk"><input type="checkbox" id="aForce"> Settle now even if it\'s early</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="settle">Settle</button>'+CLOSE;
-  if(k==='bucks')return hd('Add or remove Bucks','Use a minus sign to take Bucks away.')+'<label class="fld"><span>Team</span>'+teamSelect('aUser')+'</label>'+fld('aAmt','Amount','','number')+fld('aNote','Reason','')+'<p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="bucks">Save</button>'+CLOSE;
+  if(k==='bucks')return hd('Add or take away Bucks','Pick a team (you\'re on the list too), pick an amount, give a reason. It shows up in the ledger.')+bucksBody()+CLOSE;
   if(k==='pin')return hd('Reset a PIN','They\'ll pick a new PIN next time they log in, and get logged out everywhere.')+'<label class="fld"><span>Team</span>'+teamSelect('aUser')+'</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="pin">Reset PIN</button>'+CLOSE;
   if(k==='line'){var L=(BK.wk&&BK.wk.lines)||[];
     if(!arg)return hd('Move or void a line',L.length?'Week '+ow+'. Tap a game.':'No lines posted right now.')+'<div class="rows">'+L.map(function(l){return '<button type="button" class="row" data-adm="line" data-arg="'+l.id+'" style="grid-template-columns:minmax(0,1fr) auto 10px"><div><b style="font-size:13.5px">'+esc(team(l.a))+' vs '+esc(team(l.b))+'</b><p class="muted" style="font-size:12px">'+spr(-l.spread)+' · O/U '+f1(l.total)+' · '+odds(l.ml_a)+'/'+odds(l.ml_b)+'</p></div><span class="tr r" style="font-size:10px">'+esc(isLk(l)?l.status==='open'?'locked':l.status:'open')+'</span>'+CHEV+'</button>'}).join('')+'</div>'+CLOSE;
@@ -267,10 +289,12 @@ function admSheet(k,arg){var nw=(BK.status&&BK.status.next&&BK.status.next.week)
   return CLOSE}
 function admGo(k,arg,btn){var v=function(id){var e=$('#'+id);return e?(e.type==='checkbox'?e.checked:e.value):null};var err=function(m){var e=$('#aErr');if(e)e.textContent=m};
   var p=k==='post'?api('/admin/post-lines',{body:{week:+v('aWeek'),force:v('aForce')}}):k==='settle'?api('/admin/settle',{body:{week:+v('aWeek'),force:v('aForce')}}):
-   k==='bucks'?api('/admin/adjust',{body:{user_id:v('aUser'),amount:+v('aAmt'),note:v('aNote')}}):k==='pin'?api('/admin/reset-pin',{body:{user_id:v('aUser')}}):
+   k==='bucks'?api('/admin/adjust',{body:{user_id:BKU.u,amount:Number(BKU.amt),note:BKU.note}}):k==='pin'?api('/admin/reset-pin',{body:{user_id:v('aUser')}}):
    k==='line'?api('/admin/line/'+encodeURIComponent(arg),{body:{spread:v('aSpread'),total:v('aTotal'),ml_a:v('aMla'),ml_b:v('aMlb'),note:v('aNote')}}):
    k==='void'?api('/admin/line/'+encodeURIComponent(arg),{body:{void:true,note:v('aNote')||'Voided by commish'}}):null;
   if(!p)return;btn.disabled=true;
+  if(k==='bucks'){p.then(function(r){var who=team(BKU.u),a=Number(BKU.amt);BKU.amt='';toast((a>0?'Added ':'Took away ')+m2(Math.abs(a))+' · '+who+' now has '+m2(r.balance));
+     api('/leaderboard').then(function(x){BK.lb=x;bucksRefresh()}).catch(bucksRefresh);bookLoad()}).catch(function(e){btn.disabled=false;err(e.message)});return}
   p.then(function(r){closeSheetQuiet();toast(k==='post'?'Week '+r.week+' lines posted':k==='settle'?'Week '+r.week+' settled ('+r.bets+' bets)':k==='bucks'?'Saved. New balance '+money2(r.balance):k==='pin'?'PIN reset':k==='void'?'Game voided, stakes returned':'Line updated');bookLoad()})
    .catch(function(e){btn.disabled=false;err(e.message)})}
 function loadHealth(){api('/admin/health').then(function(r){var el=$('#aHealth');if(!el)return;

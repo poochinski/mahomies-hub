@@ -134,6 +134,8 @@ export async function adjust(userId, amount, note, by) {
   const L = await sl.league();
   await q('INSERT INTO app_users(user_id) VALUES ($1) ON CONFLICT DO NOTHING', [userId]);
   await ensureGrant(userId, L.season);
+  const before = await balanceOf(userId, L.season);
+  if (a < 0 && before + a < -0.001) throw new BookError(`They only have ${before} Bucks available (you can't take them below 0)`);
   await q("INSERT INTO bankroll_ledger(user_id, season, amount, kind, note, created_by) VALUES ($1,$2,$3,'adjust',$4,$5)", [userId, L.season, a, String(note).trim(), by]);
   await log('adjust', { user: userId, amount: a, note }, by);
   return balanceOf(userId, L.season);

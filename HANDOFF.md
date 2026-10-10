@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-09 12:10 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-09 18:30 (Pacific) · **AI:** Claude
 **Current phase:** v1.8 — Sportsbook is live in the app (login, bets, parlays, leaders, commish tools); Week 6 lines post Tue Oct 13 6 AM; next = specials + futures
-**Last commit:** "Live betting (nothing locks, odds move with the score) + MH logo"
+**Last commit:** "Gridiron Gold v2: casino cabinet + sound, Vegas-par payback, commish Bucks panel"
 **App status:** LIVE on Railway — https://mahomies-hub-production.up.railway.app (v1.7; old builds at /test/v1.6, /test/v1.5, /test/v1.0)
 
 ## What we're working toward right now
@@ -23,12 +23,20 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Gridiron Gold v2 + commish Bucks** (Claude). Jayson: "make it feel like you're actually playing at a casino", sounds you can turn up, odds "just like Vegas gaming laws", and commish add/subtract Bucks for himself and anyone.
+  - **Look**: cabinet with chrome reel window, marquee with chasing bulbs, fixed jackpot plaques (GRAND/MAJOR/MINOR/MINI at your bet), payline number tabs, LED message bar, CREDIT/BET/WIN meters, big round SPIN, bet −/+, AUTO (10/25/50, stops on features/big wins), ⓘ paytable. Symbols are drawn SVG (title ring, trophy, helmet, football, A, K, MH WILD, FREE SPINS ticket, BONUS stopwatch) — no emoji. Fonts Bungee + Orbitron self-hosted in public/fonts (OFL licenses next to them).
+  - **Feel**: reels scroll the real server strips and bounce-land one by one; tap SPIN again = slam stop; anticipation (glow + rising sound) when 2 tickets or 2 stopwatches are down; winning lines drawn and cycled with "Line 8 · 5 King · 38.89"; WIN meter rolls up (tap SPIN to skip); BIG ≥10× / MEGA ≥25× / EPIC ≥50× bet celebration with coin shower; feature splashes for free spins, retriggers, Two-Minute Drill; free spins auto-play.
+  - **Sound**: all synthesized with WebAudio (no files): reel motor + clicks, stop thunks, scatter chimes, rollup ticks, fanfares, whistle + crowd + air horn for touchdowns. Speaker button → volume slider + mute, saved per phone (localStorage `gg_vol` / `gg_mute`). On iPhone it plays even with the silent switch on (audioSession = playback) — the in-game slider is the control.
+  - **Two-Minute Drill board**: field grid of gold coins / jackpot coins / +1 DRIVE, scoreboard (drive x / y, collected), PLAY reel that spins to TOUCHDOWN or INCOMPLETE/SACKED/PUNT/FUMBLE/PICKED OFF/3 & OUT, coin-by-coin collect, summary + Collect. Math unchanged except TD chance.
+  - **Vegas math**: TD chance per drive 0.26 → 0.225 → payback **92.51%** (was ≈95%). Exact par sheet: `node server/slots/par.js` (~7 s). `PAR` constant in engine.js feeds the paytable's "The math" section. Spin responses now include `stops`; paytable includes `strips` + `par`. Labels: Stadium→Helmet, Playbook→Football, Football→Ace, Cap→King (server keys unchanged).
+  - **Commish Bucks**: Me → Book controls → "💵 Add or take away Bucks" (now first) and a shortcut button on Book → Leaders. Every team with its balance (you on top, "(you)"), quick −500…+500 chips, typed amount (keyboard has a minus), reason chips, live "before → after" preview; stays open after saving so you can do several. Server refuses taking a team below 0.
+  - Local test hook `window.__GG` only exists on port 3999.
 - 2026-10-09 — **Gridiron Gold (hidden slot machine, Easter egg)** (Claude). **Secret: don't put it in "How it works" or any menu.** On the Book tab, tap the **pink dot** in the footer (2nd of the 4 dots) → full-screen slot. Needs a Sportsbook login; spins use real Mahomie Bucks (ledger kinds slot_bet / slot_win), so they count toward bankroll and going broke still ends your season.
   - 5 reels × 3 rows, 9 fixed lines; bets 10 / 25 / 50. Symbols: 💍 Ring, 🏆 Trophy, 🏟️ Stadium, 📋 Playbook, 🏈 Football, 🧢 Cap; **MH logo = wild** (reels 2–4).
   - 🎟️ 3+ anywhere: scatter pay + **10 free spins at ×3**, retriggers add 10.
   - ⏱️ stopwatch on reels 1, 2 and 3: **Two-Minute Drill** (replaced Draft Day the same night — Jayson wanted the Texas Tea "Strike It Rich" style): hold-and-spin board, 3×3 squares that each re-spin every drive + a side TOUCHDOWN reel. Squares land on Bucks (0.2×–5× bet), jackpot coins MINI 5× · MINOR 15× · MAJOR 50× · GRAND 250× bet, EXTRA DRIVE (+1, max 20) or blank. TOUCHDOWN on the side reel collects the whole board. Starts with 8 drives (avg ≈11). Our own football version: no IGT art or names.
   - Server decides everything (`server/slots/engine.js` math incl. `drillRun()`, `server/slots/slots.js` state + ledger, routes /api/book/slots/state|spin|bonus-seen|paytable). The drill is decided and paid the moment it triggers; its frames are stored so the app replays them (or resumes after closing) and clears them via bonus-seen.
-  - Payback tuned to **≈95%** by simulation: `node server/slots/sim.js 3000000 [seed]` → base 62% · free spins 12.6% (1 in ~156) · Two-Minute Drill 20.6% (1 in ~188, avg 36× bet) · hit rate 35%. A real-server run matched the ledger to the cent.
+  - (Superseded by v2 above: payback now 92.51%.) Payback was tuned to **≈95%** by simulation: `node server/slots/sim.js 3000000 [seed]` → base 62% · free spins 12.6% (1 in ~156) · Two-Minute Drill 20.6% (1 in ~188, avg 36× bet) · hit rate 35%. A real-server run matched the ledger to the cent.
   - UI source: prototype/v1.8/v18_slot.js + v18_slot.css.
 - 2026-10-09 — **Sportsbook batch 1** (Claude). Jayson's calls: broke = out for the season (no re-buys); player props IN (parlay-able); tickets show the bettor.
   - **Player props**: over/under on any starting QB/RB/WR/TE's fantasy points. Line = Sleeper projection scored with league settings (live: pts so far + proj for the rest of his game), x.5, -110/-110; off the board when his game is ~over, bye, or proj < 3. Can't take the under on your own player. Bet legs keep the fantasy matchup in line_id (so parlays stay one-pick-per-matchup) + player_id/player_name (new columns). Graded Wednesday from every roster's players_points (void if the player isn't on any roster). engine.js `propPrice`/`gradeProp`, book.js `propsFor`.
@@ -238,6 +246,12 @@ F. Verify Lab endpoints with real data on Railway.
 - Player names in the snapshot only for 16 players; full names come from /api/game on Railway.
 
 ## Files changed in the latest push
+- server/slots/engine.js (td 0.225, stops/gridAt, PAR, labels), server/slots/par.js (new), server/slots/slots.js (stops, strips, par in paytable), server/book/book.js (adjust can't go below 0)
+- prototype/v1.8/v18_slot.js + v18_slot.css (rewritten), v18_book.js (commish Bucks), v18_book2.css, app18.template.html; prototype/dist/night.html
+- public/fonts/ (Bungee, Orbitron woff2 + OFL licenses)
+- HANDOFF.md, CHANGELOG.md, BIBLE.md
+
+## Files changed in the push before
 - prototype/v1.8/ (v18_book.js, v18.py rename pass, app18.template.html, logo.svg), prototype/dist/night.html
 - public/ icons + favicon.svg (football), server text (build.js award titles, index.js manifest, book comments)
 - src/ (unused React shell) names, index.html, BIBLE.md, README.md, HANDOFF.md, CHANGELOG.md

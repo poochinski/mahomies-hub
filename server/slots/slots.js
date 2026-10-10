@@ -1,6 +1,6 @@
 // Gridiron Gold: server side of the hidden slot. Uses the Sportsbook's logins and ledger.
 import { pool } from '../db.js';
-import { spinGrid, evaluate, drillRun, DRILL, LINES, FREE_MULT, SYMBOLS, PAYS, TICKET_PAYS, FREE_SPINS } from './engine.js';
+import { spinStops, gridAt, STRIPS, PAR, evaluate, drillRun, DRILL, LINES, FREE_MULT, SYMBOLS, PAYS, TICKET_PAYS, FREE_SPINS } from './engine.js';
 import * as sl from '../book/data.js';
 import { BookError } from '../book/book.js';
 
@@ -23,7 +23,7 @@ async function lockState(c, u, s) {
 const publicBonus = (b) => (b ? { bet: Number(b.bet), frames: b.frames, total: b.total, jackpots: DRILL.jackpots.map((j) => ({ name: j[0], x: j[1] })) } : null);
 
 export function paytable() {
-  return { symbols: SYMBOLS, pays: PAYS, ticket_pays: TICKET_PAYS, free_spins: FREE_SPINS, free_mult: FREE_MULT, drill: { drives: DRILL.drives, max: DRILL.maxDrives, values: DRILL.values, jackpots: DRILL.jackpots.map((j) => ({ name: j[0], x: j[1] })) }, lines: LINES, bets: BETS, rtp: '≈95%' };
+  return { symbols: SYMBOLS, pays: PAYS, ticket_pays: TICKET_PAYS, free_spins: FREE_SPINS, free_mult: FREE_MULT, drill: { drives: DRILL.drives, max: DRILL.maxDrives, values: DRILL.values, jackpots: DRILL.jackpots.map((j) => ({ name: j[0], x: j[1] })) }, lines: LINES, bets: BETS, strips: STRIPS, par: PAR, rtp: (PAR.rtp * 100).toFixed(1) + '%' };
 }
 
 export async function state(userId) {
@@ -47,7 +47,8 @@ export async function spin(userId, betIn) {
       if (bet > bal) throw new BookError(`Not enough Bucks (you have ${bal})`);
       await c.query("INSERT INTO bankroll_ledger(user_id, season, amount, kind, note) VALUES ($1,$2,$3,'slot_bet','Gridiron Gold spin')", [userId, L.season, -bet]);
     }
-    const grid = spinGrid();
+    const stops = spinStops();
+    const grid = gridAt(stops);
     const e = evaluate(grid);
     const mult = free ? FREE_MULT : 1;
     const win = money(e.total * bet * mult);
@@ -67,7 +68,7 @@ export async function spin(userId, betIn) {
       [userId, L.season, free ? 'free' : 'spin', bet, win, JSON.stringify(grid), JSON.stringify({ wins: e.wins, tickets: e.tickets, bonus: e.bonus })]);
     bal = await balance(c, userId, L.season);
     return {
-      grid, bet, free, mult, win,
+      grid, stops, bet, free, mult, win,
       wins: e.wins.map((w) => ({ ...w, pay: money(w.pay * bet * mult), cells: LINES[w.line].slice(0, w.n).map((row, reel) => [reel, row]) })),
       scatter: money(e.scatter * bet * mult), tickets: e.tickets,
       free_awarded: e.freeSpins, free_left: freeLeft, free_won: money(freeWon), free_done: free && freeLeft === 0,

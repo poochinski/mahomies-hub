@@ -291,7 +291,11 @@ won  → ledger +stake +profit   (stake was already deducted when placed)
 push → ledger +stake
 ```
 
-**Easter egg — Gridiron Gold slot (2026-10-09):** hidden behind the pink footer dot on the Book tab; never listed in menus or help. Server-side outcomes, ledger kinds slot_bet/slot_win, bets 10/25/50, ≈95% payback (server/slots/sim.js). Details in HANDOFF.
+**Easter egg — Gridiron Gold slot (2026-10-09):** hidden behind the pink footer dot on the Book tab; never listed in menus or help. Server-side outcomes, ledger kinds slot_bet/slot_win, bets 10/25/50. Details in HANDOFF.
+- **Works like a Nevada machine (Jayson, 2026-10-09):** every spin is one independent random stop per reel on fixed reel strips (Node crypto RNG on the server); no memory, no "due" wins, no adjusting odds by player or balance. The reels on screen scroll through the real strips and land where the server stopped them.
+- **Payback = Las Vegas Strip average:** theoretical **92.51%** (house edge 7.49%), exact from `node server/slots/par.js` (counts all 41,354,775 reel stops; drill EV by dynamic programming). Context: Nevada Gaming Commission Reg. 14.040 requires at least 75% theoretical payback; Nevada's statewide actual slot payback was ≈92.8% for the 12 months to Sept 2025 and the Strip's slot hold averages ≈7.5%. Re-run par.js and update `PAR` in engine.js after ANY change to pays, strips or drill numbers; `sim.js` is the cross-check.
+- Par sheet: base lines 59.75% · tickets 2.30% · free spins 13.72% (1 in 158) · Two-Minute Drill 16.75% (1 in 187, avg 31.3× bet, TD chance 22.5% per drive) · hit frequency 1 in 2.83.
+- **Commish Bucks (Jayson, 2026-10-09):** the commish can add or take away Bucks for any team, himself included; every change needs a reason and goes in the ledger (kind adjust). A team can't be taken below 0.
 
 **Accuracy check:** keep every line and result. A "How sharp is the Book?" page compares projected vs actual (mean error, % favorites that won). Tune the weights in Step 1 after Week 8.
 
