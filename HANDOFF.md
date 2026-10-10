@@ -1,30 +1,32 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-09 22:00 (Pacific) · **AI:** Grok
-**Current phase:** v2.0 Home rework — items 1 and 2 of Part 4 are in this push; items 3–8 are next
-**Last commit:** "v2.0 Home: Live badge follows NFL games, week title is a phase line"
-**App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app (Railway deploys main in ~2 minutes). Old builds: /test/v1.8 /test/v1.7 /test/v1.6 /test/v1.5 /test/v1.0
+**Last updated:** 2026-10-09 22:30 (Pacific) · **AI:** Grok
+**Current phase:** v2.0 Home rework — items 1–3 are on main for Jayson to look at. Item 3 (your game card) can be reverted if he doesn't like the look.
+**Last commit:** "v2.0 Home: your game card shows projected score instead of 0.00"
+**App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 **v2.0 Home page rework** (docs/V2-HANDOFF.md Part 4), then the Live Game Center (2.1). Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
-This push only changes the top of Home. "Live" used to mean the phone reached the server. It now means an NFL game this week is actually in progress (ESPN). If nothing is on, the line says "Next kickoff Thu 5:15 PM" (Pacific). The giant "Week 5" title is a short phase line instead.
+This push changes **your game card** only. Before a team has played, the big number is their projected score (labeled proj), not 0.00. Once they have points, that score stays big and the projected final sits under it in gold. A cyan line says how many starters are playing now and how many are still left. If this phone has never chosen a team, a pink "Pick your team" link sits on the card. No betting numbers.
+
+Jayson wants to see it on his phone and may ask to put the old card back. Revert commit message: "v2.0 Home: your game card shows projected score instead of 0.00".
 
 ## Done (newest first)
-- 2026-10-09 — **Home part 1** (Grok): `GET /api/pulse` (ESPN scoreboard, ~45s cache, Home polls once a minute). Badge: Live / Next kickoff / Kickoff delayed. Phase line: Waivers run Wed, Thursday night, Game day, Sunday: N games, Monday night: N games left, Week in the books. No betting numbers added. Page title no longer says v1.8.
+- 2026-10-09 — **Home part 2** (Grok): game card uses `weekState` projections on `/api/pulse` `games`. Pregame number is the projection. In progress: points so far, proj underneath, "N playing · N left".
+- 2026-10-09 — **Home part 1** (Grok): Live badge follows ESPN. Phase line replaces the giant week title.
 - 2026-10-09 — **v2.0 start** (Claude): v1.8 frozen. Live page split into prototype/v2.0. docs/V2-HANDOFF.md. BIBLE §17.
 - 2026-10-09 — Sportsbook batch 1, live odds, player props, tickets, commish Bucks, Gridiron Gold slot (secret: Book tab, 2nd footer dot, the pink one). Payback 92.51%. See CHANGELOG.md for the rest of Oct 9.
 
 ## In progress (not finished)
-- Nothing half-done. Home items 3–8 are not started.
+- Nothing half-done. Waiting on Jayson: keep the new game card, or put the old 0.00 card back.
 
 ## Next steps (in order)
-1. **Home part 2 — your game card.** Projected final (Sleeper live projections; the Book already computes them in `server/book/data.js` `weekState`), players left / playing now, real pregame projections instead of 0.00–0.00. "Pick your team" if nobody is chosen.
-2. **Home part 3.** Median tracker ("4th of 12 — on track for the median win"), lineup alert (OUT / bye / empty slot), standings strip (seed, games back of the playoff line, playoff odds). Still no betting numbers outside the Book.
-3. **Home part 4.** This week: one game per row, drop your own game, closest first, tags (Final, Upset brewing, all-time series). One-sentence recap on Home. Explore shrinks to one row. Keep This week in history.
-4. **2.1 Live Game Center** — player-by-player, clock, "needs X from Y" on Monday night.
-5. **2.2 Sportsbook batch 2** before or right after lines post **Tue Oct 13, 6 AM PT (Week 6)**. First real settlement **Wed Oct 21, 3 AM PT**. Check both.
-6. Jayson: on a phone, confirm the Home badge (this weekend it should say Sunday… or Live on Sunday, not a green Live on Friday night) and that Gridiron Gold sound plays (volume slider; iPhone silent switch).
+1. Jayson looks at the new game card on his phone. If he doesn't like it, revert the part-2 commit. The Live badge and phase line stay.
+2. **Home part 3.** Median tracker, lineup alert (OUT / bye / empty slot), standings strip. No betting numbers outside the Book.
+3. **Home part 4.** This week: one game per row, drop your own game, closest first, tags. Recap on Home. Explore shrinks to one row.
+4. **2.1 Live Game Center**, then **2.2 Sportsbook batch 2** around **Tue Oct 13, 6 AM PT**. First real settlement **Wed Oct 21, 3 AM PT**.
+5. Jayson: confirm Gridiron Gold sound on a real iPhone (volume slider and the silent switch).
 
 ## Decisions made (and why)
 - Fantasy / history first. Betting numbers (win %, lines, odds, spreads) only inside the Book tab. (Jayson, 2026-10-09)
@@ -57,11 +59,8 @@ This push only changes the top of Home. "Live" used to mean the phone reached th
 - Git tags cannot be pushed from some agents. Saved versions live on branches (`release-v1.0` through `release-v1.8`).
 
 ## Files changed in the latest push
-- `server/book/kickoffs.js` — `kickShort`, `describeWeek` (phase + next kickoff from ESPN states)
-- `server/routes/hub.js` — `GET /api/pulse`
-- `prototype/v2.0/app.js` — Home hero uses the pulse; connection to the server no longer lights Live
-- `prototype/v2.0/app.css` — phase title a bit smaller so a sentence fits on a phone
-- `prototype/v2.0/app.html` — title is "Mahomie's Hub" (was v1.8)
-- `BIBLE.md` — §10 lists `/api/pulse`; §17 describes the Home hero; version line says v2.0
-- `docs/V2-HANDOFF.md` — Part 4 items 1–2 marked done
-- `CHANGELOG.md`, `HANDOFF.md`
+- `server/book/data.js` — `homeCard()` (points, projection, playing, left). No odds.
+- `server/routes/hub.js` — `/api/pulse` includes `games`
+- `prototype/v2.0/app.js` — your game card
+- `prototype/v2.0/app.css` — proj label, playing line, pick link
+- `BIBLE.md`, `docs/V2-HANDOFF.md`, `CHANGELOG.md`, `HANDOFF.md`

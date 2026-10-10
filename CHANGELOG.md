@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — **v2.0 Home, part 2**: Your game card shows a projected score instead of 0.00 before a team plays, plus the projected final and who's still left once the game has started. "Pick your team" if this phone hasn't chosen one. Easy to undo if it doesn't look right. (Grok)
 - 2026-10-09 — **v2.0 Home, part 1**: "Live" only when an NFL game is actually on (ESPN). Otherwise "Next kickoff …". The big week title is now a phase line (waivers, game day, Monday night, and so on). (Grok)
 - 2026-10-09 — **v2.0 start**: v1.8 frozen (/test/v1.8, release-v1.8); front end split into editable prototype/v2.0 files (no build step); V2 handoff doc + PDF; BIBLE §17. (Claude)
 - 2026-10-09 — Gridiron Gold v2: casino cabinet look (drawn symbols, marquee lights, LED meters, paylines, slam stop, anticipation, rollups, BIG/MEGA/EPIC wins), synthesized sounds with a volume slider, new Two-Minute Drill board; payback set to the Las Vegas Strip average (92.5%, exact par sheet); commish Bucks panel for any team incl. yourself. (Claude)

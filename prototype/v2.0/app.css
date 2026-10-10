@@ -355,9 +355,14 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 /* ---------- v1.7: calmer screens ---------- */
 .panel.tight{padding:12px 14px}
 .yourgame{display:grid;gap:8px;width:100%;margin-top:12px;padding:12px;border:1px solid var(--line-2);border-radius:12px;background:rgba(13,10,21,.55);color:inherit;text-align:left}
+.yg-go{display:grid;gap:8px;width:100%;border:0;background:none;padding:0;color:inherit;text-align:left}
+.yg-pick{border:0;background:none;padding:0;text-align:left;color:var(--pink);font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase}
 .yg-k{font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .yg-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center}
 .yg-n{display:grid;min-width:0}.yg-n b{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.yg-n span{font:11.5px var(--mono);color:var(--muted)}
+.yg-st{color:var(--cyan)!important}
+.yg-sc{display:grid;justify-items:end;gap:1px;line-height:1}
+.yg-sc small{font:500 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
 .yg-s{font:700 28px var(--display);color:var(--ink)}.yg-s.dim{color:var(--muted)}
 .yourgame .wp-bar{height:6px}
 .games{display:grid;grid-template-columns:1fr 1fr;gap:6px}

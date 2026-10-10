@@ -123,7 +123,7 @@ Database tables: app_users, sessions, book_weeks, lines, bets, bet_legs, bankrol
 From the Home audit (2026-10-09):
 1. **Fix the "Live" badge** — DONE 2026-10-09. `GET /api/pulse` reads ESPN. Live only while a game's state is `in`. Otherwise "Next kickoff Thu 5:15 PM" (Pacific), or "Kickoff delayed" if that time has passed and the game hasn't started. The server being up no longer lights the badge.
 2. **Replace the giant "Week 6" title** — DONE 2026-10-09. Phase line from the same pulse: *Waivers run Wed* (Tue, and Wed before 11 AM PT, before any game), *Thursday night* / *Game day* / *Sunday: N games* / *Monday night: N games left* / *Week in the books*.
-3. **Your game card:** add projected final (Sleeper live projections — the Book already computes them in `server/book/data.js weekState`), players left / playing now, and pregame projections instead of 0.00 vs 0.00. Say "Pick your team" if nobody is chosen.
+3. **Your game card:** DONE 2026-10-09 (look is up for Jayson to accept or undo). Projected score instead of 0.00 before that team plays. Once they have points, the score stays big and "proj" sits under it. "N playing · N left" while the lineup is in progress. "Pick your team" if this phone hasn't chosen one. Numbers come from `weekState` (Sleeper projections), not from betting lines.
 4. **Median tracker:** "You're 4th of 12 this week — on track for the median win." (half of every 2026 week is invisible today).
 5. **Lineup alert:** starter OUT / on bye / empty slot (weekState already detects "slots not playing").
 6. **Standings strip:** your seed, games back of the playoff line, playoff odds.

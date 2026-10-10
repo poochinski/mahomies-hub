@@ -49,13 +49,28 @@ var PULSE=null;
 function loadPulse(){
   fetch('/api/pulse',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
     if(!j)return;
-    var same=PULSE&&PULSE.live===j.live&&PULSE.next===j.next&&PULSE.phase===j.phase&&PULSE.delayed===j.delayed&&PULSE.week===j.week;
+    var same=PULSE&&PULSE.live===j.live&&PULSE.next===j.next&&PULSE.phase===j.phase&&PULSE.delayed===j.delayed&&PULSE.week===j.week&&gsig(PULSE)===gsig(j);
     PULSE=j;
     if(!same&&S.tab==='home'&&!$('#sheet').classList.contains('open'))render();
   }).catch(function(){});
 }
 setInterval(function(){if(LIVE&&document.visibilityState==='visible')loadPulse()},60*1000);
 function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
+function gsig(j){return (j&&j.games||[]).map(function(g){return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b].join(':')}).join('|')}
+function savedTeam(){return (store('auth')||{}).user_id||store('me')||''}
+function slateGame(uid){var gs=PULSE&&PULSE.games;if(!gs)return null;for(var i=0;i<gs.length;i++)if(gs[i].a===uid||gs[i].b===uid)return gs[i];return null}
+function slateSide(g,uid){var k=g.a===uid?'a':'b';return {pts:g['pts_'+k],proj:g['proj_'+k],now:g['now_'+k],left:g['left_'+k],on:g['on_'+k],fin:g['fin_'+k]}}
+function ygScore(s){
+  if(!s)return '<b class="yg-s num">0.00</b>';
+  if(!s.on&&s.proj!=null)return '<div class="yg-sc"><b class="yg-s num dim">'+f1(s.proj)+'</b><small>proj</small></div>';
+  var sub=s.on&&!s.fin&&s.proj!=null?'<small>proj '+f1(s.proj)+'</small>':(s.fin?'<small>final</small>':'');
+  return '<div class="yg-sc"><b class="yg-s num">'+f2(s.pts)+'</b>'+sub+'</div>';
+}
+function ygMeta(s){
+  if(!s||s.fin)return '';
+  var bits=[];if(s.now)bits.push(s.now+' playing');if(s.left)bits.push(s.left+' left');
+  return bits.length?'<span class="yg-st">'+bits.join(' · ')+'</span>':'';
+}
 /* ---------- Book math ---------- */
 function line(id){return D.lines.find(function(l){return l.id===id})}
 /* ---------- HOME ---------- */
@@ -70,11 +85,18 @@ function home(){
   var phase=pulseForWeek()?esc(PULSE.phase):('Week '+L.week);
   var h='<section class="hero hero-tight"><div class="eyebrow">'+CUR()+' · Week '+L.week+badge+'</div><h1>'+phase+'</h1>';
   if(my){
-    var mineA=my.a===me,opp=mineA?my.b:my.a,myPts=mineA?my.live_a:my.live_b,opPts=mineA?my.live_b:my.live_a,wp=Math.round((mineA?my.wp:1-my.wp)*100);
-    h+='<button type="button" class="yourgame" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+
-     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span></div><b class="yg-s num">'+f2(myPts)+'</b></div>'+
-     '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span></div><b class="yg-s num dim">'+f2(opPts)+'</b></div>'+
-     '</button>';
+    var mineA=my.a===me,opp=mineA?my.b:my.a;
+    var sg=slateGame(me),sMe=sg?slateSide(sg,me):null,sOpp=sg?slateSide(sg,opp):null;
+    if(!sMe)sMe={pts:mineA?my.live_a:my.live_b,proj:null,now:0,left:0,on:true,fin:false};
+    if(!sOpp)sOpp={pts:mineA?my.live_b:my.live_a,proj:null,now:0,left:0,on:true,fin:false};
+    var pick=savedTeam()?'':'<button type="button" class="yg-pick" data-tab="me">Pick your team</button>';
+    h+='<div class="yourgame">'+pick+
+     '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+
+     '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
+     '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span>'+ygMeta(sOpp)+'</div>'+ygScore(sOpp)+'</div>'+
+     '</button></div>';
+  } else if(!savedTeam()){
+    h+='<button type="button" class="yourgame" data-tab="me"><div class="yg-k">Your game</div><div class="yg-n"><b>Pick your team</b><span>Then this card shows your matchup.</span></div></button>';
   } else {
     var o=(D.odds.list||[]).find(function(x){return x.uid===me});var st=(D.seasons[CUR()].standings||[]).find(function(x){return x.uid===me});
     if(st)h+='<button type="button" class="yourgame" data-go="league:odds"><div class="yg-k">Your season</div><div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+st.w+'-'+st.l+' · seed '+st.seed+(o?' · '+pct(o.playoff)+' playoff odds':'')+'</span></div></div></button>';

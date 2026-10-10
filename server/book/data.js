@@ -58,6 +58,45 @@ export async function scoresBefore(L, week) {
   return { cur, prev };
 }
 
+// Fantasy-only snapshot of this week's matchups for the Home card.
+// Points so far, Sleeper projected final, and how many starters are playing or still waiting.
+// No spreads, odds, or win percentages.
+function packSide(R) {
+  const players = (R && R.players) || [];
+  let now = 0, left = 0, done = 0;
+  for (const p of players) {
+    if (p.state === 'in') now++;
+    else if (p.state === 'pre') left++;
+    else if (p.state === 'post') done++;
+  }
+  const started = now + done > 0;
+  const finished = players.length > 0 && now === 0 && left === 0;
+  const proj = started ? R && R.proj_live : R && R.proj_pre;
+  return {
+    pts: Math.round(((R && R.pts) || 0) * 100) / 100,
+    proj: proj == null ? null : proj,
+    now, left, started, finished
+  };
+}
+
+export async function homeCard(week) {
+  const L = await league();
+  const w = Number(week) || (L.seasonType === 'regular' ? L.nflWeek : 0);
+  if (!w || w >= L.P) return { week: w, games: [] };
+  const [pairs, st] = await Promise.all([pairsFor(L, w), weekState(L, w, 45 * 1000)]);
+  const games = pairs.map((p) => {
+    const A = packSide(st.rosters[p.roster_a]);
+    const B = packSide(st.rosters[p.roster_b]);
+    return {
+      id: `w${w}m${p.matchup_id}`, a: p.a, b: p.b,
+      pts_a: A.pts, pts_b: B.pts, proj_a: A.proj, proj_b: B.proj,
+      now_a: A.now, now_b: B.now, left_a: A.left, left_b: B.left,
+      on_a: A.started, on_b: B.started, fin_a: A.finished, fin_b: B.finished
+    };
+  });
+  return { week: w, games };
+}
+
 // Live or final points for every roster in a week.
 export async function pointsFor(L, week, maxAgeMs = 2 * 60 * 1000) {
   const ms = await matchups(L.leagueId, week, maxAgeMs);

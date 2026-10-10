@@ -3,6 +3,7 @@
 import { Router } from 'express';
 import { buildHub } from '../hub/build.js';
 import { kickoffs, describeWeek } from '../book/kickoffs.js';
+import { homeCard } from '../book/data.js';
 import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
@@ -45,7 +46,9 @@ router.get('/pulse', async (_req, res) => {
     const week = Number(state.week) || 0;
     if (state.season_type !== 'regular' || !week) return res.json({ season, week, ...blank });
     const k = await kickoffs(season, week, { maxAgeMs: 45 * 1000 });
-    res.json({ season, week, ...describeWeek(k) });
+    let games = [];
+    try { games = (await homeCard(week)).games || []; } catch (e) { console.error('home card', e.message); }
+    res.json({ season, week, ...describeWeek(k), games });
   } catch (err) {
     console.error('pulse failed', err.message);
     res.json(blank);
