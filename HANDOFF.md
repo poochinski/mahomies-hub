@@ -16,6 +16,11 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.3 push 7: Sportsbook batch 2** (Claude; due before Tue Oct 13 6 AM).
+  - Specials: `priceSpecials` / `gradeSpecial` / `americanWide` in server/book/engine.js (4.5% hold, cap +5000); `insertSpecials` runs inside `postLines`; `ensureSpecials` backfills a posted week that has no board yet (only before any kickoff); `specialsFor` → `linesFor().specials`; specials lock at the week's first kickoff (`liveWeek` updates matchup 0); `settleWeek` grades them from every team's final; labels "On Fire: X top score" etc. New table `book_specials`.
+  - `GET /api/book/weekly` (best bettor). Client: Book "Specials" segment (`specialsView`, `spk`), slip/ticket support (`SPM`, `spLine`, `spOdds`, `vsTxt`), `bestBettor()` on Leaders, Sportsbook Champion row in Awards (current season, from the Book leaderboard).
+  - Tests (Claude's scratchpad `booktest/spec.mjs`): 25 checks pass (board, overround, bets, blocks, kickoff close, settle math, best bettor, dead heat). Old suites still pass: Book 44/44, props 10/10, slot ledger.
+  - **Check Tue Oct 13 6 AM:** Week 6 lines AND the Specials tab should appear. First settlement Wed Oct 21 3 AM.
 - 2026-10-10 — **v2.3 push 6: one Game page** (Claude). Game Center header shows the stage (Preview / Live / In progress / Final). `matchupStory(a,b)` (form bars, keys, series, last meeting; no betting numbers) was pulled out of `previewSheet` and is appended to the Game Center; the "Matchup preview & history" button (`data-gcprev`) is gone. The Book still opens `previewSheet(id,true)` with the line. Past games still open `gameSheet` (final box score). Back history (push 2) covers moving between them. `.form-bars` now lays bars out in one row for any number of weeks.
 - 2026-10-10 — **v2.3 push 5: tables** (Claude). `td.tm` names wrap (2 lines) instead of ellipsis; Playoff odds: no avatar, record under the name, "#1" column dropped, intro trimmed to one line; All-time: `atCard` list with sort chips (`S.ats`: titles / pct / avg / playoffs / tb); Game Center player names wrap to 2 lines (`.gc-p b`).
 - 2026-10-10 — **v2.3 push 4: Me as one identity** (Claude). `me()` rewritten: identity card (`S.me`; logged in shows Log out; logged out shows the team picker + "Log in to bet"), My team panel (data-team, this week's opponent → game), My Book (from `BK.me`: balance, open bets, could win, won-lost, 3 open tickets), `profile(u,true)` now titled "My career" (no second name header), Record vs everyone rows are `data-rival` → League › Rivals with that pair, How the app works is one row (`data-howto` → sheet). Manager pages (`profile(u,false)`) got a "This season: roster & schedule ›" link to the team page.
@@ -74,7 +79,7 @@ Where things stand (Grok, 2026-10-10):
 ## Next steps (in order)
 0. **More "clickable" passes** (Jayson wants everything to open relevant info; expand as the app grows): award rows → the game/week that won it; standings stats (PF, all-play, luck) → week-by-week breakdown; power-ranking score → the four ingredients; H2H cell → rivalry (exists); recap names → games; Last-week top player tile → player card; playoff odds row → that team's remaining schedule.
 1. ~~2.1 Live Game Center~~ done. Ideas for later: highlight players currently on the field, show big plays, push alerts.
-2. **2.2 Sportsbook batch 2** before **Tue Oct 13, 6 AM PT** lines (weekly specials, best bettor, Sportsbook Champion). First real settlement **Wed Oct 21, 3 AM PT**.
+2. ~~Sportsbook batch 2~~ done (v2.3). Check the Week 6 post **Tue Oct 13, 6 AM PT** (lines + Specials); first settlement **Wed Oct 21, 3 AM PT**.
 3. Jayson: confirm Gridiron Gold sound on a real iPhone.
 
 ## Decisions made (and why)

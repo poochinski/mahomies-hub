@@ -200,3 +200,53 @@ export function gradeProp(pick, point, pts) {
   const x = pick === 'over' ? Number(pts) - Number(point) : Number(point) - Number(pts);
   return Math.abs(x) < 1e-9 ? 'push' : x > 0 ? 'won' : 'lost';
 }
+
+// ---------- weekly specials (v2.3) ----------
+// One board per week, priced from every team's projection and weekly swing:
+//   onfire   = which team posts the week's top score
+//   icecold  = which team posts the week's lowest score
+//   lowscore = over/under on the week's lowest score
+// Odds come from 20,000 simulated weeks (seeded, so a repost gives the same numbers).
+export const SPECIAL_HOLD = HOLD; // same 4.5% hold as the moneylines (BIBLE §7)
+export const SPECIAL_MARKETS = ['onfire', 'icecold', 'lowscore'];
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+export function americanWide(q) {
+  q = Math.max(0.01, Math.min(0.97, q));
+  let o = q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q;
+  o = o >= 1000 ? Math.round(o / 50) * 50 : Math.round(o / 5) * 5;
+  if (o > -100 && o < 100) o = o < 0 ? -100 : 100;
+  return Math.max(-1000, Math.min(5000, o));
+}
+export function priceSpecials(teams, seed = 1, n = 20000) {
+  const r = rng(seed), top = {}, bot = {}, mins = [];
+  const gauss = () => { let u = 0; while (!u) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r()); };
+  for (const t of teams) { top[t.uid] = 0; bot[t.uid] = 0; }
+  for (let i = 0; i < n; i++) {
+    let hi = null, lo = null;
+    for (const t of teams) {
+      const v = Math.max(20, t.proj + t.sd * gauss());
+      if (!hi || v > hi.v) hi = { u: t.uid, v };
+      if (!lo || v < lo.v) lo = { u: t.uid, v };
+    }
+    top[hi.u]++; bot[lo.u]++; mins.push(lo.v);
+  }
+  mins.sort((a, b) => a - b);
+  const med = mins[Math.floor(n / 2)];
+  const point = Math.floor(med) + 0.5;
+  const board = (cnt) => teams.map((t) => { const p = cnt[t.uid] / n; return { pick: t.uid, prob: Math.round(p * 10000) / 10000, odds: americanWide(p * (1 + SPECIAL_HOLD)) }; })
+    .sort((a, b) => b.prob - a.prob);
+  return { onfire: board(top), icecold: board(bot), lowscore: { point, over: -110, under: -110, median: Math.round(med * 10) / 10 } };
+}
+// Grade a specials leg from every team's final score this week: { uid: points }.
+export function gradeSpecial(leg, scores) {
+  const vals = Object.values(scores);
+  if (vals.length < 2) return 'void';
+  if (leg.market === 'lowscore') {
+    const lo = Math.min(...vals), x = leg.pick === 'over' ? lo - Number(leg.point) : Number(leg.point) - lo;
+    return Math.abs(x) < 1e-9 ? 'push' : x > 0 ? 'won' : 'lost';
+  }
+  const target = leg.market === 'onfire' ? Math.max(...vals) : Math.min(...vals);
+  const at = Object.keys(scores).filter((u) => Math.abs(scores[u] - target) < 1e-9);
+  if (!at.includes(leg.pick)) return 'lost';
+  return at.length > 1 ? 'push' : 'won'; // a dead heat for the top/bottom spot is a push
+}

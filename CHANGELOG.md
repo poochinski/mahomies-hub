@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — v2.3 Sportsbook batch 2: weekly Specials tab (🔥 On Fire, 🧊 Ice Cold, low-score over/under; posted with Tuesday's lines, close at the first kickoff), 🏅 Best bettor of the week on Leaders, 💵 Sportsbook Champion in Awards. (Claude)
 - 2026-10-10 — v2.3 One Game page: tapping a game this week opens one page that is a Preview before kickoff, Live during games and Final after, with the matchup story (form, keys to the game, all-time series, last meeting) built in; the separate preview pop-up is gone outside the Book. Form bars no longer wrap to a second row. (Claude)
 - 2026-10-10 — v2.3 tables: team names wrap instead of being cut off (Standings, Playoff odds, Game Center players); Playoff odds fits the phone (record under the name, dropped the #1 column, one-line intro); All-time is a list of cards you can sort by titles, win %, points per week, playoffs or On Fire. (Claude)
 - 2026-10-10 — v2.3 Me is one identity: "You are <team>" at the top (pick your team, or log in to bet; logging in only unlocks the Book), My team (record, place, this week's opponent, roster & schedule), My Book (balance, open bets, could win, record), My career, Record vs everyone rows open the rivalry card, How the app works folded into one row. (Claude)

@@ -879,3 +879,11 @@ td.tm .who .tx>span{font-size:10.5px}
 .gc-stage{font:600 10px var(--mono);letter-spacing:.08em;color:var(--cyan)}.gc-stage.fin{color:var(--gold)}.gc-stage.pre{color:var(--muted)}
 .gc-story .panel{margin-top:10px;background:var(--ground-2)}
 .form-bars{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+/* v2.3 Sportsbook: specials, best bettor */
+.seg5 button{font-size:10px;letter-spacing:.04em;padding:0 2px}
+.sp-grid{display:grid}
+.sp-row{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.sp-grid .sp-row:first-child{border-top:0}
+.sp-row.me .who b{color:var(--gold)}
+.sp-row .ob{min-height:40px}
+.sp-ou{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sp-ou .ob{min-height:46px}
+.bb .row .who b{font-size:15px}

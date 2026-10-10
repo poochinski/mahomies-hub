@@ -436,7 +436,9 @@ function awardsView(){
   h+='<section class="hero aw-hero"><div class="eyebrow">'+(s===CUR()?'In progress · through Week '+D.league.last_scored:'Final')+'</div><h1>'+s+' awards</h1>'+info('awards');
   if(champ)h+='<div class="podium2"><button type="button" class="p2 gold" data-mgr="'+champ.uid+'"><span class="p2i">🏆</span>'+av(champ.uid,44)+'<b>'+esc(tnS(s,champ.uid))+'</b><small>Champion</small></button>'+(sacko?'<button type="button" class="p2 poo" data-mgr="'+sacko.uid+'"><span class="p2i">🚽</span>'+av(sacko.uid,44)+'<b>'+esc(tnS(s,sacko.uid))+'</b><small>Sacko</small></button>':'')+'</div>';
   else h+='<p class="sub">Leaders change every week until the season ends.</p>';
-  h+='</section><section class="panel tight"><div class="rows">'+A.filter(function(a){return a.key!=='champ'&&a.key!=='sacko'}).map(function(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
+  var bkc='';if(s===CUR()){if(LIVE&&!BK.lb&&!bookBusy)setTimeout(bookLoad,0);var lead=(BK.lb||[]).filter(function(x){return x.joined})[0];
+    if(lead)bkc='<button type="button" class="row aw-row" data-go="book"><span class="aw-ic">💵</span><span class="aw-m"><b>Sportsbook Champion</b><span class="aw-tm">'+av(lead.user_id,18)+esc(team(lead.user_id))+'</span><span class="aw-note">Most Mahomie Bucks (cash + open bets) at the end of the season. '+(s===CUR()?'Leader right now.':'')+'</span></span><span class="aw-vb"><span class="aw-v num">'+money(lead.bankroll)+'</span><small>Bucks</small></span></button>'}
+  h+='</section><section class="panel tight"><div class="rows">'+bkc+A.filter(function(a){return a.key!=='champ'&&a.key!=='sacko'}).map(function(a){var gx=a.game?gi(a.game.s,a.game.w,a.game.win):-1;
     return '<button type="button" class="row aw-row" '+(gx>=0?'data-game="'+gx+'"':'data-mgr="'+a.uid+'"')+'><span class="aw-ic">'+(AW_ICON[a.key]||'⭐')+'</span><span class="aw-m"><b>'+esc(a.title)+'</b><span class="aw-tm">'+av(a.uid,18)+esc(tnS(s,a.uid))+'</span><span class="aw-note">'+esc(a.note)+'</span></span>'+awVal(a)+'</button>'}).join('')+'</div></section>';
   h+='<button type="button" class="share-btn wide" data-share-aw="'+s+'">Share '+s+' awards</button>';
   return h;
@@ -657,7 +659,7 @@ var bookAt=0;
 function bookLoad(){
   if(!LIVE||bookBusy)return Promise.resolve();bookBusy=true;bookAt=Date.now();
   return api('/status').then(function(s){BK.on=true;BK.status=s;BK.err=null;
-    return Promise.all([api('/lines').then(function(w){BK.wk=w}),api('/leaderboard').then(function(x){BK.lb=x}),api('/feed?limit=40').then(function(x){BK.feed=x}),
+    return Promise.all([api('/lines').then(function(w){BK.wk=w}),api('/leaderboard').then(function(x){BK.lb=x}),api('/feed?limit=40').then(function(x){BK.feed=x}),api('/weekly').then(function(x){BK.wkly=x}).catch(function(){}),
       AUTH?api('/me').then(function(m){BK.me=m;if(S.me!==m.user_id){S.me=m.user_id;store('me',S.me);S.h2a=S.me}}).catch(function(){}):null])})
    .then(function(){if(BK.me)rememberBets(BK.me.bets);rememberBets(BK.feed);S.picks=S.picks.filter(function(p){var l=bl(p.line);return l&&!isLk(l)&&legOdds(p)!=null});bookBusy=false;render()})
    .catch(function(e){bookBusy=false;BK.on=false;BK.err=e.message;render()})}
@@ -666,16 +668,20 @@ setInterval(function(){if(document.visibilityState!=='visible'||(S.tab!=='book'&
   if(live||Date.now()-bookAt>55000)bookLoad()},30000);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')bookLoad()});
 
-function bl(id){return BK.wk&&BK.wk.lines?BK.wk.lines.find(function(l){return l.id===id}):null}
+var SPM={onfire:1,icecold:1,lowscore:1};
+function spLine(){var sp=BK.wk&&BK.wk.specials;return sp?{id:sp.id,a:'*',b:'*',special:true,status:sp.status,finished:sp.started,live:false,lock_at:sp.lock_at,sp:sp}:null}
+function bl(id){if(BK.wk&&BK.wk.specials&&BK.wk.specials.id===id)return spLine();return BK.wk&&BK.wk.lines?BK.wk.lines.find(function(l){return l.id===id}):null}
+function spOdds(p){var sp=BK.wk&&BK.wk.specials;if(!sp)return null;if(p.mkt==='lowscore')return sp.lowscore?sp.lowscore[p.side]:null;var x=(sp[p.mkt]||[]).find(function(r){return r.pick===p.side});return x?x.odds:null}
+function vsTxt(l,g){return l&&l.special||(g&&SPM[g.market])?'Week '+((BK.wk&&BK.wk.week)||(g&&g.week)||'')+' special':team(l?l.a:g.a)+' vs '+team(l?l.b:g.b)}
 function BS(){return (BK.status&&BK.status.settings)||{min_bet:10,max_bet:250,parlay_max_legs:4,parlay_max_payout:10000,grant:1000}}
 function a2d(o){return o>0?1+o/100:1+100/Math.abs(o)}
 function d2a(d){return d>=2?Math.round((d-1)*100):-Math.round(100/(d-1))}
 function propOf(p){var l=bl(p.line);return l&&l.props?l.props.find(function(x){return x.pid===p.pid}):null}
-function legOdds(p){var l=bl(p.line);if(!l)return null;if(p.mkt==='prop'){var pr=propOf(p);return pr?(p.side==='over'?pr.over:pr.under):null}return p.mkt==='ml'?(p.side==='a'?l.ml_a:l.ml_b):p.mkt==='spread'?l.spread_price:l.total_price}
-function legPoint(p){var l=bl(p.line);if(!l)return null;if(p.mkt==='prop'){var pr=propOf(p);return pr?pr.line:null}return p.mkt==='spread'?(p.side==='a'?-l.spread:l.spread):p.mkt==='total'?l.total:null}
-function legLabel(p){var l=bl(p.line);if(!l)return '?';if(p.mkt==='prop'){var pr=propOf(p);return (pr?pr.name:'Player')+' '+(p.side==='over'?'over ':'under ')+(pr?f1(pr.line):'')+' pts'}
+function legOdds(p){var l=bl(p.line);if(!l)return null;if(SPM[p.mkt])return spOdds(p);if(p.mkt==='prop'){var pr=propOf(p);return pr?(p.side==='over'?pr.over:pr.under):null}return p.mkt==='ml'?(p.side==='a'?l.ml_a:l.ml_b):p.mkt==='spread'?l.spread_price:l.total_price}
+function legPoint(p){var l=bl(p.line);if(!l)return null;if(p.mkt==='lowscore')return l.sp&&l.sp.lowscore?l.sp.lowscore.point:null;if(SPM[p.mkt])return null;if(p.mkt==='prop'){var pr=propOf(p);return pr?pr.line:null}return p.mkt==='spread'?(p.side==='a'?-l.spread:l.spread):p.mkt==='total'?l.total:null}
+function legLabel(p){var l=bl(p.line);if(!l)return '?';if(p.mkt==='onfire')return '🔥 On Fire: '+team(p.side);if(p.mkt==='icecold')return '🧊 Ice Cold: '+team(p.side);if(p.mkt==='lowscore')return 'Low score '+(p.side==='over'?'over ':'under ')+f1(legPoint(p));if(p.mkt==='prop'){var pr=propOf(p);return (pr?pr.name:'Player')+' '+(p.side==='over'?'over ':'under ')+(pr?f1(pr.line):'')+' pts'}
   if(p.mkt==='ml')return team(p.side==='a'?l.a:l.b)+' to win';if(p.mkt==='spread')return team(p.side==='a'?l.a:l.b)+' '+spr(legPoint(p));return (p.side==='over'?'Over ':'Under ')+f1(l.total)+' total'}
-function legKind(p){return p.mkt==='prop'?'Player prop':p.mkt==='ml'?'Moneyline':p.mkt==='spread'?'Spread':'Total'}
+function legKind(p){return SPM[p.mkt]?'Special':p.mkt==='prop'?'Player prop':p.mkt==='ml'?'Moneyline':p.mkt==='spread'?'Spread':'Total'}
 function pkey(p){return p.line+'|'+p.mkt+'|'+p.side+'|'+(p.pid||'')}
 function bank(){return BK.me?BK.me.balance:0}
 function money2(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2})}
@@ -686,7 +692,7 @@ function lockTxt(l){if(l.status==='final')return 'Final';if(l.status==='void')re
   var ms=l.lock_at?new Date(l.lock_at)-Date.now():null;if(ms==null)return 'Pregame';if(ms<=0)return 'Going live';
   if(ms<36e5)return 'Live in '+Math.max(1,Math.round(ms/6e4))+' min';if(ms<864e5)return 'Live in '+Math.floor(ms/36e5)+'h '+Math.round(ms%36e5/6e4)+'m';return whenTxt(l.lock_at)}
 function isLk(l){return l.status!=='open'||!!l.finished}
-function blocked(l,mkt,side,pid){var me=AUTH&&AUTH.user_id;if(!me)return false;
+function blocked(l,mkt,side,pid){var me=AUTH&&AUTH.user_id;if(!me)return false;if(mkt==='icecold')return side===me;if(SPM[mkt])return false;
   if(mkt==='prop'){var pr=l.props&&l.props.find(function(x){return x.pid===pid});return !!pr&&pr.owner===me&&side==='under'}
   if(l.a!==me&&l.b!==me)return false;var mine=l.a===me?'a':'b';if(mkt==='total')return side==='under';return side!==mine}
 function picked(id,mkt,side,pid){return S.picks.some(function(p){return p.line===id&&p.mkt===mkt&&p.side===side&&(p.pid||'')===(pid||'')})}
@@ -733,7 +739,7 @@ function tktNo(id){return String(id).padStart(6,'0')}
 function tStatus(b){var lk=b.legs.some(function(g){return g.started||g.locked});return b.status==='open'?(lk?'live':'open'):b.status}
 function stub(b,mine){var st=tStatus(b);rememberBets([b]);
   return '<button type="button" class="stub" data-tkt="'+b.id+'"><div class="stub-l"><div class="stub-k">'+(mine?'':esc(team(b.user_id))+' · ')+(b.kind==='parlay'?b.legs.length+'-leg parlay':'Straight')+' · Wk '+b.week+'</div>'+
-   b.legs.map(function(g){return '<div class="stub-leg">'+(b.legs.length>1?'<i class="lg lg-'+g.result+'"></i>':'')+esc(g.label)+(g.market==='total'?' <small>('+esc(team(g.a))+' vs '+esc(team(g.b))+')</small>':'')+(g.live?' <span class="lv">LIVE</span>':'')+'</div>'}).join('')+
+   b.legs.map(function(g){return '<div class="stub-leg">'+(b.legs.length>1?'<i class="lg lg-'+g.result+'"></i>':'')+(SPM[g.market]?'⭐ ':'')+esc(g.label)+(g.market==='total'?' <small>('+esc(team(g.a))+' vs '+esc(team(g.b))+')</small>':'')+(g.live?' <span class="lv">LIVE</span>':'')+'</div>'}).join('')+
    '<div class="stub-m">'+odds(b.odds)+' · risk '+money2(b.stake)+' · '+(b.status==='won'?'won '+money2(b.payout-b.stake):b.status==='lost'?'lost':b.status==='push'||b.status==='void'?'stake back':'to win '+money2(b.to_win))+'</div></div>'+
    '<div class="stub-r"><span class="stamp s-'+st+'">'+st+'</span><small>#'+tktNo(b.id)+'</small></div></button>'}
 function barcode(id){var s=String(id)+'MH',h='';for(var i=0;i<34;i++){var c=s.charCodeAt(i%s.length)*(i+7);h+='<i style="width:'+(1+c%3)+'px;margin-right:'+(1+(c>>2)%3)+'px"></i>'}return '<div class="bcode">'+h+'</div>'}
@@ -742,7 +748,7 @@ function ticketHtml(b){var st=tStatus(b),mgr=M(b.user_id).name;
    '<div class="tkt-dash"></div><div class="tkt-meta"><span>TICKET #'+tktNo(b.id)+'</span><span>'+esc(new Date(b.placed_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+'</span></div>'+
    '<div class="tkt-who">BETTOR: <b>'+esc(team(b.user_id))+'</b>'+(mgr?' ('+esc(mgr)+')':'')+'</div>'+
    '<div class="tkt-type">'+(b.kind==='parlay'?b.legs.length+'-LEG PARLAY':'STRAIGHT BET')+' · '+odds(b.odds)+'</div><div class="tkt-dash"></div>'+
-   b.legs.map(function(g){return '<div class="tkt-leg"><div><b>'+esc(g.label)+'</b><small>'+esc(team(g.a))+' vs '+esc(team(g.b))+(g.live?' · LIVE':'')+'</small></div><span>'+odds(g.odds)+(g.result&&g.result!=='open'?'<em class="r-'+g.result+'">'+g.result.toUpperCase()+'</em>':'')+'</span></div>'}).join('')+
+   b.legs.map(function(g){return '<div class="tkt-leg"><div><b>'+esc(g.label)+'</b><small>'+esc(SPM[g.market]?'Week '+b.week+' special':team(g.a)+' vs '+team(g.b))+(g.live?' · LIVE':'')+'</small></div><span>'+odds(g.odds)+(g.result&&g.result!=='open'?'<em class="r-'+g.result+'">'+g.result.toUpperCase()+'</em>':'')+'</span></div>'}).join('')+
    '<div class="tkt-dash"></div><div class="tkt-tot"><div><small>RISK</small><b>'+m2(b.stake)+'</b></div><div><small>'+(b.status==='won'?'WON':'TO WIN')+'</small><b>'+m2(b.status==='won'?b.payout-b.stake:b.to_win)+'</b></div><div><small>PAYOUT</small><b>'+m2(b.status==='lost'?0:b.payout!=null?b.payout:b.stake+b.to_win)+'</b></div></div>'+
    '<div class="tkt-stamp s-'+st+'">'+st.toUpperCase()+'</div>'+barcode(b.id)+'<div class="tkt-fine">#'+tktNo(b.id)+' · MAHOMIE BUCKS · NO CASH VALUE</div></div>'}
 function ticketSheet(ids,title){var bs=ids.map(function(i){return TK[i]}).filter(Boolean);if(!bs.length)return '<p class="muted">Ticket not found.</p>'+CLOSE;
@@ -759,7 +765,7 @@ function ticketPng(b){var W=720,legH=96,H=640+b.legs.length*legH,c=document.crea
     y+=100;var dash=function(){x.strokeStyle='#b9ae95';x.setLineDash([8,6]);x.beginPath();x.moveTo(px+24,y);x.lineTo(px+pw-24,y);x.stroke();x.setLineDash([]);y+=34};dash();
     x.fillStyle=ink;x.font='600 20px '+mono;x.fillText('TICKET #'+tktNo(b.id),px+30,y);x.textAlign='right';x.fillText(new Date(b.placed_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),px+pw-30,y);x.textAlign='left';y+=38;
     x.font='600 22px '+mono;x.fillText(fit('BETTOR: '+team(b.user_id)+(M(b.user_id).name?' ('+M(b.user_id).name+')':''),pw-60),px+30,y);y+=36;x.fillStyle=mut;x.font='500 20px '+mono;x.fillText((b.kind==='parlay'?b.legs.length+'-LEG PARLAY':'STRAIGHT BET')+' · '+odds(b.odds),px+30,y);y+=26;dash();
-    b.legs.forEach(function(g){x.fillStyle=ink;x.font='700 24px '+mono;x.fillText(fit(g.label,pw-170),px+30,y);x.textAlign='right';x.fillText(odds(g.odds),px+pw-30,y);x.textAlign='left';x.fillStyle=mut;x.font='500 18px '+mono;x.fillText(fit(team(g.a)+' vs '+team(g.b),pw-60),px+30,y+30);y+=legH});
+    b.legs.forEach(function(g){x.fillStyle=ink;x.font='700 24px '+mono;x.fillText(fit(g.label,pw-170),px+30,y);x.textAlign='right';x.fillText(odds(g.odds),px+pw-30,y);x.textAlign='left';x.fillStyle=mut;x.font='500 18px '+mono;x.fillText(fit(SPM[g.market]?'Week '+b.week+' special':team(g.a)+' vs '+team(g.b),pw-60),px+30,y+30);y+=legH});
     y-=20;dash();var tot=[['RISK',m2(b.stake)],[b.status==='won'?'WON':'TO WIN',m2(b.status==='won'?b.payout-b.stake:b.to_win)],['PAYOUT',m2(b.status==='lost'?0:b.payout!=null?b.payout:b.stake+b.to_win)]];
     tot.forEach(function(t,i){var cx=px+30+i*(pw-60)/3;x.fillStyle=mut;x.font='500 18px '+mono;x.fillText(t[0],cx,y);x.fillStyle=ink;x.font='700 30px '+mono;x.fillText(t[1],cx,y+38)});y+=80;
     var st=tStatus(b).toUpperCase();x.save();x.translate(px+pw-120,y+58);x.rotate(-0.12);x.strokeStyle=st==='WON'||st==='LIVE'?'#1b8a3c':st==='LOST'?'#c0392b':'#2a5bd7';x.fillStyle=x.strokeStyle;x.lineWidth=4;x.strokeRect(-80,-34,160,52);x.font='700 30px '+mono;x.textAlign='center';x.fillText(st,0,4);x.restore();
@@ -770,7 +776,7 @@ function shareTickets(ids){var bs=ids.map(function(i){return TK[i]}).filter(Bool
 function book(){
   if(S.bseg==='how')S.bseg='lines';
   var h=bookHero();
-  h+='<div class="seg">'+[['lines','Games'],['props','Props'],['mine','My bets'],['leaders','Leaders']].map(function(x){return '<button type="button" class="'+(S.bseg===x[0]?'on':'')+'" data-bseg="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="seg seg5">'+[['lines','Games'],['specials','Specials'],['props','Props'],['mine','My bets'],['leaders','Leaders']].map(function(x){return '<button type="button" class="'+(S.bseg===x[0]?'on':'')+'" data-bseg="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
   if(!BK.on)return h+(BK.on===null&&LIVE?'<p class="muted" style="padding:16px 4px">Loading the Book…</p>':bookOff())+foot();
   var W=BK.wk;
   if(S.bseg==='lines'){
@@ -784,6 +790,7 @@ function book(){
     }
   }
   if(S.bseg==='props')h+=propsView();
+  if(S.bseg==='specials')h+=specialsView();
   if(S.bseg==='mine'){
     if(!AUTH||!BK.me)h+='<section class="panel"><p class="muted" style="font-size:13px">Log in to see your bets.</p><button type="button" class="cta" data-login="1" style="margin-top:10px">Log in</button></section>';
     else{var bets=BK.me.bets.filter(function(b){return b.status!=='cancelled'}),open=bets.filter(function(b){return b.status==='open'}),done=bets.filter(function(b){return b.status!=='open'});
@@ -796,7 +803,8 @@ function book(){
   if(S.bseg==='leaders'){
     var lb=BK.lb||[];
     if(BK.me&&BK.me.commish)h+='<button type="button" class="cta" data-adm="bucks" style="margin:0 0 10px">💵 Commish: add or take away Bucks</button>';
-    h+='<section class="panel"><div class="ph"><div><div class="kicker">Bucks + open bets</div><h2>Leaderboard</h2></div></div><div class="rows">'+
+    h+=bestBettor();
+    h+='<section class="panel"><div class="ph"><div><div class="kicker">Bucks + open bets · season leader = Sportsbook Champion</div><h2>Leaderboard</h2></div></div><div class="rows">'+
      lb.map(function(x){return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto"><span class="rk'+(x.rank===1&&x.joined?' gold':'')+'">'+x.rank+'</span>'+who(x.user_id,x.joined?x.record+(x.in_play?' · '+money(x.in_play)+' in play':''):'Hasn\'t logged in yet',30)+'<span class="val">💵 '+money(x.bankroll)+'</span></div>'}).join('')+'</div></section>';
     var fd=BK.feed||[];
     h+='<section class="panel tight"><div class="kicker">Bet feed · tap a ticket</div>'+(fd.length?fd.map(function(b){return stub(b,false)}).join(''):'<p class="muted">Bets show up here as people place them.</p>')+'</section>';
@@ -805,9 +813,29 @@ function book(){
   return h+foot();
 }
 
+/* weekly specials (v2.3) */
+function spk(l,mkt,pick,label,o){var dis=isLk(l)||blocked(l,mkt,pick);return '<button type="button" class="ob'+(picked(l.id,mkt,pick)?' sel':'')+'" data-bk="'+l.id+'|'+mkt+'|'+pick+'"'+(dis?' disabled':'')+'>'+esc(label)+(o!=null?'<small>'+odds(o)+'</small>':'')+'</button>'}
+function specialsView(){var W=BK.wk,sp=W&&W.specials,l=spLine();
+  if(!sp)return '<section class="panel"><p class="muted">Specials post with the week\'s lines (Tuesday 6 AM).</p></section>';
+  var me=AUTH&&AUTH.user_id,done=!!sp.result;
+  var h='<div class="bk-sub"><span>Week '+W.week+' specials · '+(sp.status==='void'?'off the board':done?'final':sp.started?'closed at kickoff':'close '+whenTxt(sp.lock_at))+'</span>'+info('book')+'</div>';
+  if(done)h+='<section class="panel sp-res"><div class="tm-stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><b class="num">'+f2(sp.result.top)+'</b><small>🔥 top score</small></div><div><b class="num">'+f2(sp.result.low)+'</b><small>🧊 low score</small></div></div></section>';
+  var board=function(mk,title,kick,list){return '<section class="panel tight"><div class="ph"><div><div class="kicker">'+kick+'</div><h2>'+title+'</h2></div></div><div class="sp-grid">'+list.map(function(x){
+    return '<div class="sp-row'+(x.pick===me?' me':'')+'">'+whoS(x.pick,Math.round(x.prob*100)+'% chance',24)+spk(l,mk,x.pick,'Pick',x.odds)+'</div>'}).join('')+'</div></section>'};
+  h+=board('onfire','🔥 On Fire','Week\'s top score',sp.onfire);
+  if(sp.lowscore)h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Over/under on the lowest score this week</div><h2>Low score</h2></div></div><div class="sp-ou">'+spk(l,'lowscore','over','Over '+f1(sp.lowscore.point),sp.lowscore.over)+spk(l,'lowscore','under','Under '+f1(sp.lowscore.point),sp.lowscore.under)+'</div></section>';
+  h+=board('icecold','🧊 Ice Cold','Week\'s lowest score',sp.icecold);
+  h+='<p class="muted" style="font-size:11.5px;margin:4px 2px 0;line-height:1.5">They close at the first kickoff of the week. One special per parlay. A tie for the top or bottom spot is a push. You can\'t bet on yourself to be Ice Cold.</p>';
+  if(!AUTH)h+='<p class="note"><b>Look around all you want.</b> Log in with your team and PIN to place bets.</p>';
+  return h}
+function bestBettor(){var x=BK.wkly;if(!x||!x.week||!x.rows.length)return '';var b=x.rows[0];
+  return '<section class="panel bb"><div class="ph"><div><div class="kicker">Week '+x.week+' · most Bucks won</div><h2>🏅 Best bettor</h2></div></div>'+
+   '<div class="row" style="border-top:0">'+who(b.user_id,b.won+'-'+b.lost+' · '+money(b.risked)+' risked'+(b.best?' · best hit +'+money(b.best):''),36)+'<span class="val" style="color:'+(b.profit>=0?'var(--win)':'var(--loss)')+'">'+(b.profit>=0?'+':'')+money(b.profit)+'</span></div>'+
+   (x.rows.length>1?'<div class="rows">'+x.rows.slice(1,5).map(function(r){return '<div class="row">'+who(r.user_id,r.won+'-'+r.lost,26)+'<span class="val" style="font-size:14px;color:'+(r.profit>=0?'var(--win)':'var(--loss)')+'">'+(r.profit>=0?'+':'')+money(r.profit)+'</span></div>'}).join('')+'</div>':'')+'</section>'}
 /* bet slip: Singles / Parlay → Review → Confirm → Ticket */
-function parlayOk(){if(S.picks.length<2)return 'Pick at least 2 to make a parlay.';if(S.picks.length>BS().parlay_max_legs)return 'Parlays max out at '+BS().parlay_max_legs+' picks.';
-  var seen={};for(var i=0;i<S.picks.length;i++){if(seen[S.picks[i].line])return 'A parlay can use only one pick per fantasy matchup. Remove a pick from '+esc(team(bl(S.picks[i].line).a))+' vs '+esc(team(bl(S.picks[i].line).b))+'.';seen[S.picks[i].line]=1}
+function parlayOk(){if(S.picks.length<2)return 'Pick at least 2 to make a parlay.';var spt=S.picks.filter(function(p){return p.mkt==='onfire'||p.mkt==='icecold'}).map(function(p){return p.side})[0];
+  if(spt&&S.picks.some(function(p){var l=bl(p.line);return l&&!l.special&&(l.a===spt||l.b===spt)}))return esc(team(spt))+'\'s special can\'t be in a parlay with its own game.';if(S.picks.length>BS().parlay_max_legs)return 'Parlays max out at '+BS().parlay_max_legs+' picks.';
+  var seen={};for(var i=0;i<S.picks.length;i++){if(seen[S.picks[i].line])return 'A parlay can use only one pick per fantasy matchup. Remove a pick from '+esc(vsTxt(bl(S.picks[i].line)))+'.';seen[S.picks[i].line]=1}
   if(S.picks.some(function(p){return legOdds(p)==null}))return 'One of these picks is off the board.';return ''}
 function slipDec(){return S.picks.reduce(function(x,p){return x*a2d(legOdds(p))},1)}
 function parlayWin(st){return Math.min(st*slipDec(),BS().parlay_max_payout)-st}
@@ -818,7 +846,7 @@ function slipProblem(){var s=BS(),st=S.stake;if(!(st>=s.min_bet&&st<=s.max_bet&&
   if(S.slipMode==='parlay'){var e=parlayOk();if(e)return e}
   var risk=slipBets().reduce(function(x,b){return x+b.stake},0);if(AUTH&&BK.me&&risk>bank())return 'Not enough Mahomie Bucks: this slip risks '+money2(risk)+' and you have '+money2(bank())+'.';return ''}
 function legRow(p,i,edit){var l=bl(p.line),o=legOdds(p);
-  return '<div class="leg"><div><b>'+esc(legLabel(p))+'</b><span>'+legKind(p)+' · '+esc(team(l.a))+' vs '+esc(team(l.b))+(l.live?' · LIVE':'')+'</span></div><div class="leg-r"><b class="num">'+(o==null?'Off':odds(o))+'</b>'+(edit?'<button type="button" class="x" data-unpick="'+i+'" aria-label="Remove">✕</button>':'')+'</div></div>'}
+  return '<div class="leg"><div><b>'+esc(legLabel(p))+'</b><span>'+legKind(p)+' · '+esc(vsTxt(l))+(l.live?' · LIVE':'')+'</span></div><div class="leg-r"><b class="num">'+(o==null?'Off':odds(o))+'</b>'+(edit?'<button type="button" class="x" data-unpick="'+i+'" aria-label="Remove">✕</button>':'')+'</div></div>'}
 function slipHtml(){
   var n=S.picks.length,s=BS();if(!n)return '<p class="muted">Your slip is empty.</p>'+CLOSE;
   if(n<2)S.slipMode='single';
@@ -1023,6 +1051,7 @@ var EXPLAIN={
   ['Pregame lines','Posted Tuesday 6 AM. Each team\'s projection is 60% Sleeper\'s projection for the lineup as it\'s set that morning and 40% league history (last 3 weeks, season average, last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
   ['Live odds','Once the first player in a matchup kicks off, the odds go live and update about every minute: projected final = points already scored + Sleeper\'s projection for every starter still to play (the same projected totals Sleeper shows). The "proj" under each team is that live number. The further ahead a team gets, the worse its price.'],
   ['Player props','Over/under on one player\'s fantasy points this week, scored your league\'s way. The line is Sleeper\'s projection (live during his game: points so far + projection for the rest), always x.5 so there are no pushes, -110 both ways. You can\'t take the under on your own player.'],
+  ['Weekly specials','On Fire: pick the team that posts the week\'s top score. Ice Cold: pick the week\'s lowest score. Low score: over/under on the week\'s lowest score. Prices come from 20,000 simulated weeks using every team\'s projection and week-to-week swing, with the same 4.5% house edge as the moneylines. They close at the first kickoff of the week. One special per parlay, and a team\'s On Fire or Ice Cold can\'t be parlayed with that team\'s own game. A tie for the top or bottom spot is a push. You can\'t bet on yourself to be Ice Cold.'],
   ['Singles and parlays','Your slip holds up to 8 picks. Singles = each pick is its own bet. Parlay = 2–4 picks, one per fantasy matchup, all have to win; odds multiply. Every bet gets a confirm screen, then a ticket you can share.'],
   ['Off the board','If a moneyline would be shorter than -1000 (nearly a sure thing), it comes off the board. Spreads and totals stay open.'],
   ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],

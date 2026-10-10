@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../db.js';
 import { COMMISH_USER_ID } from '../config.js';
-import { priceWeek, legTerms, gradeLeg, gradeBet, betOdds, money, livePrice, worseThan, swing, propPrice, gradeProp } from './engine.js';
+import { priceWeek, legTerms, gradeLeg, gradeBet, betOdds, money, livePrice, worseThan, swing, propPrice, gradeProp, priceSpecials, gradeSpecial, SPECIAL_MARKETS } from './engine.js';
 import { kickoffs, postTime, settleTime, fmtPT } from './kickoffs.js';
 import * as sl from './data.js';
 
@@ -172,10 +172,48 @@ export async function postLines(week, { force = false, by = null } = {}) {
                      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
         [`${season}-w${week}-m${m.matchup_id}`, season, week, m.matchup_id, m.a, m.b, m.roster_a, m.roster_b, m.proj_a, m.proj_b, m.spread, m.total, m.ml_a, m.ml_b, m.wp_a, m.sd_a, m.sd_b]);
     }
+    await insertSpecials(c, season, week, priced, k?.first || null);
   });
   await log('post_lines', { season, week, lines: priced.length, force, sleeper_projections: priced.filter((m) => m.blended).length }, by);
   await refreshLocks(season, week, { fresh: true }).catch(() => {});
   return linesFor(week);
+}
+
+// ---------- weekly specials (On Fire, Ice Cold, low-score over/under) ----------
+const spId = (season, week) => `${season}-w${week}-sp`;
+async function insertSpecials(c, season, week, priced, firstKick) {
+  const teams = [];
+  for (const m of priced) { teams.push({ uid: m.a, proj: Number(m.proj_a), sd: Number(m.sd_a) || 24 }); teams.push({ uid: m.b, proj: Number(m.proj_b), sd: Number(m.sd_b) || 24 }); }
+  if (teams.length < 4) return;
+  const sp = priceSpecials(teams, Number(season) * 100 + Number(week));
+  const id = spId(season, week);
+  await c.query(`INSERT INTO lines(id, season, week, matchup_id, team_a, team_b, roster_a, roster_b, proj_a, proj_b, spread, total, ml_a, ml_b, wp_a, lock_at, note)
+                 VALUES ($1,$2,$3,0,'*','*',0,0,0,0,0,$4,100,100,0.5,$5,'Weekly specials') ON CONFLICT (id) DO NOTHING`, [id, season, week, sp.lowscore.point, firstKick]);
+  for (const mk of ['onfire', 'icecold']) for (const x of sp[mk]) await c.query('INSERT INTO book_specials(line_id, market, pick, odds, prob) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING', [id, mk, x.pick, x.odds, x.prob]);
+  for (const side of ['over', 'under']) await c.query('INSERT INTO book_specials(line_id, market, pick, odds, point) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING', [id, 'lowscore', side, sp.lowscore[side], sp.lowscore.point]);
+}
+// Weeks posted before specials existed get a board the first time someone looks, if nothing has kicked off yet.
+async function ensureSpecials(season, week) {
+  const [have] = await q('SELECT 1 FROM lines WHERE id=$1', [spId(season, week)]);
+  if (have) return;
+  const rows = await q('SELECT * FROM lines WHERE season=$1 AND week=$2 AND matchup_id > 0', [season, week]);
+  if (!rows.length || rows.some(isStarted)) return;
+  const [bw] = await q('SELECT first_kick FROM book_weeks WHERE season=$1 AND week=$2', [season, week]);
+  const priced = rows.map((r) => ({ a: r.team_a, b: r.team_b, proj_a: r.proj_a, proj_b: r.proj_b, sd_a: r.sd_a, sd_b: r.sd_b }));
+  await tx((c) => insertSpecials(c, season, week, priced, bw?.first_kick || null));
+}
+async function specialsFor(season, week, L) {
+  const [row] = await q('SELECT * FROM lines WHERE id=$1', [spId(season, week)]);
+  if (!row) return null;
+  const px = await q('SELECT market, pick, odds, point::float, prob::float FROM book_specials WHERE line_id=$1', [row.id]);
+  const handle = await q(`SELECT g.market, COUNT(*)::int n FROM bet_legs g JOIN bets b ON b.id=g.bet_id WHERE g.line_id=$1 AND b.status <> 'cancelled' GROUP BY g.market`, [row.id]);
+  const board = (mk) => px.filter((x) => x.market === mk).sort((a, b) => b.prob - a.prob).map((x) => ({ pick: x.pick, team: L.teams[x.pick]?.team || '?', odds: x.odds, prob: x.prob }));
+  const lo = px.filter((x) => x.market === 'lowscore');
+  return { id: row.id, lock_at: row.lock_at, started: !!isStarted(row), status: row.status, note: row.status === 'void' ? row.note : null,
+    onfire: board('onfire'), icecold: board('icecold'),
+    lowscore: lo.length ? { point: lo[0].point, over: lo.find((x) => x.pick === 'over')?.odds ?? -110, under: lo.find((x) => x.pick === 'under')?.odds ?? -110 } : null,
+    result: row.status === 'final' ? { top: Number(row.final_a), low: Number(row.final_b) } : null,
+    bets: handle.reduce((a, h) => a + h.n, 0) };
 }
 
 // Live state of a week: when each matchup started (its first starter's kickoff),
@@ -196,6 +234,8 @@ export async function liveWeek(season, week, { fresh = false } = {}) {
   }
   await q('UPDATE book_weeks SET first_kick=$3, last_kick=$4, settle_at=COALESCE(settle_at,$5) WHERE season=$1 AND week=$2 AND settled_at IS NULL',
     [season, week, st.k.first, st.k.last, settleTime(st.k)]);
+  if (st.k.first) await q(`UPDATE lines SET lock_at = CASE WHEN locked THEN lock_at ELSE $3 END, locked = locked OR $4, updated_at = now()
+                           WHERE season=$1 AND week=$2 AND matchup_id=0`, [season, week, st.k.first, new Date(st.k.first) <= t]);
   // Lines posted before live betting existed have no swing saved; fill it in once.
   const noSd = await q('SELECT id, team_a, team_b FROM lines WHERE season=$1 AND week=$2 AND sd_a IS NULL', [season, week]);
   if (noSd.length) {
@@ -248,14 +288,16 @@ export async function linesFor(week, { season = null } = {}) {
   if (!week) { const w = await currentWeek(); if (!w) return { season, week: null, lines: [] }; week = w.week; season = w.season; }
   const [bw] = await q('SELECT * FROM book_weeks WHERE season=$1 AND week=$2', [season, week]);
   const st = bw && !bw.settled_at ? await liveWeek(season, week).catch(() => null) : null;
-  const rows = await q('SELECT * FROM lines WHERE season=$1 AND week=$2 ORDER BY matchup_id', [season, week]);
+  if (bw && !bw.settled_at) await ensureSpecials(season, week).catch((e) => console.error('[book] specials', e.message));
+  const rows = await q('SELECT * FROM lines WHERE season=$1 AND week=$2 AND matchup_id > 0 ORDER BY matchup_id', [season, week]);
+  const specials = await specialsFor(season, week, L).catch(() => null);
   const live = Object.fromEntries(Object.entries(st?.rosters || {}).map(([r, x]) => [r, x.pts]));
   const handle = await q(`SELECT l.line_id, COUNT(*)::int AS n, COALESCE(SUM(b.stake),0)::float AS bucks FROM bet_legs l JOIN bets b ON b.id=l.bet_id
                           WHERE b.season=$1 AND b.week=$2 AND b.status <> 'cancelled' GROUP BY l.line_id`, [season, week]);
   const H = Object.fromEntries(handle.map((h) => [h.line_id, h]));
   return {
     season, week: Number(week),
-    posted_at: bw?.posted_at || null, first_kick: bw?.first_kick || null, settle_at: bw?.settle_at || null, settled_at: bw?.settled_at || null,
+    posted_at: bw?.posted_at || null, first_kick: bw?.first_kick || null, settle_at: bw?.settle_at || null, settled_at: bw?.settled_at || null, specials,
     lines: rows.map((r) => { const p = priceNow(r, st); return {
       id: r.id, matchup_id: r.matchup_id, a: r.team_a, b: r.team_b,
       team_a: L.teams[r.team_a]?.team || '?', team_b: L.teams[r.team_b]?.team || '?',
@@ -310,6 +352,9 @@ function label(leg, line, teams) {
   const nm = (u) => teams[u]?.team || '?';
   const odds = (o) => (o > 0 ? `+${o}` : `${o}`);
   if (leg.market === 'prop') return `${leg.player_name || 'Player'} ${leg.pick === 'over' ? 'over' : 'under'} ${Number(leg.point)} pts`;
+  if (leg.market === 'onfire') return `On Fire: ${nm(leg.pick)} top score`;
+  if (leg.market === 'icecold') return `Ice Cold: ${nm(leg.pick)} lowest score`;
+  if (leg.market === 'lowscore') return `Week's low score ${leg.pick === 'over' ? 'over' : 'under'} ${Number(leg.point)}`;
   if (leg.market === 'ml') return `${nm(leg.pick === 'a' ? line.team_a : line.team_b)} to win (${odds(leg.odds)})`;
   if (leg.market === 'spread') { const p = Number(leg.point); return `${nm(leg.pick === 'a' ? line.team_a : line.team_b)} ${p === 0 ? 'PK' : p > 0 ? '+' + p : p}`; }
   return `${leg.pick === 'over' ? 'Over' : 'Under'} ${Number(leg.point)} total`;
@@ -346,6 +391,18 @@ export async function placeBet(userId, legsIn, stakeIn) {
     const [fresh] = await q('SELECT * FROM lines WHERE id=$1', [String(li.line_id)]);
     const vs = `${L.teams[fresh.team_a]?.team} vs ${L.teams[fresh.team_b]?.team}`;
     if (fresh.status !== 'open') throw new BookError('That game is off the board');
+    if (SPECIAL_MARKETS.includes(li.market) || fresh.matchup_id === 0) {
+      if (fresh.matchup_id !== 0 || !SPECIAL_MARKETS.includes(li.market)) throw new BookError('Unknown bet type');
+      if (!fresh.lock_at) throw new BookError("Can't confirm kickoff times right now. Try again in a minute.", 503);
+      if (isStarted(fresh)) throw new BookError('Specials closed at the first kickoff of the week');
+      const [px] = await q('SELECT odds, point FROM book_specials WHERE line_id=$1 AND market=$2 AND pick=$3', [fresh.id, li.market, String(li.pick)]);
+      if (!px) throw new BookError('That pick is off the board');
+      if (li.market === 'icecold' && li.pick === userId) throw new BookError("You can't bet on yourself to be Ice Cold");
+      const terms = { point: px.point != null ? Number(px.point) : null, odds: px.odds, live: false };
+      if (worseThan(li.market === 'lowscore' ? 'total' : 'ml', li.pick, { odds: li.odds, point: li.point }, terms)) throw new BookError('Odds moved. Check the new price and place it again.', 409);
+      legs.push({ line: fresh, market: li.market, pick: String(li.pick), ...terms });
+      continue;
+    }
     if (!fresh.lock_at) throw new BookError("Can't confirm kickoff times right now. Try again in a minute.", 503);
     if (li.market === 'prop') {
       if (li.pick !== 'over' && li.pick !== 'under') throw new BookError('Unknown bet type');
@@ -372,6 +429,11 @@ export async function placeBet(userId, legsIn, stakeIn) {
       if (li.market === 'total' && li.pick === 'under') throw new BookError("You can't bet the under on your own game");
     }
     legs.push({ line: fresh, market: li.market, pick: li.pick, ...terms });
+  }
+  // A special on a team (On Fire / Ice Cold) can't share a parlay with that team's own game.
+  for (const sp of legs.filter((l) => l.market === 'onfire' || l.market === 'icecold')) {
+    if (legs.some((l) => l.line.matchup_id > 0 && (l.line.team_a === sp.pick || l.line.team_b === sp.pick)))
+      throw new BookError(`${L.teams[sp.pick]?.team || 'That team'}'s special can't be in a parlay with its own game`);
   }
   const { dec, american: odds } = betOdds(legs);
   const toWin = money(Math.min(stake * dec, parlay ? s.parlay_max_payout : Infinity) - stake);
@@ -458,6 +520,20 @@ export async function leaderboard() {
   }).sort((a, b) => b.bankroll - a.bankroll || b.profit - a.profit).map((x, i) => ({ rank: i + 1, ...x }));
 }
 
+// Best bettor of the week: profit on bets settled in a week (latest settled week by default).
+export async function weekly(weekIn = null) {
+  const L = await sl.league();
+  let week = Number(weekIn) || null;
+  if (!week) { const [w] = await q('SELECT week FROM book_weeks WHERE season=$1 AND settled_at IS NOT NULL ORDER BY week DESC LIMIT 1', [L.season]); week = w ? w.week : null; }
+  if (!week) return { season: L.season, week: null, rows: [] };
+  const rows = await q(`SELECT user_id, COUNT(*)::int AS bets, SUM(stake)::float AS risked,
+      SUM(CASE WHEN status='won' THEN 1 ELSE 0 END)::int AS won, SUM(CASE WHEN status='lost' THEN 1 ELSE 0 END)::int AS lost,
+      SUM(COALESCE(payout,0) - stake)::float AS profit, MAX(CASE WHEN status='won' THEN payout - stake END)::float AS best
+    FROM bets WHERE season=$1 AND week=$2 AND status NOT IN ('open','cancelled') GROUP BY user_id`, [L.season, week]);
+  return { season: L.season, week, rows: rows.map((r) => ({ ...r, team: L.teams[r.user_id]?.team || '?', profit: money(r.profit), risked: money(r.risked), best: r.best != null ? money(r.best) : null }))
+    .sort((a, b) => b.profit - a.profit || b.won - a.won) };
+}
+
 export async function feed(limit = 40) {
   const L = await sl.league();
   return betsWhere("b.season=$1 AND b.status <> 'cancelled'", [L.season], Math.min(100, Number(limit) || 40));
@@ -488,11 +564,22 @@ export async function settleWeek(season, week, { force = false, by = null } = {}
   if (!force && L.lastScored < week && now() - new Date(bw.settle_at) < 24 * 60 * MIN) throw new BookError(`Sleeper hasn't finalized Week ${week} yet`);
   const pts = await sl.pointsFor(L, week, 0);
   const lines = await q("SELECT * FROM lines WHERE season=$1 AND week=$2 AND status='open'", [season, week]);
-  for (const l of lines) if (!(pts[l.roster_a] > 0) || !(pts[l.roster_b] > 0)) throw new BookError(`Missing final score for ${l.id}; not settling`);
+  for (const l of lines) if (l.matchup_id > 0 && (!(pts[l.roster_a] > 0) || !(pts[l.roster_b] > 0))) throw new BookError(`Missing final score for ${l.id}; not settling`);
+  // Every team's score this week, for the specials board (teams playing this week only).
+  const scores = {};
+  const games = await q('SELECT team_a, team_b, roster_a, roster_b FROM lines WHERE season=$1 AND week=$2 AND matchup_id > 0', [season, week]);
+  for (const g of games) { if (pts[g.roster_a] > 0) scores[g.team_a] = pts[g.roster_a]; if (pts[g.roster_b] > 0) scores[g.team_b] = pts[g.roster_b]; }
   const ppts = await sl.playerPoints(L, week, 0).catch(() => ({}));
   let graded = 0;
   await tx(async (c) => {
     for (const l of lines) {
+      if (l.matchup_id === 0) {
+        const vals = Object.values(scores);
+        await c.query("UPDATE lines SET status='final', final_a=$2, final_b=$3, locked=true, updated_at=now() WHERE id=$1", [l.id, vals.length ? Math.max(...vals) : null, vals.length ? Math.min(...vals) : null]);
+        const { rows: legs } = await c.query("SELECT * FROM bet_legs WHERE line_id=$1 AND result='open'", [l.id]);
+        for (const g of legs) await c.query('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, gradeSpecial(g, scores)]);
+        continue;
+      }
       const fa = pts[l.roster_a], fb = pts[l.roster_b];
       await c.query("UPDATE lines SET status='final', final_a=$2, final_b=$3, locked=true, updated_at=now() WHERE id=$1", [l.id, fa, fb]);
       const { rows: legs } = await c.query("SELECT * FROM bet_legs WHERE line_id=$1 AND result='open'", [l.id]);
@@ -570,7 +657,7 @@ export async function health() {
   add('Sleeper', true, `${L.teams ? Object.keys(L.teams).length : 0} managers, Week ${L.nflWeek}`);
   if (w) {
     const [bw] = await q('SELECT * FROM book_weeks WHERE season=$1 AND week=$2', [w.season, w.week]);
-    const lines = await q('SELECT status, locked FROM lines WHERE season=$1 AND week=$2', [w.season, w.week]);
+    const lines = await q('SELECT status, locked FROM lines WHERE season=$1 AND week=$2 AND matchup_id > 0', [w.season, w.week]);
     const open = await q("SELECT COUNT(*)::int n, COALESCE(SUM(stake),0)::float s FROM bets WHERE season=$1 AND week=$2 AND status='open'", [w.season, w.week]);
     add('Lines', lines.length > 0, `Week ${w.week}: ${lines.length} games (${lines.filter((l) => l.locked).length} started, ${lines.filter((l) => l.status !== 'open').length} final/void)`);
     add('Open bets', true, `${open[0].n} bets, ${money(open[0].s)} Bucks riding`);

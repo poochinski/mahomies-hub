@@ -171,3 +171,15 @@ CREATE TABLE IF NOT EXISTS slot_jackpots (
   won_amt  NUMERIC(14,2),
   PRIMARY KEY (season, bet, name)
 );
+
+-- 2026-10-10 (v2.3): weekly specials. One placeholder line per week (id <season>-w<week>-sp,
+-- matchup_id 0) holds the board's lock time and status; prices live here.
+CREATE TABLE IF NOT EXISTS book_specials (
+  line_id  TEXT NOT NULL REFERENCES lines(id) ON DELETE CASCADE,
+  market   TEXT NOT NULL,                  -- onfire | icecold | lowscore
+  pick     TEXT NOT NULL,                  -- a Sleeper user id, or over | under
+  odds     INT NOT NULL,
+  point    NUMERIC(6,1),
+  prob     NUMERIC(6,4),
+  PRIMARY KEY (line_id, market, pick)
+);

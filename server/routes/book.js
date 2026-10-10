@@ -38,6 +38,7 @@ router.get('/book/lines', wrap((req) => book.linesFor(Number(req.query.week) || 
 router.post('/book/bets', wrap(async (req) => book.placeBet(await need(req), req.body?.legs, req.body?.stake)));
 router.post('/book/bets/:id/cancel', wrap(async (req) => book.cancelBet(await need(req), req.params.id)));
 router.get('/book/leaderboard', wrap(() => book.leaderboard()));
+router.get('/book/weekly', wrap((req) => book.weekly(req.query.week)));
 router.get('/book/feed', wrap((req) => book.feed(req.query.limit)));
 
 // ---------- Gridiron Gold (hidden slot) ----------
