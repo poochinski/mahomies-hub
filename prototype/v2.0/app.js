@@ -33,7 +33,7 @@ var S={tab:'home',lseg:'season',rec:'high',rf:'all',resMore:false,recMore:false,
 S.h2a=S.me;
 /* On Railway the page sits next to our server: turn on live lineups + real avatars. */
 var LIVE=false;
-try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render();loadHub();bookLoad()}}).catch(function(){})}catch(e){}
+try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render();loadHub();loadPulse();bookLoad()}}).catch(function(){})}catch(e){}
 
 function loadHub(){
   fetch('/api/hub',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
@@ -44,6 +44,18 @@ function loadHub(){
   }).catch(function(){});
 }
 setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&!$('#sheet').classList.contains('open'))loadHub()},3*60*1000);
+/* Home "Live" is an NFL game in progress, not "the server answered". Polled once a minute. */
+var PULSE=null;
+function loadPulse(){
+  fetch('/api/pulse',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
+    if(!j)return;
+    var same=PULSE&&PULSE.live===j.live&&PULSE.next===j.next&&PULSE.phase===j.phase&&PULSE.delayed===j.delayed&&PULSE.week===j.week;
+    PULSE=j;
+    if(!same&&S.tab==='home'&&!$('#sheet').classList.contains('open'))render();
+  }).catch(function(){});
+}
+setInterval(function(){if(LIVE&&document.visibilityState==='visible')loadPulse()},60*1000);
+function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
 /* ---------- Book math ---------- */
 function line(id){return D.lines.find(function(l){return l.id===id})}
 /* ---------- HOME ---------- */
@@ -51,7 +63,12 @@ function weekGames(s,w){return D.games.map(function(g,i){return {g:g,i:i}}).filt
 function home(){
   var L=D.league,hw=S.hw,me=S.me;
   var my=D.lines.filter(function(l){return l.a===me||l.b===me})[0];
-  var h='<section class="hero hero-tight"><div class="eyebrow">'+CUR()+' · Week '+L.week+(LIVE?' · <span class="live"><i></i>Live</span>':'')+'</div><h1>Week '+L.week+'</h1>';
+  var badge='';
+  if(pulseForWeek()&&PULSE.live)badge=' · <span class="live"><i></i>Live</span>';
+  else if(pulseForWeek()&&PULSE.delayed)badge=' · Kickoff delayed';
+  else if(pulseForWeek()&&PULSE.next)badge=' · <span class="kick">Next kickoff '+esc(PULSE.next)+'</span>';
+  var phase=pulseForWeek()?esc(PULSE.phase):('Week '+L.week);
+  var h='<section class="hero hero-tight"><div class="eyebrow">'+CUR()+' · Week '+L.week+badge+'</div><h1>'+phase+'</h1>';
   if(my){
     var mineA=my.a===me,opp=mineA?my.b:my.a,myPts=mineA?my.live_a:my.live_b,opPts=mineA?my.live_b:my.live_a,wp=Math.round((mineA?my.wp:1-my.wp)*100);
     h+='<button type="button" class="yourgame" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for preview</div>'+

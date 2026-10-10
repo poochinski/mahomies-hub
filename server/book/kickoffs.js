@@ -74,6 +74,58 @@ export function ptWeekdayAfter(date, weekday, hour) {
 }
 export const fmtPT = (d) => new Date(d).toLocaleString('en-US', { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
+// "Thu 5:15 PM" in Pacific — the Home badge, not the long date.
+export function kickShort(d) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(d).replace(',', '');
+}
+
+// Home hero: is an NFL game actually on, when is the next kickoff, and a one-line week phase.
+// `k` is the object kickoffs() returns. Times are Pacific.
+export function describeWeek(k, now = new Date()) {
+  const games = (k && k.games) || [];
+  const upcoming = games.filter((g) => g.state === 'pre').slice().sort((a, b) => a.at - b.at);
+  const live = games.filter((g) => g.state === 'in');
+  const unfinished = games.filter((g) => g.state !== 'post');
+  const day = (g) => ptParts(g.at).wd;
+  const pt = ptParts(now);
+  const nLabel = (n) => `${n} game${n === 1 ? '' : 's'}`;
+
+  let phase = null;
+  if (games.length && unfinished.length && unfinished.every((g) => day(g) === 1)) {
+    phase = `Monday night: ${nLabel(unfinished.length)} left`;
+  } else if (live.length) {
+    const days = new Set(live.map(day));
+    if (days.size === 1 && days.has(4)) phase = 'Thursday night';
+    else if (days.size === 1 && days.has(5)) phase = 'Friday night';
+    else if (days.size === 1 && days.has(6)) phase = 'Saturday';
+    else phase = 'Game day';
+  } else if (games.length && !upcoming.length) phase = 'Week in the books';
+  else if (games.length && games.every((g) => g.state === 'pre')) {
+    if (pt.wd === 2 || (pt.wd === 3 && pt.h < 11)) phase = 'Waivers run Wed';
+    else phase = slateLine(day(upcoming[0]), upcoming.filter((g) => day(g) === day(upcoming[0])).length, false);
+  } else if (upcoming.length) {
+    const wd = day(upcoming[0]);
+    phase = slateLine(wd, upcoming.filter((g) => day(g) === wd).length, true);
+  }
+
+  let next = null;
+  let delayed = false;
+  if (!live.length && upcoming[0]) {
+    if (upcoming[0].at.getTime() < now.getTime() - 60 * 1000) delayed = true;
+    else next = kickShort(upcoming[0].at);
+  }
+  return { live: live.length > 0, live_n: live.length, left: unfinished.length, next, delayed, phase };
+}
+
+function slateLine(wd, n, between) {
+  if (wd === 1) return `Monday night: ${n} game${n === 1 ? '' : 's'} left`;
+  if (wd === 4) return 'Thursday night';
+  if (wd === 5) return 'Friday night';
+  if (wd === 6) return n === 1 ? 'Saturday: 1 game' : `Saturday: ${n} games`;
+  if (wd === 0) return between ? (n === 1 ? 'Sunday: 1 game left' : `Sunday: ${n} games`) : 'Sunday';
+  return between ? `${n} game${n === 1 ? '' : 's'} left` : 'This week';
+}
+
 // Lines post Tuesday 6 AM before the week's first kickoff;
 // bets settle Wednesday 3 AM after the week's last game (after stat corrections).
 export const postTime = (k) => ptWeekdayBefore(k.first, 2, 6);

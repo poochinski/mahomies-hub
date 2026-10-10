@@ -299,6 +299,9 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 @media (max-width:360px){.awards{grid-template-columns:1fr}}
 /* ---------- v1.6: less scrolling ---------- */
 .hero-tight{padding-bottom:12px}
+.hero-tight .eyebrow{letter-spacing:.08em;line-height:1.45}
+.hero-tight h1{font-size:28px;line-height:1.15}
+.kick{color:var(--gold);letter-spacing:.02em}
 .tiles-swipe{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,46%);grid-template-columns:none;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin-inline:-15px;padding-inline:15px}
 .tiles-swipe::-webkit-scrollbar{display:none}.tiles-swipe>*{scroll-snap-align:start}
 @media (min-width:600px){.tiles-swipe{grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.swipe-hint{display:none}}

@@ -9,7 +9,7 @@
 - **Owner / commissioner:** Jayson
 - **App name:** Mahomie's Hub (repo `poochinski/mahomies-hub`). It is its own app with its own look and names. **No Banana Bets branding anywhere** (no "banana" names, emoji or logo) — Jayson, 2026-10-09.
 - **Other projects by Jayson** live in separate repos and Railway services. Never mix code or branding between them.
-- **Prototype version:** v1.5 (v1.0 saved at git tag `v1.0`)
+- **Prototype version:** v2.0 (v1.8 frozen at /test/v1.8 and branch release-v1.8)
 - **Bible version:** 1.1 · 2026-10-07 (relay workflow: unlimited work per session, handoff on every push)
 
 ---
@@ -417,6 +417,7 @@ Ties broken by points for.
 ```
 GET  /api/state                     current season/week + last sync time
 GET  /api/hub                       EVERYTHING the app shows, built live from Sleeper, cached 3 min (built)
+GET  /api/pulse                     Home badge: NFL live / next kickoff / week phase from ESPN (built, polled ~1 min)
 GET  /api/history                   all seasons, champions, all-time table
 GET  /api/records                   record book
 GET  /api/managers/:id              profile
@@ -587,4 +588,5 @@ The repo must be **public** for the links to work. GitHub can take up to ~5 minu
 - Plan and feature order for v2: `docs/V2-HANDOFF.md` Part 4 (2.0 Home rework → 2.1 Live Game Center → 2.2 Sportsbook batch 2 → 2.3 futures + playoff lines → 2.4 League Wire → 2.5 engagement → 2.6 commish + extras).
 - Pushing: any AI with GitHub access commits straight to `main` (author `Jayson <editfilminc@gmail.com>`); Railway auto-deploys every push to main in ~2 minutes. AIs without push access give full files + Codespaces git commands (§12 rule 4).
 - After each push: check `/api/health` and the changed screen at 390px.
+- Home hero (v2.0, first slice): "Live" only when ESPN says an NFL game this week is in progress. Otherwise "Next kickoff Thu 5:15 PM" (Pacific). The big "Week N" title is a phase line ("Waivers run Wed", "Game day", "Monday night: 2 games left", "Sunday: 13 games", "Week in the books"). Data is `GET /api/pulse`. Betting numbers stay off Home.
 - Railway variables actually used: `DATABASE_URL` (required), `SLEEPER_LEAGUE_ID`, `COMMISH_USER_ID` (both default in code). `SESSION_SECRET`, `TZ`, `BOOK_HOLD` in §13 are not read by the code today.

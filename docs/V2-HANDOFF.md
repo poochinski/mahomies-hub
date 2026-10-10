@@ -121,8 +121,8 @@ Database tables: app_users, sessions, book_weeks, lines, bets, bet_legs, bankrol
 
 ### 2.0 — Home page rework (do this first)
 From the Home audit (2026-10-09):
-1. **Fix the "Live" badge** — today it means "connected to the server", not "games in progress". Show live only when an NFL game in the week is in progress (ESPN states); otherwise "Next kickoff Thu 5:15 PM".
-2. **Replace the giant "Week 6" title** with a week-phase line: *Waivers run Wed*, *Game day*, *Monday night: 2 games left*.
+1. **Fix the "Live" badge** — DONE 2026-10-09. `GET /api/pulse` reads ESPN. Live only while a game's state is `in`. Otherwise "Next kickoff Thu 5:15 PM" (Pacific), or "Kickoff delayed" if that time has passed and the game hasn't started. The server being up no longer lights the badge.
+2. **Replace the giant "Week 6" title** — DONE 2026-10-09. Phase line from the same pulse: *Waivers run Wed* (Tue, and Wed before 11 AM PT, before any game), *Thursday night* / *Game day* / *Sunday: N games* / *Monday night: N games left* / *Week in the books*.
 3. **Your game card:** add projected final (Sleeper live projections — the Book already computes them in `server/book/data.js weekState`), players left / playing now, and pregame projections instead of 0.00 vs 0.00. Say "Pick your team" if nobody is chosen.
 4. **Median tracker:** "You're 4th of 12 this week — on track for the median win." (half of every 2026 week is invisible today).
 5. **Lineup alert:** starter OUT / on bye / empty slot (weekState already detects "slots not playing").

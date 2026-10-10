@@ -2,6 +2,8 @@
 // Rebuilt at most every 3 minutes (past weeks are cached for days inside the Sleeper client).
 import { Router } from 'express';
 import { buildHub } from '../hub/build.js';
+import { kickoffs, describeWeek } from '../book/kickoffs.js';
+import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
 const router = Router();
@@ -29,6 +31,24 @@ router.get('/hub', async (_req, res) => {
   } catch (err) {
     console.error('hub build failed', err);
     res.status(502).json({ error: err.message });
+  }
+});
+
+// GET /api/pulse — Home badge only. Live means an NFL game is in progress (ESPN),
+// not "the server is up". Cached inside kickoffs(); safe to poll once a minute.
+router.get('/pulse', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const blank = { live: false, live_n: 0, left: 0, next: null, delayed: false, phase: null };
+  try {
+    const state = await sleeper('/state/nfl', { maxAgeMs: 10 * 60 * 1000 });
+    const season = String(state.season || '');
+    const week = Number(state.week) || 0;
+    if (state.season_type !== 'regular' || !week) return res.json({ season, week, ...blank });
+    const k = await kickoffs(season, week, { maxAgeMs: 45 * 1000 });
+    res.json({ season, week, ...describeWeek(k) });
+  } catch (err) {
+    console.error('pulse failed', err.message);
+    res.json(blank);
   }
 });
 
