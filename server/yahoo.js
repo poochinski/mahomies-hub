@@ -80,7 +80,11 @@ async function yget(path, leagueKey = null, retry = true) {
   let body; try { body = JSON.parse(text); } catch { body = { text: text.slice(0, 2000) }; }
   await pool.query('INSERT INTO yahoo_raw (path, league_key, ok, body, fetched_at) VALUES ($1,$2,$3,$4,now()) ON CONFLICT (path) DO UPDATE SET league_key=$2, ok=$3, body=$4, fetched_at=now()',
     [path, leagueKey, res.ok, JSON.stringify(body)]);
-  if (!res.ok) throw new Error(`Yahoo ${res.status} on ${path}`);
+  if (!res.ok) {
+    const why = body?.error?.description || '';
+    if (/not authorized/i.test(why)) throw new Error('Yahoo says this app isn\'t allowed to read Fantasy Sports. On developer.yahoo.com, open the app and make sure API Permissions has Fantasy Sports → Read ticked, then tap Reconnect (Step 2) and try again.');
+    throw new Error(`Yahoo ${res.status} on ${path}${why ? ': ' + why : ''}`);
+  }
   return body;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
