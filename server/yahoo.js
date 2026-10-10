@@ -41,7 +41,7 @@ export async function authUrl() {
   const c = await creds(); if (!c) throw new Error('Add the Yahoo Client ID and Secret first');
   const state = crypto.randomBytes(16).toString('hex');
   await kvSet('oauth_state', { state, at: Date.now() });
-  const q = new URLSearchParams({ client_id: c.id, redirect_uri: REDIRECT, response_type: 'code', state, language: 'en-us' });
+  const q = new URLSearchParams({ client_id: c.id, redirect_uri: REDIRECT, response_type: 'code', scope: 'fspt-r', state, language: 'en-us' }); // fspt-r = Fantasy Sports read
   return AUTH + 'request_auth?' + q;
 }
 async function tokenCall(params) {
@@ -54,7 +54,7 @@ async function tokenCall(params) {
   });
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.access_token) throw new Error('Yahoo login failed: ' + (j.error_description || j.error || res.status));
-  const tok = { access: j.access_token, refresh: j.refresh_token, expires: Date.now() + (Number(j.expires_in) || 3600) * 1000 - 60000 };
+  const tok = { access: j.access_token, refresh: j.refresh_token, expires: Date.now() + (Number(j.expires_in) || 3600) * 1000 - 60000, at: new Date().toISOString(), scope: j.scope || null };
   await kvSet('token', tok);
   return tok;
 }
@@ -183,7 +183,7 @@ export async function status() {
   if (!pool) return out;
   const [c, t, leagues, imported] = await Promise.all([creds(), kvGet('token'), kvGet('leagues'), kvGet('imported')]);
   const { rows } = await pool.query('SELECT league_key, count(*)::int AS n, sum(CASE WHEN ok THEN 0 ELSE 1 END)::int AS bad FROM yahoo_raw GROUP BY league_key ORDER BY league_key NULLS FIRST');
-  return { ...out, has_keys: !!c, connected: !!t, leagues: leagues || [], imported: imported || {}, saved: rows, import: importStatus() };
+  return { ...out, has_keys: !!c, connected: !!t, connected_at: t?.at || null, scope: t?.scope || null, leagues: leagues || [], imported: imported || {}, saved: rows, import: importStatus() };
 }
 export async function rawList(leagueKey) {
   await init();
