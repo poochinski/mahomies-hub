@@ -23,6 +23,13 @@ currently shows the league name, current week, all 4 seasons found on Sleeper
 Once it's live, start Phase 1: sync every season's Sleeper data into Postgres.
 
 ## Done (newest first)
+- 2026-10-09 — **Gridiron Gold (hidden slot machine, Easter egg)** (Claude). **Secret: don't put it in "How it works" or any menu.** On the Book tab, tap the **pink dot** in the footer (2nd of the 4 dots) → full-screen slot. Needs a Sportsbook login; spins use real Mahomie Bucks (ledger kinds slot_bet / slot_win), so they count toward bankroll and going broke still ends your season.
+  - 5 reels × 3 rows, 9 fixed lines; bets 10 / 25 / 50. Symbols: 💍 Ring, 🏆 Trophy, 🏟️ Stadium, 📋 Playbook, 🏈 Football, 🧢 Cap; **MH logo = wild** (reels 2–4).
+  - 🎟️ 3+ anywhere: scatter pay + **10 free spins at ×3**, retriggers add 10.
+  - 📜 draft card on reels 1, 2 and 3: **Draft Day** bonus — pick 3 of 12 face-down prospects (1×–25× bet each), then the Combine multiplier ×1/×2/×3. Our own pick-a-spot bonus in the spirit of Texas Tea's, no IGT art or names.
+  - Server decides everything (`server/slots/engine.js` math, `server/slots/slots.js` state + ledger, routes /api/book/slots/*). Bonus board values stay on the server until picked. Free spins / pending bonus survive closing the app.
+  - Payback tuned to **≈95%** by simulation: `node server/slots/sim.js 3000000` → base 62% · free spins 12% (1 in 155) · Draft Day 21% (1 in 178) · hit rate 35%. A 4,000-spin run through the real server + database matched the ledger to the cent.
+  - UI source: prototype/v1.8/v18_slot.js + v18_slot.css.
 - 2026-10-09 — **Sportsbook batch 1** (Claude). Jayson's calls: broke = out for the season (no re-buys); player props IN (parlay-able); tickets show the bettor.
   - **Player props**: over/under on any starting QB/RB/WR/TE's fantasy points. Line = Sleeper projection scored with league settings (live: pts so far + proj for the rest of his game), x.5, -110/-110; off the board when his game is ~over, bye, or proj < 3. Can't take the under on your own player. Bet legs keep the fantasy matchup in line_id (so parlays stay one-pick-per-matchup) + player_id/player_name (new columns). Graded Wednesday from every roster's players_points (void if the player isn't on any roster). engine.js `propPrice`/`gradeProp`, book.js `propsFor`.
   - **Game cards**: sportsbook grid (Spread · Total · Money per team row, O on top / U on bottom), live progress bar, "Opened …" line, "Player props (N) ›" link.

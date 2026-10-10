@@ -167,6 +167,7 @@ css=""".bk-sub{display:flex;justify-content:space-between;padding:0 4px;font:500
 css+=open('/home/claude/data/v18_trades.css').read()
 css+=AW_CSS
 css+=open('/home/claude/data/v18_book2.css').read()
+css+=open('/home/claude/data/v18_slot.css').read()
 # RENAME (Jayson 2026-10-09: no Banana Bets branding in this app)
 LOGO='<img class="mark" src="/brand-96.png" alt="" width="34" height="34">'
 a=s.index('<svg class="mark"'); b=s.index('</svg>',a)+6; s=s[:a]+LOGO+s[b:]
@@ -218,6 +219,11 @@ for a_,b_ in [
   ]:
     assert s.count(a_)==1,(s.count(a_),a_[:70])
     s=s.replace(a_,b_)
+# SLOT pass: Gridiron Gold easter egg (Jayson 2026-10-09) — pink footer dot on the Book tab
+a_="""<i style="background:var(--pink)"></i>"""
+assert s.count(a_)==1,s.count(a_)
+s=s.replace(a_,"""<i style="background:var(--pink)" data-egg="1"></i>""")
+s=s.replace("/* ---------- ME / PROFILE ---------- */",open('/home/claude/data/v18_slot.js').read()+"\n/* ---------- ME / PROFILE ---------- */",1)
 left=[l.strip()[:120] for l in s.split('\n') if re.search('anana|🍌',l)]
 assert not left,left
 i=s.index("</style>")

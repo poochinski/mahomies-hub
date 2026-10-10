@@ -134,3 +134,27 @@ ALTER TABLE bet_legs ADD COLUMN IF NOT EXISTS live BOOLEAN NOT NULL DEFAULT fals
 -- fantasy matchup in line_id (one pick per matchup in a parlay) plus the player.
 ALTER TABLE bet_legs ADD COLUMN IF NOT EXISTS player_id TEXT;
 ALTER TABLE bet_legs ADD COLUMN IF NOT EXISTS player_name TEXT;
+
+-- 2026-10-09: "Gridiron Gold" hidden slot machine (Easter egg). Bets and wins go through
+-- bankroll_ledger (kinds slot_bet / slot_win); these tables keep the machine's state + history.
+CREATE TABLE IF NOT EXISTS slot_state (
+  user_id    TEXT NOT NULL,
+  season     TEXT NOT NULL,
+  free_left  INT NOT NULL DEFAULT 0,
+  free_bet   NUMERIC(10,2),
+  free_won   NUMERIC(12,2) NOT NULL DEFAULT 0,
+  bonus      JSONB,                       -- pending Draft Day board (values stay server-side)
+  PRIMARY KEY (user_id, season)
+);
+CREATE TABLE IF NOT EXISTS slot_spins (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  season      TEXT NOT NULL,
+  kind        TEXT NOT NULL,              -- spin | free | bonus
+  bet         NUMERIC(10,2) NOT NULL,
+  win         NUMERIC(12,2) NOT NULL,
+  grid        JSONB,
+  detail      JSONB,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS slot_spins_user ON slot_spins(user_id, season);

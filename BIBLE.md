@@ -291,6 +291,8 @@ won  → ledger +stake +profit   (stake was already deducted when placed)
 push → ledger +stake
 ```
 
+**Easter egg — Gridiron Gold slot (2026-10-09):** hidden behind the pink footer dot on the Book tab; never listed in menus or help. Server-side outcomes, ledger kinds slot_bet/slot_win, bets 10/25/50, ≈95% payback (server/slots/sim.js). Details in HANDOFF.
+
 **Accuracy check:** keep every line and result. A "How sharp is the Book?" page compares projected vs actual (mean error, % favorites that won). Tune the weights in Step 1 after Week 8.
 
 ---

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { COMMISH_USER_ID } from '../config.js';
 import * as book from '../book/book.js';
+import * as slots from '../slots/slots.js';
 
 const router = Router();
 
@@ -38,6 +39,12 @@ router.post('/book/bets', wrap(async (req) => book.placeBet(await need(req), req
 router.post('/book/bets/:id/cancel', wrap(async (req) => book.cancelBet(await need(req), req.params.id)));
 router.get('/book/leaderboard', wrap(() => book.leaderboard()));
 router.get('/book/feed', wrap((req) => book.feed(req.query.limit)));
+
+// ---------- Gridiron Gold (hidden slot) ----------
+router.get('/book/slots/paytable', wrap(() => slots.paytable()));
+router.get('/book/slots/state', wrap(async (req) => slots.state(await need(req))));
+router.post('/book/slots/spin', wrap(async (req) => slots.spin(await need(req), req.body?.bet)));
+router.post('/book/slots/pick', wrap(async (req) => slots.pick(await need(req), req.body?.index)));
 
 // ---------- commish tools ----------
 router.post('/book/admin/post-lines', wrap(async (req) => book.postLines(Number(req.body?.week), { force: !!req.body?.force, by: await commish(req) })));

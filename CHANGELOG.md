@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-09 — Hidden Easter egg: Gridiron Gold slot machine (pink footer dot on the Book tab), free spins + Draft Day bonus, server-side, ≈95% payback. (Claude)
 - 2026-10-09 — Sportsbook batch 1: player props, sportsbook game grid, Singles/Parlay slip with confirm screen, casino tickets with share image, ticket-stub My bets/feed, Book health card. (Claude)
 - 2026-10-09 — Sportsbook: live projected totals + live odds from Sleeper's player projections; Tuesday lines blend Sleeper 60/40 with history. (Claude)
 - 2026-10-09 — Home + non-Book previews no longer show win % or betting lines; Your game shows record + place. (Claude)
