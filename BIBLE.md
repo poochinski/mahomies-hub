@@ -596,3 +596,8 @@ The repo must be **public** for the links to work. GitHub can take up to ~5 minu
 - **CSS class names:** prefix new feature classes (e.g. `gg-` for the slot) — a generic name like `.slot` once broke the box score.
 - **Live Game Center (2026-10-10):** tapping a game on Home opens it player by player (`GET /api/live/:week/:mid`). Fantasy only: points, projected finals, NFL game status. Before a team plays, Home shows 0.00 with the projection small underneath (Jayson).
 - **Player cards (2026-10-10):** any NFL player's name is tappable (`data-pl`) and opens his card (`GET /api/player/:pid`): bio, NFL seasons scored with our league's settings, league history. No players tab. Taps should open the most relevant detail (the game, the week, the bench), not just the manager page.
+- **Yahoo years (2026-10-10):** the league started on Yahoo, with 2021 (10 teams) and 2022 (12 teams), PPR both years. Sleeper starts in 2023.
+  - Yahoo seasons are imported once through the commish page `/yahoo` and saved in Postgres (`yahoo_raw`, `yahoo_kv`). The app never calls Yahoo during normal use.
+  - Yahoo keys and tokens never go to the browser or into `/api/yahoo/*` answers.
+  - In the app, Yahoo seasons count like any other season (titles, records, all-time, rivals) and carry a small "Yahoo era" tag.
+  - 2021 was a 10-team year. Per-team stats are fine as they are. League-wide "rank of N" numbers (all-play, median) use that season's team count.

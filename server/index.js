@@ -9,6 +9,7 @@ import gameRoutes from './routes/game.js';
 import labRoutes from './routes/lab.js';
 import hubRoutes from './routes/hub.js';
 import bookRoutes from './routes/book.js';
+import yahooRoutes from './routes/yahoo.js';
 import { initBook, startBookJobs } from './book/book.js';
 import { pool } from './db.js';
 
@@ -41,6 +42,7 @@ app.use('/api', gameRoutes);
 app.use('/api', labRoutes);
 app.use('/api', hubRoutes);
 app.use('/api', bookRoutes);
+app.use(yahooRoutes); // /yahoo page + /api/yahoo/* (old Yahoo seasons import)
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
 // The first deploy installed a service worker that keeps showing the old

@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — Yahoo history import, part 1: commish page /yahoo connects Yahoo (read-only) and saves every piece of the 2021–2022 Yahoo seasons; turning it into app seasons comes next. (Claude)
 - 2026-10-10 — Full app audit written to docs/AUDIT-2026-10-10.md. (Claude)
 - 2026-10-10 — Player photos: headshots on the player card and in the Game Center (team logos for defenses), initials if a photo can't load. (Claude)
 - 2026-10-10 — **v2.2 Player cards + tappable stats**: tap any NFL player's name (Game Center, box scores, benches, trades, draft re-grade, records, props) for his card: bio, this NFL season scored our way with weekly bars, earlier seasons, and his whole history in our league (owners, starts, points, best start, draft, trades/waivers). Bench Shame rows open every week's should-have-started list and the game. (Claude)

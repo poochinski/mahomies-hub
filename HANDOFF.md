@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 13:00 (Pacific) · **AI:** Claude
-**Current phase:** v2.2 player cards + "everything clickable" (first pass) live; next: more drill-downs, then 2.2 Sportsbook batch 2 (before Tue Oct 13, 6 AM PT)
-**Last commit:** "Full app audit (docs/AUDIT-2026-10-10.md)"
+**Last updated:** 2026-10-10 13:45 (Pacific) · **AI:** Claude
+**Current phase:** Yahoo history import, part 1 (connect + save raw data) live; waiting on Jayson to connect Yahoo. Then part 2 (turn it into seasons). Sportsbook batch 2 due before Tue Oct 13, 6 AM PT
+**Last commit:** "Yahoo history import, part 1: connect page + raw download"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,15 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **Yahoo history import, part 1** (Claude). The league played **2021 (10 teams) and 2022 (12 teams) on Yahoo**, PPR both years, then moved to Sleeper (12 teams since). Jayson wants those years in the app.
+  - New page **/yahoo** (server-rendered, phone-sized). Actions are commish-only: the page reads the Book login from `localStorage['mh-auth']`.
+    1. Paste the Yahoo app Client ID/Secret (saved in Postgres `yahoo_kv`; Railway vars `YAHOO_CLIENT_ID`/`YAHOO_CLIENT_SECRET` win if set).
+    2. Connect Yahoo (OAuth2, read-only). Redirect URI `https://mahomies-hub-production.up.railway.app/yahoo/callback`.
+    3. Find leagues (`users;use_login=1/games;game_codes=nfl/leagues`) and import each one.
+  - The import runs in the background. Every Yahoo answer is saved **as-is** in `yahoo_raw (path, league_key, ok, body)`. Saved per league: settings, standings, teams (managers), draftresults/players, transactions, league, scoreboard for every week, and every team's roster with weekly player stats.
+  - **Public read-only checks** (no keys or tokens): `/api/yahoo/status`, `/api/yahoo/raw-list?league=KEY`, `/api/yahoo/raw?path=PATH&norm=1`. `norm=1` flattens Yahoo's odd JSON.
+  - Claude's sandbox can't reach Yahoo. Tested against a mock Yahoo (connect, wrong state, find, import, a failed piece, stopping after 8 failures in a row).
+  - **Part 2 (next):** read the saved answers and build 2021/2022 in the same shape as Sleeper seasons. That needs a manager-matching screen (Yahoo nickname → Sleeper user, plus "former" managers) and a 10-team 2021. Then merge into History, Records, All-time, Rivals, Awards and player cards, with a "Yahoo era" tag. Player IDs: Sleeper's players DB has `yahoo_id`.
 - 2026-10-10 — **Full audit** (Claude, Jayson asked for a page-by-page breakdown): `docs/AUDIT-2026-10-10.md` lists repeats, dead navigation, cut-off names, missing features (team page/roster, player search, league activity feed, schedule, one identity on Me) and code cleanup, with a suggested order. Waiting on Jayson to pick what to do first.
 - 2026-10-10 — **Player photos** (Claude, Jayson asked why there were none): `plPic()` loads Sleeper's CDN headshot `sleepercdn.com/content/nfl/players/thumb/{id}.jpg`, falls back to ESPN (`a.espncdn.com/i/headshots/nfl/players/full/{espn_id}.png`, Sleeper players `espn_id` kept as slim `e`) or Sleeper full-size, then initials; defenses use `sleepercdn.com/images/team_logos/nfl/{team}.png`. On the player card (76px) and Game Center rows (20px). Images can't be checked from Claude's sandbox; verify on the phone.
 - 2026-10-10 — **v2.2 Player cards + everything clickable, first pass** (Claude). Jayson: tap an NFL player anywhere → profile (no new tab); taps should open relevant info, not just the manager page (e.g. Bench Shame → the actual games/bench).
@@ -51,7 +60,7 @@ Where things stand (Grok, 2026-10-10):
 - 2026-10-09 — Sportsbook batch 1, live odds, player props, tickets, commish Bucks, Gridiron Gold slot (secret: Book tab, 2nd footer dot, the pink one). Payback 92.51%. See CHANGELOG.md for the rest of Oct 9.
 
 ## In progress (not finished)
-- Nothing half-done.
+- Yahoo import: part 1 live. Waiting on Jayson to create the Yahoo developer app, connect, and import 2021 + 2022 at /yahoo. Then Claude reads `/api/yahoo/raw` and builds part 2.
 
 ## Next steps (in order)
 0. **More "clickable" passes** (Jayson wants everything to open relevant info; expand as the app grows): award rows → the game/week that won it; standings stats (PF, all-play, luck) → week-by-week breakdown; power-ranking score → the four ingredients; H2H cell → rivalry (exists); recap names → games; Last-week top player tile → player card; playoff odds row → that team's remaining schedule.
