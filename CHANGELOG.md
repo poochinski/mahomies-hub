@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — Player photos: headshots on the player card and in the Game Center (team logos for defenses), initials if a photo can't load. (Claude)
 - 2026-10-10 — **v2.2 Player cards + tappable stats**: tap any NFL player's name (Game Center, box scores, benches, trades, draft re-grade, records, props) for his card: bio, this NFL season scored our way with weekly bars, earlier seasons, and his whole history in our league (owners, starts, points, best start, draft, trades/waivers). Bench Shame rows open every week's should-have-started list and the game. (Claude)
 - 2026-10-10 — **v2.1 Live Game Center**: tap any game on Home for both lineups player by player (points, projected final, NFL game clock + score, injury tags, empty slots, benches, what the trailing team needs), refreshes every minute; Home scores show 0.00 before a team plays (projection underneath). (Claude)
 - 2026-10-10 — Home This week: the team that's ahead shows its score in green; "Upset brewing" goes only on the single biggest upset of the week. (Claude)

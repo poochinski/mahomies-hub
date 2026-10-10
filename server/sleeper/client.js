@@ -45,6 +45,7 @@ export async function getPlayers() {
       if (p.college) slim[id].c = p.college;
       if (p.height) slim[id].ht = p.height;
       if (p.weight) slim[id].wt = p.weight;
+      if (p.espn_id) slim[id].e = String(p.espn_id); // ESPN headshot fallback
     }
     players = slim;
     playersAt = Date.now();

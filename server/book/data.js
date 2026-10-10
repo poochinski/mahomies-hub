@@ -246,7 +246,7 @@ export async function gameCenter(week, matchupId) {
     else if (g && g.state === 'in') status = g.detail || 'Live';
     else if (g) status = 'Final';
     return {
-      slot, pid, name: players[pid]?.n || pid, pos: posOf(pid), nfl, inj: players[pid]?.i || null,
+      slot, pid, name: players[pid]?.n || pid, pos: posOf(pid), nfl, inj: players[pid]?.i || null, espn: players[pid]?.e || null,
       pts: Math.round(got * 100) / 100, proj_full: pj ?? null,
       proj: !g ? Math.round(got * 10) / 10 : pj == null ? null : Math.round((got + pj * (1 - prog)) * 10) / 10,
       state, status, opp: opp ? (g.home === nfl ? 'vs ' : '@ ') + opp : '',

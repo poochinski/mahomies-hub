@@ -150,7 +150,7 @@ function gcLoad(){var m=/^w(\d+)m(\d+)$/.exec(GC.id||'');if(!m)return;var id=GC.
 function gcState(p){if(p.state==='in')return 'live';if(p.state==='post')return 'fin';if(p.state==='bye')return 'bye';return 'pre'}
 function gcCell(p,side){if(!p)return '<div class="gc-p '+side+'"></div>';if(p.empty)return '<div class="gc-p '+side+' gc-empty"><b>Empty slot</b><span>no player</span></div>';
   var st=gcState(p),inj=p.inj&&st==='pre'&&/^(out|ir|doubt|sus|pup|na|q)/i.test(p.inj)?'<em class="gc-inj">'+esc(String(p.inj).toUpperCase().slice(0,4))+'</em>':'';
-  return '<div class="gc-p '+side+'"><b'+(p.pid?' class="plk" data-pl="'+esc(p.pid)+'"':'')+'>'+esc(p.name)+'</b><span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+'</span><span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+((p.sc||p.nfl_score)&&st!=='pre'?' · '+esc(p.sc||p.nfl_score):'')+inj+'</span></div>'}
+  return '<div class="gc-p '+side+'"><b'+(p.pid?' class="plk" data-pl="'+esc(p.pid)+'"':'')+'>'+(p.pid?plPic(p.pid,p.name,20,p.pos,p.espn):'')+esc(p.name)+'</b><span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+'</span><span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+((p.sc||p.nfl_score)&&st!=='pre'?' · '+esc(p.sc||p.nfl_score):'')+inj+'</span></div>'}
 function gcPts(p,side,hi){if(!p||p.empty)return '<div class="gc-v '+side+'"></div>';var st=gcState(p);
   return '<div class="gc-v '+side+(hi?' hi':'')+'"><b class="num">'+f1(p.pts)+'</b>'+(st!=='fin'&&st!=='bye'&&p.proj!=null?'<small>'+f1(p.proj)+'</small>':'')+'</div>'}
 function gcNeed(X,Y){var left=X.playing+X.left;if(!left)return '';var est=(Y.playing+Y.left)?Y.proj:Y.pts,need=est-X.pts;if(need<=0||X.proj>=est)return '';
@@ -175,6 +175,11 @@ function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})
   h+='<button type="button" class="ghost" data-gcprev="'+GC.id+'" style="width:100%;margin-top:6px">Matchup preview &amp; history</button>';
   return h+CLOSE.replace(/^/,'')+'</div>'}
 /* ---------- PLAYER CARD (v2.2): tap any NFL player's name anywhere ---------- */
+// Headshots from Sleeper's image CDN (team logo for defenses); initials show if the image can't load.
+function plPic(pid,name,sz,pos,espn){pid=String(pid||'');var def=/^[A-Z]{2,3}$/.test(pid)||pos==='DEF';
+  var src=def?'https://sleepercdn.com/images/team_logos/nfl/'+pid.toLowerCase()+'.png':'https://sleepercdn.com/content/nfl/players/thumb/'+encodeURIComponent(pid)+'.jpg';
+  var ini=String(name||'?').replace(/[^A-Za-z ]/g,'').split(' ').filter(Boolean).map(function(w){return w[0]}).slice(0,2).join('').toUpperCase();
+  return '<span class="plpic'+(def?' def':'')+'" style="width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*.36)+'px">'+esc(ini)+(LIVE&&pid?'<img src="'+src+'" alt="" loading="lazy" data-alt="'+(def?'':espn?'https://a.espncdn.com/i/headshots/nfl/players/full/'+encodeURIComponent(espn)+'.png':'https://sleepercdn.com/content/nfl/players/'+encodeURIComponent(pid)+'.jpg')+'" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt=\'\'}else this.remove()">':'')+'</span>'}
 var PLB=null;
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl)return;e.stopPropagation();e.preventDefault();plOpen(t.dataset.pl)},true);
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bsh],[data-plback]');if(!t)return;e.stopPropagation();
@@ -197,7 +202,7 @@ function plHtml(pid,d){
   if(!d)return h+'<div class="kicker">Player</div><p class="muted" id="plErr" style="margin-top:8px">Loading his stats from Sleeper…</p>'+CLOSE+'</div>';
   if(d.error)return h+'<p class="err">'+esc(d.error)+'</p>'+CLOSE+'</div>';
   var b=d.bio,meta=[b.pos,b.team||'Free agent',b.number!=null?'#'+b.number:'',b.age?'Age '+b.age:'',b.exp!=null?(b.exp===0?'Rookie':'Year '+(b.exp+1)):'',b.college||''].filter(Boolean);
-  h+='<div class="ph" style="margin:0 0 6px"><div><div class="kicker">Player</div><h2>'+esc(b.name)+'</h2><p class="muted" style="font-size:12px;margin-top:2px">'+esc(meta.join(' · '))+'</p>'+
+  h+='<div class="ph pl-head" style="margin:0 0 6px">'+plPic(b.id,b.name,76,b.pos,b.espn)+'<div><div class="kicker">Player</div><h2>'+esc(b.name)+'</h2><p class="muted" style="font-size:12px;margin-top:2px">'+esc(meta.join(' · '))+'</p>'+
    (b.inj?'<span class="pl-inj">'+esc(b.inj)+'</span>':'')+'</div></div>';
   h+='<div class="pl-on">'+(d.on_now?av(d.on_now,22)+'<span>On <b>'+esc(team(d.on_now))+'</b> in our league</span>':'<span>Not on a team in our league right now</span>')+'</div>';
   var cur=(d.nfl||[]).filter(function(x){return x.season===d.cur_season})[0];

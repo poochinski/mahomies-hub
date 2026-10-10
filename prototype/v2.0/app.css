@@ -791,3 +791,12 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .pl-wr[data-game]{cursor:pointer}.pl-wr .muted{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl-wr .pl-s{color:var(--gold)}.pl-wr b{text-align:right;font-size:13px}
 .bs-row{width:100%;text-align:left;color:inherit;font:inherit;grid-template-columns:minmax(0,1fr) auto!important;align-items:start}.bs-row[data-game]{cursor:pointer}
 .bs-l{font-size:12px;line-height:1.5;margin-top:3px;color:var(--ink)}.bs-k{font:500 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-right:2px}
+
+/* player photos (v2.2) */
+.plpic{position:relative;flex:none;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--panel-3);color:var(--muted);font-weight:700;font-family:var(--display);vertical-align:middle}
+.plpic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 15%}
+.plpic.def{border-radius:8px;background:var(--ground-2)}.plpic.def img{object-fit:contain;padding:8%}
+.pl-head{display:flex!important;gap:12px;align-items:center;justify-content:flex-start!important}
+.pl-head .plpic{box-shadow:0 0 0 2px var(--line-2)}
+.gc-p b .plpic{margin-right:5px;vertical-align:-5px}
+.gc-p.b b .plpic{margin-right:0;margin-left:5px;float:right}

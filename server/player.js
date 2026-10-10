@@ -96,7 +96,7 @@ export async function playerProfile(pid) {
   const p = players[pid] || {};
   const isDef = /^[A-Z]{2,3}$/.test(pid);
   const bio = { id: pid, name: p.n || (isDef ? `${pid} defense` : `Player ${pid}`), pos: isDef ? 'DEF' : p.p || '', team: isDef ? pid : p.t || '',
-    inj: p.i || null, age: p.a || null, number: p.no ?? null, exp: p.x ?? null, college: p.c || null, height: p.ht || null, weight: p.wt || null };
+    inj: p.i || null, age: p.a || null, number: p.no ?? null, exp: p.x ?? null, college: p.c || null, height: p.ht || null, weight: p.wt || null, espn: p.e || null };
 
   // In the league, season by season
   const seasons = [];
