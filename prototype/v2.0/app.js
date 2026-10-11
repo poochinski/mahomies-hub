@@ -96,9 +96,15 @@ function medianLine(me){
   if(done)t='Median game: you finished <b>'+ord(rk)+' of '+n+'</b> · '+(top?'<em class="ok">extra win ✓</em>':'<em class="no">extra loss</em>');
   else t='Median game: '+(started?'projected':'projected')+' <b>'+ord(rk)+' of '+n+'</b> · '+(top?'<em class="ok">on track for the extra win</em>':'<em class="no">'+f1(Math.max(.1,cut-mine))+' pts short of the top '+half+'</em>')+' <span>(top-'+half+' line ≈ '+f1(cut)+')</span>';
   return '<button type="button" class="yg-med" data-info="median">'+t+'</button>'}
-function warnLine(s){if(!s)return '';var bits=s.warn.map(function(w){return esc(w.name)+(w.pos?' ('+esc(w.pos)+')':'')+' '+(w.why==='bye'?'is on bye':w.why==='no team'?'has no NFL team':'is '+esc(String(w.why).toUpperCase()))});
-  if(s.empty)bits.push(s.empty+' empty starting slot'+(s.empty>1?'s':''));
-  return bits.length?'<div class="yg-warn">⚠️ Lineup check: '+bits.join(' · ')+' <span>Fix it in Sleeper.</span></div>':''}
+// A count first, then a few names. The old version printed the whole list and
+// swallowed the card on a bye week.
+function warnLine(s){if(!s)return '';
+  var ws=s.warn||[],n=ws.length+(s.empty||0);if(!n)return '';
+  var why=function(w){return w.why==='bye'?'bye':w.why==='no team'?'no NFL team':String(w.why).toLowerCase()};
+  var bits=ws.slice(0,3).map(function(w){return esc(w.name)+' ('+esc(why(w))+')'});
+  if(ws.length>3)bits.push('and '+(ws.length-3)+' more');
+  if(s.empty)bits.push(s.empty+' empty slot'+(s.empty>1?'s':''));
+  return '<div class="yg-warn"><b>Lineup check · '+n+' to look at</b><span>'+bits.join(', ')+'. Fix it in Sleeper.</span></div>'}
 function ygScore(s){
   if(!s)return '<b class="yg-s num">0.00</b>';
   if(!s.on)return '<div class="yg-sc"><b class="yg-s num dim">'+f2(s.pts||0)+'</b>'+(s.proj!=null?'<small>proj '+f1(s.proj)+'</small>':'')+'</div>';
@@ -215,8 +221,8 @@ function plPic(pid,name,sz,pos,espn){pid=String(pid||'');var def=/^[A-Z]{2,3}$/.
   return '<span class="plpic'+(def?' def':'')+'" style="width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*.36)+'px">'+esc(ini)+(LIVE&&pid?'<img src="'+src+'" alt="" loading="lazy" data-alt="'+(def?'':espn?'https://a.espncdn.com/i/headshots/nfl/players/full/'+encodeURIComponent(espn)+'.png':'https://sleepercdn.com/content/nfl/players/'+encodeURIComponent(pid)+'.jpg')+'" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt=\'\'}else this.remove()">':'')+'</span>'}
 /* Sheet history (v2.3): any page opened from inside a pop-up gets ‹ Back to where you were. */
 var SH=[];
-function nav(f){if($('#sheet').classList.contains('open')){var b=$('#sheetBody').cloneNode(true);[].forEach.call(b.querySelectorAll('[data-shback]'),function(x){x.remove()});
-  SH.push({html:b.innerHTML,top:$('#sheet').scrollTop,gc:document.getElementById('gc')?GC.id:null});if(SH.length>12)SH.shift()}f()}
+function nav(f){if($('#sheet').classList.contains('open')){
+  SH.push({html:$('#sheetBody').innerHTML,top:$('#sheet').scrollTop,gc:document.getElementById('gc')?GC.id:null});if(SH.length>12)SH.shift()}f()}
 function shBack(){var s=SH.pop();if(!s)return;openSheet(s.html);$('#sheet').scrollTop=s.top;var q=document.getElementById('srQ');if(q)q.value=SR.q;
   if(s.gc){GC.id=s.gc;gcLoad();clearInterval(GC.timer);GC.timer=setInterval(function(){if(!document.getElementById('gc')||!$('#sheet').classList.contains('open')){clearInterval(GC.timer);GC.timer=null;return}if(document.visibilityState==='visible')gcLoad()},60*1000)}}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl)return;e.stopPropagation();e.preventDefault();nav(function(){plOpen(t.dataset.pl)})},true);
@@ -1829,7 +1835,8 @@ function shareAwards(s){var A=D.awards[s]||[],f=function(k){return A.find(functi
 function shareSeason(s){var x=D.seasons[s];showShare({eyebrow:s+' season',title:x.champ?'Champion':'Leader',big:'🏆',team:tnS(s,x.champ||x.standings[0].uid),sub:x.sacko?'Sacko: '+tnS(s,x.sacko):'Through Week '+D.league.last_scored})}
 
 /* ---------- sheets ---------- */
-function openSheet(html){$('#sheetBody').innerHTML=(SH.length?'<button type="button" class="sh-back" data-shback="1">‹ Back</button>':'')+html;$('#sheet').classList.add('open');$('#scrim').classList.add('open');$('#sheet').scrollTop=0}
+function openSheet(html){$('#sheetBody').innerHTML=html;var b=$('#sheetBack');if(b)b.hidden=!SH.length;
+  $('#sheet').classList.add('open');$('#scrim').classList.add('open');$('#sheet').scrollTop=0}
 function closeSheet(){SH=[];$('#sheet').classList.remove('open');$('#scrim').classList.remove('open')}
 function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show')},2200)}
 
@@ -1904,7 +1911,7 @@ document.addEventListener('click',function(e){
   if(d.howto){nav(function(){openSheet(explainPanel()+CLOSE)});return}
   if(d.rival){var rp=d.rival.split('|');S.h2a=rp[0];S.h2b=rp[1];go('league','h2h');var rt=document.getElementById('rivalTop');if(rt)rt.scrollIntoView({block:'start'});return}
   if(d.search){nav(searchOpen);return}
-  if(t.id==='closeP'){closeSheet();return}
+  if(t.id==='closeP'||t.id==='sheetX'){closeSheet();return}
 });
 document.addEventListener('change',function(e){
   if(e.target.id==='meSel'){S.me=e.target.value;store('me',S.me);S.h2a=S.me;S.h2b=null;render();toast('Playing as '+team(S.me))}

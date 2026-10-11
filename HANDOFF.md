@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 16:00 (Pacific) · **AI:** Claude
-**Current phase:** v2.3 is live (the whole audit list + Sportsbook batch 2). Next: Jayson tests on his phone; check the Week 6 post Tue Oct 13 6 AM PT (lines + Specials); Yahoo import parked.
-**Last commit:** "v2.3: version number + docs"
+**Last updated:** 2026-10-10 22:30 (Pacific) · **AI:** Claude
+**Current phase:** v2.4 look, first pass — live and awaiting Jayson's verdict. Old look frozen at /test/v2.3; revert = `git revert` the v2.4 commits or reset to branch `release-v2.3`.
+**Last commit:** "v2.4 look, first pass"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,14 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **v2.4 look, first pass** (Claude; Jayson asked for a full UI overhaul, same colours and theme, more professional, revertable).
+  - **Revert plan:** v2.3 is frozen at `prototype/v2.3/` + route `/test/v2.3` (its own app.html/css/js, so it keeps the old fonts) and branch `release-v2.3`. To go back: `git revert` the v2.4 commits, or `git checkout release-v2.3 -- prototype/v2.0 && git commit`.
+  - **How it's built:** almost all of it is one appended layer at the bottom of `prototype/v2.0/app.css` (marked `v2.4 — the look`), which redefines the existing `:root` tokens so the change cascades. Only three JS edits: the sheet header bar, `warnLine`, and `openSheet`/`nav` no longer inject the Back button into the body.
+  - Tokens: deeper page (`--ground:#0b0912`) so cards sit on lighter surfaces; `--line` is now a hairline rgba; `--display:Archivo`, `--body:Inter`, `--mono` now *is* Inter (labels are text) with real mono scoped back onto `.tkt`, `.stub`, `.bcode` and the slot via `--code`.
+  - A generated sweep turned off `text-transform:uppercase` on 74 label selectors. Caps survive only where they're a graphic device: the ticket's rubber stamp and the slot's LEDs.
+  - `.ph > div:first-child` is `column-reverse`, so the heading comes first and the old kicker reads as a quiet subtitle under it.
+  - Deliberately untouched: the Gridiron Gold cabinet (`.gg-*`, `.ggslot`, `.dr*`) and bet tickets (`.tkt`). A casino cabinet and a paper receipt shouldn't match the rest of the app.
+  - Checked at 390px: Home, League (all 7 views), Records, Book (games/specials/futures/slip/review), Me, Game Center, player card, team page, bench shame, rivalry, slot + paytable. No page errors, nothing scrolls sideways.
 - 2026-10-10 — Jayson: removed the commish Bucks button from Book › Leaders; the tool lives only in Me › Book controls. (Claude)
 - 2026-10-10 — Jayson: League tab is only for fantasy football; Sportsbook awards stay in the Book. Removed the Sportsbook Champion row from `awardsView`; it's now a card at the top of Book › Leaders (above Best bettor). (Claude)
 - 2026-10-10 — **Season futures** (Claude; Jayson said yes, with a 250-Buck season cap). Sim in server/hub/build.js now also plays the playoff bracket + Toilet Bowl and returns `champ`, `sacko`, `pking`, `wins_ou {line, over}` per team in `odds.list`. `server/hub/cache.js` holds the shared `getHub()` (used by /api/hub and the Book). Book: `postFutures` (after `postLines`; also back-fills the current week before kickoff), `futuresFor` → `linesFor().futures`, `settleFutures` in `tick()`, `futures_used` on /book/me, setting `futures_cap` (250). Client: Specials tab has "This week / Season futures"; `futuresView`, `FUM`, `fuLine`, `fuRow`, `fuName`. Tests (scratchpad `booktest/fut.mjs`): 19 pass; Book 44, specials 25 still pass. NFL stat props (anytime TD) parked as a maybe; yardage = no.

@@ -892,3 +892,520 @@ td.tm .who .tx>span{font-size:10.5px}
 .fu-row{display:grid;grid-template-columns:minmax(0,1fr) 72px 72px;gap:6px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.sp-grid .fu-row:first-child{border-top:0}
 .fu-row.me .who b{color:var(--gold)}.fu-row .ob{min-height:40px;padding:4px 2px}
 .fu-off{text-align:center;color:var(--faint);font:12px var(--mono)}
+
+/* ============================================================
+   v2.4 — the look. Same palette, used with intent.
+   Rules: surfaces carry hierarchy (not borders); colour means
+   something (gold = leader/you, green = up, red = down, cyan =
+   live); headings stand alone; the score is the loudest thing
+   on the screen. Appended last so it wins over the v2.0 rules.
+   The slot machine (.gg-*) and bet tickets (.tkt) are left alone
+   on purpose: a casino cabinet and a paper receipt should not
+   look like the rest of the app.
+   ============================================================ */
+:root{
+  /* deeper page so cards can sit above it instead of being outlined */
+  --ground:#0b0912; --ground-2:#15121f;
+  --panel:#15121f; --panel-2:#1e1a2b; --panel-3:#2a2439;
+  --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.14);
+  --ink:#f3f0fa; --muted:#a39bba; --faint:#776e8e;
+  --loss:#ff6b7d;
+  --display:"Archivo","Segoe UI",system-ui,sans-serif;
+  --body:"Inter","Segoe UI",system-ui,sans-serif;
+  --mono:"Inter","Segoe UI",system-ui,sans-serif;   /* labels are text, not code */
+  --code:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --wide:"Archivo","Segoe UI",system-ui,sans-serif;
+  --lift:0 1px 0 rgba(255,255,255,.05) inset, 0 2px 10px rgba(0,0,0,.35);
+  --r-btn:12px; --r-card:16px; --r-sheet:24px;
+}
+body{background:
+  radial-gradient(90% 38% at 50% -6%,rgba(124,77,255,.16) 0%,transparent 70%) fixed,
+  var(--ground)}
+.num,.tile strong,.stat strong,.val,.yg-s,.gc-big{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
+
+/* --- type scale ------------------------------------------------ */
+h1,h2,h3{font-family:var(--display);letter-spacing:-.02em}
+.hero h1{font-size:30px;font-weight:700;line-height:1.08;margin:6px 0 6px;font-stretch:112%}
+.ph h2,.bh h2{font-size:20px;font-weight:650;letter-spacing:-.02em;margin:0}
+.hero .sub,.sub{font-size:14px;line-height:1.55;color:var(--muted)}
+.muted{font-size:13px;line-height:1.55}
+
+/* Labels: sentence case, quiet, never shouting. */
+.eyebrow,.kicker,.tile small,.stat small,.stat span,.tm-grp,.tm-w,.tm-slot,.tm-stats small,
+.at-g small,.lw-c small,.yg-k,.bk-sub span,.twih-go em,.sh-back,.tr,.chip,.link,.tab,
+.val small,.seg button,.fu-cap,.gc-key,.wr-wk,.wr-val,.wr-sub,.sr-own .fa,.tm-v small,.tm-inj,.pl-inj{
+  text-transform:none;letter-spacing:0;font-family:var(--body)}
+.eyebrow{font-size:12.5px;font-weight:500;color:var(--muted)}
+.kicker{font-size:12.5px;font-weight:450;color:var(--muted);margin-top:3px;line-height:1.4}
+/* heading first, context underneath it */
+.ph>div:first-child,.bh>div:first-child{display:flex;flex-direction:column-reverse;min-width:0}
+.ph{align-items:flex-start;margin-bottom:14px}
+
+/* --- surfaces --------------------------------------------------- */
+.panel{padding:16px;border:0;border-radius:var(--r-card);background:var(--panel);box-shadow:var(--lift)}
+.panel.tight{padding:14px 16px}
+.hero{padding:18px 16px 16px;border:0;border-radius:var(--r-card);
+  background:linear-gradient(168deg,#241d38 0%,#17131f 62%);box-shadow:var(--lift)}
+.hero::before{display:none}                       /* graph-paper overlay: gone */
+.hero::after{height:2px;opacity:.85}              /* one brand rule, at the top */
+#view{display:grid;gap:12px}
+.block{padding:0;border:0;background:none}
+
+/* --- numbers that lead ------------------------------------------ */
+.tile,.stat{border:0;background:var(--panel-2);border-radius:12px;padding:12px}
+.tile::before{display:none}
+.tile small,.stat small{font-size:11.5px;font-weight:500;color:var(--faint)}
+.tile strong{font-size:27px;font-weight:700;margin-top:5px;letter-spacing:-.02em}
+.stat strong{font-size:23px;font-weight:700;margin-top:4px;letter-spacing:-.02em}
+.tile span,.stat span{font-size:12px;color:var(--muted);margin-top:3px}
+.val{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.02em}
+.val small{font-size:11px;font-weight:450;color:var(--faint);margin-top:1px}
+
+/* --- one button system ------------------------------------------ */
+.cta{min-height:50px;border-radius:var(--r-btn);background:var(--gold);color:var(--gold-ink);
+  font:700 16px var(--display);letter-spacing:-.01em;text-transform:none;box-shadow:0 2px 14px rgba(246,207,76,.22)}
+.cta:active{transform:translateY(1px)}
+.ghost{min-height:46px;border:1px solid var(--line-2);border-radius:var(--r-btn);background:var(--panel-2);
+  font:600 14px var(--body);letter-spacing:0;text-transform:none;color:var(--ink)}
+.link{font:600 13px var(--body);color:var(--gold);padding:4px 0}
+.chip{border:1px solid transparent;background:var(--panel-2);border-radius:999px;padding:9px 14px;
+  font:600 13px var(--body);color:var(--muted);min-height:38px}
+.chip.on{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.seg{padding:4px;border:0;border-radius:12px;background:var(--panel-2);gap:3px}
+.seg button{min-height:40px;border-radius:9px;font:600 13px var(--body);color:var(--muted)}
+.seg button.on{background:var(--panel-3);color:var(--ink);box-shadow:none}
+.seg5 button{font-size:11.5px}
+.ob{border:1px solid var(--line-2);background:var(--panel-2);border-radius:10px;min-height:48px;
+  font:650 15px var(--display);color:var(--ink)}
+.ob small{font:500 11px var(--body);color:var(--faint);margin-top:1px}
+.ob.sel small{color:#6b5406}
+.ob:active{background:var(--panel-3)}
+
+/* --- rows, tables ------------------------------------------------ */
+.row{padding:12px 0;border-top:1px solid var(--line);gap:12px}
+.rows>.row:first-child,.panel>.rows>.row:first-child{border-top:0}
+.who .tx>b{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.who .tx>span{font-family:var(--body);font-size:12.5px;color:var(--muted)}
+th{font:500 11.5px var(--body);letter-spacing:0;text-transform:none;color:var(--faint);padding:0 6px 8px;border-bottom:1px solid var(--line)}
+td{font-family:var(--display);font-weight:500;font-size:13px;padding:11px 6px;border-bottom:1px solid var(--line)}
+td.tm{font-family:var(--body)}
+tr.me td{background:rgba(246,207,76,.06)}
+tr.cut td{border-bottom:1px dashed var(--line-2)}
+.rk{font-family:var(--display);font-weight:700}
+
+/* --- chrome ------------------------------------------------------ */
+.topbar{background:rgba(11,9,18,.88);padding-bottom:11px}
+.bname{font-family:var(--display);letter-spacing:-.01em}
+.bsub{font-family:var(--body);letter-spacing:.04em;font-size:9.5px}
+.bucks{border-radius:10px;font:650 14px var(--display);padding:8px 11px}
+.hsearch{border-radius:10px;height:38px;width:38px;background:var(--panel-2);border-color:transparent}
+.tabbar{background:rgba(11,9,18,.94);border-top:1px solid var(--line)}
+.tab{font:600 10.5px var(--body);letter-spacing:0;text-transform:none;gap:4px}
+.tab.on::before{left:34%;right:34%}
+
+/* --- the scorebug: the loudest thing in the app ------------------ */
+.yourgame{padding:14px;border-radius:var(--r-card);background:var(--panel-2);border:0}
+.yg-k{font-size:12px;font-weight:500;color:var(--faint);text-transform:none;letter-spacing:0}
+.yg-row{padding:9px 0}
+.yg-n b{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+.yg-s{font-family:var(--display);font-stretch:118%;font-weight:700;font-size:34px;letter-spacing:-.025em;line-height:1}
+.yg-sc small{font-family:var(--body);font-size:11px;color:var(--faint);letter-spacing:0;text-transform:none}
+.yg-st{font-family:var(--body);font-size:11.5px;color:var(--cyan)}
+.tw-row{background:var(--panel);border:0;border-radius:var(--r-card);padding:13px 14px;box-shadow:var(--lift)}
+.tw-row .yg-s{font-size:27px}
+.tw-side.tw-lead .yg-s{color:var(--gold)}
+.tw-n b{font-size:14.5px}
+.tw-tag{font:500 11.5px var(--body);letter-spacing:0;border-radius:999px;padding:4px 9px;color:var(--faint)}
+.tw-recap{font-size:14px;line-height:1.55}
+.lw-c{border:0;background:var(--panel-2);border-radius:12px}
+.lw-c::before{display:none}
+
+/* --- sheets become modals ---------------------------------------- */
+.scrim{background:rgba(5,4,9,.72);backdrop-filter:blur(3px)}
+.sheet{background:var(--ground-2);border:0;border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+  padding:0 0 calc(env(safe-area-inset-bottom,0px) + 16px);box-shadow:0 -16px 50px rgba(0,0,0,.6);max-height:92vh}
+.grab{width:36px;height:4px;background:var(--line-2);margin:8px auto 0}
+.sheet-body{gap:12px;padding:12px 14px 0}
+.sheet .panel,.sheet .hero{box-shadow:none}
+.sheet .panel{background:var(--panel)}
+/* Mono is still right in two places: a betting ticket is a receipt, and the
+   slot machine's meters are an LED display. Both keep the real thing. */
+.tkt,.stub,.bcode,[class^="gg-"],[class*=" gg-"],.ggslot,.dr,.pinbox .dots{--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+.tkt,.tkt *{font-family:var(--mono)}
+
+/* --- pass 2: the bits still shouting --------------------------- */
+.info{border:0;background:var(--panel-2);border-radius:999px;padding:7px 12px;min-height:34px;
+  font:600 12px var(--body);letter-spacing:0;text-transform:none;color:var(--muted)}
+.fld>span{font:500 12px var(--body);letter-spacing:0;text-transform:none;color:var(--muted)}
+.fld input,input,select,.sr-in{border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)}
+.badge{font:600 11.5px var(--body);letter-spacing:0;text-transform:none;border-radius:999px;padding:4px 10px}
+.pill{font:500 12.5px var(--body);border:0;background:var(--panel-2);border-radius:999px;padding:6px 11px}
+.share-btn,.open-season{font:600 13px var(--body);letter-spacing:0;text-transform:none;border-radius:var(--r-btn);min-height:42px}
+.tr{font:600 11.5px var(--body);letter-spacing:0;text-transform:none;border-radius:999px;padding:4px 9px}
+.note{border:0;border-left:3px solid var(--gold);border-radius:10px;padding:11px 13px;font-size:13px}
+.toast{border-radius:12px;font-family:var(--body);font-size:13.5px}
+.wk .p{font:650 13.5px var(--display)}
+.season{border:0;border-radius:var(--r-card);box-shadow:var(--lift)}
+.season-h{background:var(--panel-2);padding:14px 16px}
+.season-h::after{display:none}
+.season-h b{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.season-h span{font:500 12px var(--body);letter-spacing:0;text-transform:none;color:var(--muted)}
+.season-f{border-top:1px solid var(--line);background:transparent;padding:12px 16px 14px}
+
+/* Meters read as one quantity, not a rainbow. */
+.pbar{height:4px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:7px}
+.pbar i{background:var(--gold);opacity:.8}
+.wk.hl .bar i{background:var(--gold)}
+
+/* Tappable names: weight and colour, no underline clutter. */
+.plk,.wr-t{text-decoration:none;font-weight:600}
+.plk{color:var(--cyan)}
+.wr-h .plk,.wr-side .plk,.wr-sub .plk{color:var(--cyan)}
+.wr-t{color:var(--ink);box-shadow:inset 0 -1px 0 rgba(246,207,76,.4)}
+
+/* The lineup warning is a nudge, not a paragraph. */
+.yg-warn{display:block;margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(255,179,71,.09);
+  color:#ffc06b;font-size:12.5px;font-weight:500;line-height:1.5;max-height:4.6em;overflow:hidden}
+.yg-warn span{color:var(--muted);font-weight:400}
+.yg-med{font-size:12.5px;line-height:1.5;margin-top:8px}
+
+/* Standings names: two tidy lines, not a ragged stack. */
+td.tm .who .tx>b{line-height:1.25;font-size:13.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+td{padding:10px 6px}
+
+/* --- the sheet is a real modal: grabber, Back, and a close that
+       stays reachable however far you scroll ---------------------- */
+.sheet-bar{position:sticky;top:0;z-index:3;display:grid;grid-template-columns:1fr auto;align-items:center;
+  gap:8px;padding:0 12px 10px;background:linear-gradient(var(--ground-2) 72%,rgba(21,18,31,0));}
+.sheet-bar .grab{grid-column:1/-1;margin:8px auto 8px}
+.sheet-back{justify-self:start;border:0;background:none;color:var(--gold);font:600 14px var(--body);padding:4px 2px}
+.sheet-back[hidden]{display:none}
+.sheet-back[hidden]+.sheet-x{grid-column:2}
+.sheet-x{grid-column:2;justify-self:end;width:34px;height:34px;display:grid;place-items:center;border:0;
+  border-radius:999px;background:var(--panel-2);color:var(--muted);font-size:14px;line-height:1}
+.sheet-x:active{background:var(--panel-3);color:var(--ink)}
+.sheet-body{padding-top:0}
+.sheet-body>.ph:first-child h2,.sheet-body>div>.ph:first-child h2{font-size:22px}
+#closeP{display:none}                     /* the X in the bar replaces it */
+.sh-back{display:none}
+.tab
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.eyebrow
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.tile small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.kicker
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.link
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.val small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.seg button
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.chip
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+th
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.lbl
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.stat small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.st
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.x
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.cta
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.ghost
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.towin
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.tr
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.badge
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.ln.head
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.ln.tot .pl
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.bench summary
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.fmr
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.mx th.fm
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.open-season
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.lab-off
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.verdict
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.share-btn
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.br-l
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.more
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.p2 b
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.yg-pick
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.yg-k
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.yg-sc small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.lw-c small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.picker small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.bk-sub
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.slipbar
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.pk2.dim
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.fld
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.info
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.trd-h
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.trd-n
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.trd-got
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.trd-more
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.dp-n
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.wkb-w
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.aw-vb small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.rec-hero .rec-unit
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.gc-h
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.gc-cols
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.gc-props
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.pl-odds
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.rv-k
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.rv-tot
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.stub-k
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.gc-tb small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.gc-vs
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.gc-r.gc-hd
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.gc-bench summary
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.pl-inj
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.pl-tiles b
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.pl-best small
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.pl-wk
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.bs-l
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.twih-go em
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.sh-back
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.tm-stats b
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.tm-grp
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.tm-inj
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.tm-v
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.sr-own
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.wr-val em
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.me-lbl
+/* Sentence case everywhere it's prose. Caps survive only where they are a
+   graphic device: the rubber stamp on a ticket and the slot machine's LEDs. */
+,
+.at-g b{text-transform:none;letter-spacing:0;font-family:var(--body)}
+/* A box score is all tappable names; colouring every one is noise. */
+.plk{color:inherit;font-weight:600}
+.gc-p b .plk,.ln .plk,.bn .plk{color:inherit}
+.pl-wk,.bs-l,.tm-grp,.gc-cols,.gc-r.gc-hd,.ln.head,.bench summary,.gc-bench summary,.stub-k,.rv-k,.me-lbl,
+.trd-h,.dp-n,.wkb-w,.aw-vb small,.pl-best small,.pl-tiles b,.tm-stats b,.at-g b,.gc-tb small,.sr-own,.fld>span{font-size:11.5px;font-weight:500}
+.tab{font-size:10.5px}
+.stamp{font-family:var(--code)}
+
+/* --- pass 3 ------------------------------------------------------ */
+.yg-warn{max-height:none;overflow:visible}
+.yg-warn b{display:block;font-size:13px;font-weight:650;color:#ffc06b}
+.yg-warn span{display:block;margin-top:2px;font-size:12.5px;color:var(--muted)}
+/* Give team names the room; the prices only need to fit their digits. */
+.gc-row{grid-template-columns:minmax(0,1fr) 62px 62px 62px;gap:6px}
+.gc-cols{grid-template-columns:minmax(0,1fr) 62px 62px 62px;gap:6px}
+.gc-who .tx>b{font-size:14px}
+.gcard{border:0;background:var(--panel);border-radius:var(--r-card);box-shadow:var(--lift);padding:14px}
+.gc-h{padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.gc-f{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.prev-link{font:600 13px var(--body);color:var(--gold)}
+.gc-cols,.gc-row{grid-template-columns:minmax(0,1fr) 58px 58px 58px}
+.gc-who .tx>b{white-space:normal;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gc-who .tx>span{font-size:11px}
+/* Weekly score bars are one quantity too — height says it, colour shouldn't shout. */
+.fb i{background:linear-gradient(180deg,var(--gold),rgba(246,207,76,.45))}
+.fb{background:rgba(255,255,255,.04);border-radius:8px}
+.fb span{font:650 12px var(--display)}
+.fb small{font-family:var(--body);font-size:10.5px}
