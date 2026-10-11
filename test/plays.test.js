@@ -56,3 +56,16 @@ test('shortName matches ESPN play text', () => {
   assert.equal(shortName('Jaylen Warren'), 'J.Warren');
   assert.equal(shortName('Marvin Harrison Jr.'), 'M.Harrison');
 });
+
+test('finds the ESPN id from the play text when Sleeper has none', () => {
+  const plays = [
+    play({ id: 1, seq: 1, type: 'Rush', yds: 16, text: 'J.Smith-Njigba right end to SF 31 for 16 yards (J.Brown).', parts: [['4430878', 'rusher'], ['46', 'tackler']] }),
+    play({ id: 2, seq: 2, type: 'Pass Reception', yds: 4, text: '(Shotgun) S.Darnold pass short right to J.Smith-Njigba to SEA 48 for 4 yards (J.Dugger).', parts: [['39', 'passer'], ['4430878', 'receiver'], ['50', 'tackler']] }),
+    play({ id: 3, seq: 3, type: 'Pass Reception', yds: 9, text: 'S.Darnold pass short left to G.Holani to SF 25 for 9 yards.', parts: [['39', 'passer'], ['44', 'receiver']] }),
+    play({ id: 4, seq: 4, type: 'Pass Incompletion', text: 'S.Darnold pass incomplete deep left to C.Kupp.', parts: [['39', 'passer'], ['45', 'receiver']] })
+  ];
+  const { plays: out } = playerGameLog(plays, { espn: '', abbr: 'J.Smith-Njigba', pos: 'WR', nfl: 'SEA' }, { home: 'SEA', teams: ['SEA', 'SF'] }, SC);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].what, '16 yd rush');
+  assert.equal(out[1].what, '4 yd catch');
+});

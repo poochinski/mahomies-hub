@@ -1,14 +1,18 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 15:45 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-11 15:40 (Pacific) · **AI:** Claude
 **Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
-**Last commit:** "Play by play from ESPN + Sleeper-style score breakdown"
+**Last commit:** "Play by play: find ESPN ids from the plays when Sleeper has none"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **Play by play: ESPN id fix** (Claude; Jayson: JSN live and Warren final both showed "No plays for him yet").
+  - Diagnosed with the new `GET /api/live/pbpdebug/:pid` (shows the player's slim record, the ESPN game id, the plays URL, status, play count, participant `type` values seen, and the last plays mentioning him). Result: ESPN feed fine (115 plays, `rusher`/`receiver`/`passer`/`kicker`/… types as expected) but Sleeper's `espn_id` was **null** for JSN, so matching by id found nothing.
+  - `resolveEspnId(plays, me)` in `server/stats/plays.js`: if Sleeper's id appears in the plays, use it; otherwise tally, for each athlete id, how many of his plays name the player's abbreviation ("J.Smith-Njigba") vs all his plays — the id with ratio ≥ 0.8 and the most named plays wins (QBs and tacklers score low). `playerGameLog` calls it. Test added.
+  - Participant types seen live: kicker, returner, assistedBy, rusher, tackler, other, passer, receiver, passDefender, punter, sackedBy, scorer, patScorer, recoverer, penalized, snapper, holder, fumbler, forcedBy.
 - 2026-10-11 — **Play by play + score breakdown** (Claude; Jayson sent Sleeper's Score Breakdown and play feed: tap the points → breakdown, tap the row (not the name) → player week with a play-by-play instead of the "Before tracking" scoring summary).
   - **Removed:** `server/stats/timeline.js`, its test, and `startTimeline()` in `server/index.js`. The `live_timeline` Postgres table may exist on Railway; nothing reads it, safe to drop.
   - **Play-by-play** (`server/stats/plays.js`): ESPN core API `{CORE}/events/{id}/competitions/{id}/plays?limit=500` (paged), cached 10 s live / 6 h final, shared in-flight. Each play's `participants[]` carries `athlete.$ref` (ESPN athlete id) + `type` (rusher, receiver, passer, kicker…); matched to Sleeper's `espn_id` (slim `e`). `playStats()` turns a play into Sleeper stat keys (rush/rec/pass, 40+ bonuses, first downs, position reception bonus, fumble lost; kickers: FG by distance bucket from the text, XP from "(X.Name kick)" on the TD play). `playerGameLog()` adds 100/200/300/400-yd crossing bonuses, scores each play with `L.scoring`, and returns down & distance (`start.downDistanceText`, falling back to the previous play's `end`), Q/clock, away–home score, what happened, points, running total and the cumulative `statLine`. ESPN event id is now kept on each kickoffs game (`g.id`). DEF: no play-by-play (team unit) — sheet says so.

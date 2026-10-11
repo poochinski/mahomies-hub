@@ -145,6 +145,34 @@ export function playStats(pl, me) {
   return { s, what };
 }
 
+/**
+ * Sleeper often has no espn_id for a player, so find his ESPN id from the game itself:
+ * the athlete who shows up in plays whose text names him ("J.Smith-Njigba") and almost
+ * never in plays that don't. A quarterback or a tackler is in plenty of plays that don't
+ * mention him, so they score low; the player himself scores 1.
+ */
+export function resolveEspnId(plays, me) {
+  const ids = new Set();
+  for (const pl of plays) for (const p of pl.parts) ids.add(p.id);
+  if (me.espn && ids.has(me.espn)) return me.espn;
+  const abbr = String(me.abbr || '');
+  if (!abbr) return me.espn || '';
+  const esc = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(^|[^A-Za-z])${esc}([^A-Za-z'-]|$)`);
+  const tally = new Map(); // id -> [plays with him named, plays total]
+  for (const pl of plays) {
+    const named = re.test(pl.text);
+    for (const id of new Set(pl.parts.map((p) => p.id).filter(Boolean))) {
+      const t = tally.get(id) || [0, 0];
+      t[1]++; if (named) t[0]++;
+      tally.set(id, t);
+    }
+  }
+  let best = '', bestN = 0;
+  for (const [id, [hit, all]] of tally) if (hit / all >= 0.8 && hit > bestN) { best = id; bestN = hit; }
+  return best || me.espn || '';
+}
+
 const CROSS = [['rush_yd', 100, 'bonus_rush_yd_100'], ['rush_yd', 200, 'bonus_rush_yd_200'], ['rec_yd', 100, 'bonus_rec_yd_100'], ['rec_yd', 200, 'bonus_rec_yd_200'],
   ['pass_yd', 300, 'bonus_pass_yd_300'], ['pass_yd', 400, 'bonus_pass_yd_400']];
 
@@ -155,6 +183,7 @@ const CROSS = [['rush_yd', 100, 'bonus_rush_yd_100'], ['rush_yd', 200, 'bonus_ru
  */
 export function playerGameLog(plays, me, g, scoring) {
   const sc = scoring || {};
+  me = { ...me, espn: resolveEspnId(plays, me) };
   const home = g?.home || '', away = (g?.teams || []).find((t) => t !== home) || '';
   const cum = {}; let total = 0; let prevEnd = '';
   const out = [];
