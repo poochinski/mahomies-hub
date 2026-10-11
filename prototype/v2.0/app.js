@@ -806,7 +806,6 @@ function book(){
   }
   if(S.bseg==='leaders'){
     var lb=BK.lb||[];
-    if(BK.me&&BK.me.commish)h+='<button type="button" class="cta" data-adm="bucks" style="margin:0 0 10px">💵 Commish: add or take away Bucks</button>';
     var lead=lb.filter(function(x){return x.joined})[0];
     if(lead)h+='<section class="panel bb"><div class="ph"><div><div class="kicker">'+CUR()+' · most Bucks at season\'s end wins it</div><h2>💵 Sportsbook Champion</h2></div></div><div class="row" style="border-top:0">'+who(lead.user_id,'Leading right now · '+lead.record,36)+'<span class="val">💵 '+money(lead.bankroll)+'</span></div></section>';
     h+=bestBettor();

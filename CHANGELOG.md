@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — Removed the big "Commish: add or take away Bucks" button from Book › Leaders (it's in Me › Book controls). (Claude)
 - 2026-10-10 — Sportsbook Champion moved out of League › Awards (League is fantasy only) to the top of Book › Leaders. (Claude)
 - 2026-10-10 — Season futures in the Book (Specials → Season futures): Champion, Sacko, playoffs yes/no, #1 seed, Points King, wins over/under; new prices every Tuesday, 250 Bucks a season cap, paid when the season decides them. (Claude)
 - 2026-10-10 — v2.3: footer version, pre-v2.3 saved as branch release-v2.2. (Claude)
