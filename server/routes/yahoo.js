@@ -22,9 +22,10 @@ async function commish(req) {
   return u;
 }
 
-router.get('/api/yahoo/status', wrap(() => y.status()));
-router.get('/api/yahoo/raw-list', wrap((req) => y.rawList(req.query.league ? String(req.query.league) : null)));
-router.get('/api/yahoo/raw', wrap(async (req) => (await y.raw(String(req.query.path || ''), req.query.norm === '1')) || { error: 'Not saved' }));
+router.use('/api/yahoo', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+router.get('/api/yahoo/status', wrap(async (req) => { await commish(req); return y.status(); }));
+router.get('/api/yahoo/raw-list', wrap(async (req) => { await commish(req); return y.rawList(req.query.league ? String(req.query.league) : null); }));
+router.get('/api/yahoo/raw', wrap(async (req) => { await commish(req); return (await y.raw(String(req.query.path || ''), req.query.norm === '1')) || { error: 'Not saved' }; }));
 router.post('/api/yahoo/creds', wrap(async (req) => { await commish(req); await y.saveCreds(req.body?.id, req.body?.secret); return { ok: true }; }));
 router.post('/api/yahoo/start', wrap(async (req) => { await commish(req); return { url: await y.authUrl() }; }));
 router.post('/api/yahoo/find', wrap(async (req) => { await commish(req); return { leagues: await y.findLeagues() }; }));
@@ -96,3 +97,4 @@ load();
 </script></body></html>`;
 
 export default router;
+

@@ -20,3 +20,13 @@ The app page is `prototype/v2.0/` (app.html, app.css, app.js). Edit those files 
 ## Deploy
 
 Railway installs and runs `npm start` on every push to `main` (no build step).
+
+## Account setup and tests
+
+New and reset accounts need a private setup code from the commissioner. Existing
+PINs keep working. See [account setup and recovery](docs/ACCOUNT-SETUP.md), including
+`npm run invite:commish` for initial commissioner setup from the server console.
+
+Run `npm ci` and `npm test` for the isolated database/API regression suite. Tests
+use fixture league data and never connect to the production database.
+

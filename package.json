@@ -9,10 +9,16 @@
   },
   "scripts": {
     "dev": "node --watch server/index.js",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "test": "node --experimental-vm-modules --test test/*.test.js",
+    "invite:commish": "node server/scripts/invite-commish.js"
   },
   "dependencies": {
-    "express": "4.21.2",
+    "express": "4.22.3",
     "pg": "8.13.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
+    "jsdom": "26.1.0"
   }
 }

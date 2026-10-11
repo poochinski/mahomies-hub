@@ -30,7 +30,7 @@ async function commish(req) { const u = await need(req); if (u !== COMMISH_USER_
 
 router.get('/book/status', wrap(() => book.status()));
 router.get('/book/teams', wrap(() => book.teamsList()));
-router.post('/book/login', wrap((req) => book.login(String(req.body?.user_id || ''), String(req.body?.pin || ''), req.ip)));
+router.post('/book/login', wrap((req) => book.login(String(req.body?.user_id || ''), String(req.body?.pin || ''), req.ip, String(req.body?.invite || ''))));
 router.post('/book/logout', wrap(async (req) => { await book.logout(token(req)); return { ok: true }; }));
 router.get('/book/me', wrap(async (req) => book.me(await need(req))));
 
@@ -56,10 +56,14 @@ router.post('/book/admin/settle', wrap(async (req) => {
 }));
 router.post('/book/admin/line/:id', wrap(async (req) => { await book.editLine(req.params.id, req.body || {}, await commish(req)); return { ok: true }; }));
 router.post('/book/admin/adjust', wrap(async (req) => ({ balance: await book.adjust(String(req.body?.user_id), req.body?.amount, req.body?.note, await commish(req)) })));
-router.post('/book/admin/reset-pin', wrap(async (req) => { await book.resetPin(String(req.body?.user_id), await commish(req)); return { ok: true }; }));
+router.post('/book/admin/reset-pin', wrap(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return book.resetPin(String(req.body?.user_id), await commish(req));
+}));
 router.post('/book/admin/setting', wrap(async (req) => book.setSetting(String(req.body?.key), req.body?.value, await commish(req))));
 router.post('/book/admin/tick', wrap(async (req) => { await commish(req); return book.tick(); }));
 router.get('/book/admin/health', wrap(async (req) => { await commish(req); return book.health(); }));
 router.get('/book/admin/log', wrap(async (req) => { await commish(req); return book.recentLog(Number(req.query.limit) || 50); }));
 
 export default router;
+
