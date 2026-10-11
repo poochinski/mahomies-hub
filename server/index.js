@@ -87,6 +87,10 @@ app.use('/v2', express.static(V2, { index: false, setHeaders: (res) => res.set('
 const V23 = path.join(proto, 'v2.3');
 app.get('/test/v2.3', (_req, res) => res.set('Cache-Control', 'no-store').type('html').send(pageFrom(V23)));
 app.use('/test/v2.3', express.static(V23, { index: false, redirect: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
+// Exact look from the night of Oct 10, before the v2.6 chrome trial. Say "go back" to restore this.
+const V25 = path.join(proto, 'v2.5');
+app.get('/test/v2.5', (_req, res) => res.set('Cache-Control', 'no-store').type('html').send(pageFrom(V25)));
+app.use('/test/v2.5', express.static(V25, { index: false, redirect: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
 app.get('/test/v1.8', (_req, res) => res.sendFile(path.join(proto, 'v1.8', 'night.html')));
 app.get('/test/v1.7', (_req, res) => res.sendFile(path.join(proto, 'v1.7', 'night.html')));
 app.get('/test/v1.6', (_req, res) => res.sendFile(path.join(proto, 'v1.6', 'night.html')));

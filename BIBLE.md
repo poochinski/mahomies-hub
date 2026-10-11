@@ -126,7 +126,7 @@ Display type **Chakra Petch**, body **IBM Plex Sans**, labels and numbers **IBM 
 | Gray | Neutral, pending, history |
 
 ### Mobile-first rules (this app lives on phones)
-- Design at **390px wide first**. Bottom tab bar (fixed): Home · League · Records · Book · Me. The top header scrolls away with the page (not sticky).
+- Design at **390px wide first**. Bottom tab bar (fixed): Home · League · Records · Book · Me. **Look trial (2026-10-10, Grok):** the header stays pinned so search, the Book button and the section chips stay in reach. The exact previous look, header included, is frozen at `/test/v2.5`. Jayson says "go back" to restore it.
 - Tap targets at least 44px. Respect safe areas. **No sideways scrolling** (Jayson's call in v1.7): no carousels or chip rows that run off-screen.
 - Every stat screen has an "ⓘ How it works" sheet (text in prototype/v1.8/v18_explain.js). If a formula changes, change its explanation in the same push.
 - Every game/score is tappable for details. Former managers stay in every list, tagged "Former".

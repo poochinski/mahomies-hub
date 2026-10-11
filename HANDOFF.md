@@ -1,21 +1,23 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 23:30 (Pacific) · **AI:** Claude
-**Current phase:** Front Office records shipped (v2.5) — 20 new boards in the Records tab about moves, not points. Next two record-book pushes are proposed but not started (see "Next steps"). Then from the fantasyhoff sweep: a free weekly pick'em, Trade Court, Matchup Hype.
-**Last commit:** "Front office records: 20 boards about the moves, not the points"
+**Last updated:** 2026-10-10 23:40 (Pacific) · **AI:** Grok
+**Current phase:** Look trial is live on the main app. Same neon colours, tighter chrome and clearer navigation. The exact previous look is frozen at https://mahomies-hub-production.up.railway.app/test/v2.5 — if Jayson says "go back", restore prototype/v2.0 from prototype/v2.5 (and the header-scrolls line in BIBLE).
+**Last commit:** "Night look trial: pinned header, gold pills, sheet bar"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
-**v2.0 Home page rework** (docs/V2-HANDOFF.md Part 4), then the Live Game Center (2.1). Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
+Jayson is deciding whether to keep the new look. Do not start the next feature until he says keep or go back.
 
-Where things stand (Grok, 2026-10-10):
-- Home parts 1–4 are live. Part 4: This week is one game per row (your own game left off once this phone has picked a team, closest first). Scores match the card (projection, not 0.00). Tags: all-time series ("Boyz lead 6–0" or "Tied 3–3"), Final, Upset brewing (worse record ahead on points, only after the game has started). Last week has a one-sentence recap. Explore is one row: This week in history, Awards, Record book.
-- Your game card is unchanged: lineup check, median-game line. No playoff odds or standings strip on the card (where playoff odds go on Home is still open).
-- Box-score lineups fixed (the slot's old `.slot` class was hiding the slot column). New Home classes are prefixed `tw-`.
-- Gridiron Gold v2.1 is live. Any slot math change: re-run par.js, update `PAR` in engine.js.
-- Next: Live Game Center (2.1).
+The look (no new stats, no betting-number changes):
+- Header stays pinned (search + Book always reachable). This reverses the old "header scrolls away" rule for this trial only.
+- League is a 2×4 grid (Standings, Playoff odds, Awards, Draft, History, All-time, Rivals, Lab) so nothing hides off the side of the phone.
+- Selected tab, selected chip, and selected Book/Records filter are a gold pill.
+- Your game, this week's leader, and the record number pop a little (gold edge, green glow on the leader).
+- Pop-ups keep a bar at the top: rainbow grab, Close on the right, Back on the left once you open something from inside the pop-up.
+- Fonts unchanged: Archivo, Inter, IBM Plex Mono. Palette unchanged: gold, pink, cyan, green on deep purple.
 
 ## Done (newest first)
+- 2026-10-10 — **Look trial** (Grok; Jayson: complete UI overhaul, same neon, more professional, better navigation, easy to undo). CSS lives at the bottom of `prototype/v2.0/app.css` under "v2.6 look trial". Sheet dock is in `app.html`. `syncDock()` in `app.js` shows Back only when there is somewhere to go back to. Frozen copy: `prototype/v2.5/` served at `/test/v2.5` (its HTML points at `/test/v2.5/app.css` and `app.js`, not `/v2/`). BIBLE design line notes the pinned header. Checked at 390px: Home, League, Records, Book, and a game pop-up. No sideways page scroll. The your-team row is a gold wash plus one bar on the name, not a bar in every column.
 - 2026-10-10 — **Front Office records, v2.5** (Claude; Jayson: "build front office first", then "change some of the names of the record so we're not copying them completely unless it's a generic record").
   - `server/records/frontoffice.js` → `GET /api/records/frontoffice`, cached 15 min. Nothing new is fetched: it reuses `leagueIndex()` (every completed transaction in league history) and `draftSeason()` (every graded draft).
   - **Twenty boards, each with a top-10 leaderboard** — Activity: Most trades, Most roster moves. Trades: Best trader, The robbery, The one he regrets, Trade buddies. Waivers & FAAB: Best on the wire, Best free agent grab, Dropped too soon, Best money spent, Worst money spent, Biggest FAAB bid, Points per dollar. Draft: Steal of the draft, Draft day bust, Best keeper call, Best drafter, Best draft night, Worst draft night, Position specialist.
