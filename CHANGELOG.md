@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-10 — **v2.4**: the v2.4 look was rolled back at Jayson's call. Everything is the v2.3 design again; the only thing kept is the typefaces — **Archivo** for headings and numbers, **Inter** for body text (labels stay IBM Plex Mono). Share images and bet tickets use the new faces too. /test/v2.3 is the same app in the old Chakra Petch / Plex Sans, for comparison. (Claude)
 - 2026-10-10 — **v2.4 look (first pass)**: same colours, new typography (Archivo for headings and numbers, Inter for text), cards sit on surfaces instead of outlines, no more ALL-CAPS labels above every heading, one button style, colour now means something (gold = leader, green = up, red = down, cyan = live), scores are the biggest thing on screen, and pop-ups are proper modals with a sticky Back/close bar. The old look is frozen at /test/v2.3. (Claude)
 - 2026-10-10 — Removed the big "Commish: add or take away Bucks" button from Book › Leaders (it's in Me › Book controls). (Claude)
 - 2026-10-10 — Sportsbook Champion moved out of League › Awards (League is fantasy only) to the top of Book › Leaders. (Claude)
