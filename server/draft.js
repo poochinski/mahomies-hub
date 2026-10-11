@@ -91,17 +91,23 @@ export async function draftSeason(season) {
     };
   }).sort((a, b) => a.pick_no - b.pick_no);
 
-  // The value curve: the Nth-best drafted player is what pick N was "worth".
-  const ranked = picks.filter((p) => !SKIP.has(p.pos)).slice().sort((a, b) => b.points - a.points);
+  // Picks get a second number: their place among the picks somebody actually made.
+  // In a keeper league the best players are kept, so measuring live picks against a
+  // curve that includes keepers makes every real pick look like a disaster.
+  let dec = 0;
+  for (const p of picks) p.dec_no = (p.keeper || SKIP.has(p.pos)) ? null : ++dec;
+
+  // The value curve: the Nth-best live pick is what the Nth decision was "worth".
+  const ranked = picks.filter((p) => !p.keeper && !SKIP.has(p.pos)).slice().sort((a, b) => b.points - a.points);
   ranked.forEach((p, i) => { p.rank = i + 1; });
   const curve = ranked.map((p) => p.points);
-  const par = (pickNo) => (curve.length ? curve[Math.min(curve.length - 1, Math.max(0, pickNo - 1))] : 0);
+  const par = (n) => (curve.length ? curve[Math.min(curve.length - 1, Math.max(0, n - 1))] : 0);
 
   for (const p of picks) {
-    if (SKIP.has(p.pos) || p.rank == null) { p.value = null; continue; }
-    p.par = r1(par(p.pick_no));
-    p.value = r1(p.points - p.par);     // points above or below what the slot usually returns
-    p.moved = p.pick_no - p.rank;        // spots gained (kept for the old "finished #N" line)
+    if (p.keeper || SKIP.has(p.pos) || p.rank == null) { p.value = null; p.par = null; continue; }
+    p.par = r1(par(p.dec_no));
+    p.value = r1(p.points - p.par);   // points above or below what that pick was worth
+    p.moved = p.dec_no - p.rank;      // places gained against the other live picks
   }
 
   // "Still on the board": the best player taken in the next two rounds. Looking at the
