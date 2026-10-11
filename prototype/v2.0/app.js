@@ -764,7 +764,7 @@ function foRecords(){
    (r0.pid?'<button type="button" class="share-btn" data-pl="'+esc(r0.pid)+'">Player card</button>':'')+info('frontoffice')+'</section>';
   h+='<section class="panel tight rec-list"><div class="rows">'+
    b.rows.slice(1,S.recMore?10:5).map(function(x,j){
-     var inner='<span class="rk">'+(j+2)+'</span>'+foWho(x,28,!x.pid)+'<span class="aw-vb"><span class="val">'+esc(x.vfmt)+'</span><small>'+esc(b.unit)+'</small></span>';
+     var inner='<span class="rk">'+(j+2)+'</span>'+foWho(x,28,!x.pid)+'<span class="aw-vb"><span class="val fo-val'+(String(x.vfmt).charAt(0)==='-'?' fo-neg':'')+'">'+esc(x.vfmt)+'</span><small>'+esc(b.unit)+'</small></span>';
      if(x.pid)return '<button type="button" class="row" data-pl="'+esc(x.pid)+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>';
      return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div>'+(b.rows.length>5?'<button type="button" class="more" data-more="rec">'+(S.recMore?'Show top 5':'Show top '+b.rows.length)+'</button>':'')+'</section>';

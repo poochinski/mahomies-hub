@@ -942,3 +942,5 @@ td.tm .who .tx>span{font-size:10.5px}
 .fo-hold{display:flex;align-items:center;gap:9px;margin-top:10px}
 .fo-hold .tx>b{font-size:14px;white-space:normal}
 .rec-list .fo-pair .tx>b{font-size:13px;white-space:normal;line-height:1.3}
+.fo-val{white-space:nowrap}
+.fo-val.fo-neg{color:var(--loss)}
