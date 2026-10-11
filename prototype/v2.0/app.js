@@ -290,7 +290,7 @@ function needLine(id,opp,sMe,sOpp){
   var youBehind=sMe.pts<sOpp.pts,b=youBehind?sMe:sOpp,a=youBehind?sOpp:sMe;
   var bLeft=(b.now||0)+(b.left||0),aLeft=(a.now||0)+(a.left||0),est=(aLeft&&a.proj!=null)?a.proj:a.pts,gap=a.pts-b.pts,need=est-b.pts;
   if(!bLeft&&gap>0.05)return btn(youBehind?'Short <b class="num">'+f1(gap)+'</b>':'They\'re short <b class="num">'+f1(gap)+'</b>');
-  if(bLeft>4&&gap>0.05)return btn((youBehind?'Down ':'Ahead ')+'<b class="num">'+f1(gap)+'</b>');
+  if(bLeft>4)return '';
   if(bLeft&&need>0.05&&b.proj!=null&&b.proj+0.05>=est)return btn(youBehind?'Down <b class="num">'+f1(gap)+'</b> · on track':'They can catch you');
   if(bLeft&&need>0.05)return btn((youBehind?'Need ':'They need ')+'<b class="num">'+f1(need)+'</b>'+(aLeft?' more':' to win'));
   return '';
@@ -341,7 +341,8 @@ function slotBlock(desk){
   var mx=Math.max.apply(null,vals.concat([1])),cols='';
   for(var i=0;i<n;i++){var a=desk.mine[i],b=desk.his[i],lab=(a&&a.s)||(b&&b.s)||'';
     var ah=slotPts(a),bh=slotPts(b);
-    var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;return '<i class="'+cls+'" style="'+(pct?'height:'+pct+'%':'height:0;min-height:0')+'"></i>'};
+    var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;if(!pct)return '<i class="'+cls+'" style="height:0;min-height:0"></i>';
+      return '<i class="'+cls+(pct<46?' out':'')+'" style="height:'+pct+'%"><b>'+f1(v)+'</b></i>'};
     cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><small>'+esc(lab)+'</small></span>'}
   var sum=slotSummary(desk);
   return '<button type="button" class="mh-slots" data-mh="slots">'+(sum?'<div class="mh-sum">'+sum+'</div>':'')+'<span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
@@ -362,8 +363,8 @@ function formBlock(me,opp){
 function seriesBlock(me,opp){
   var r=D.h2h&&D.h2h[me+'|'+opp];
   if(!r||!r.games||!r.games.length)return '<button type="button" class="mh-series" data-mh="series"><span><small>Series</small><b>First meeting</b></span></button>';
-  var last=r.games[r.games.length-1],won=last.m>last.o,tag=r.w>r.l?'You lead':r.w<r.l?'You trail':'Tied';
-  return '<button type="button" class="mh-series" data-mh="series"><span><small>'+tag+'</small><b class="'+(r.w>r.l?'w':r.w<r.l?'l':'')+'">'+r.w+'–'+r.l+'</b></span><span><small>'+(won?'Won':'Lost')+' · '+String(last.s).slice(-2)+' W'+last.w+'</small><b class="'+(won?'w':'l')+'">'+Math.round(last.m)+'–'+Math.round(last.o)+'</b></span></button>';
+  var last=r.games[r.games.length-1],won=last.m>last.o,tag=r.w>r.l?'you lead':r.w<r.l?'you trail':'tied';
+  return '<button type="button" class="mh-series" data-mh="series"><span><small>All-time record</small><b class="'+(r.w>r.l?'w':r.w<r.l?'l':'')+'">'+r.w+'–'+r.l+'</b><em>'+tag+'</em></span><span><small>Last matchup</small><b class="'+(won?'w':'l')+'">'+Math.round(last.m)+'–'+Math.round(last.o)+'</b><em>'+(won?'won':'lost')+' · '+String(last.s).slice(-2)+' wk '+last.w+'</em></span></button>';
 }
 function seriesSheet(me,opp){
   var r=(D.h2h&&D.h2h[me+'|'+opp])||{w:0,l:0,games:[]};

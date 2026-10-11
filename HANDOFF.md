@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 00:25 (Pacific) · **AI:** Grok
-**Current phase:** Home matchup desk is live under Your game. The lines under the score are short tiles now (Jayson: the sentences were wrapping team names). Do not go back to paragraph copy.
-**Last commit:** "Matchup desk fits on one line"
+**Last updated:** 2026-10-11 00:32 (Pacific) · **AI:** Grok
+**Current phase:** Home matchup desk is live. Jayson pulled the "Ahead 33.5" line (the score already shows it). Series row is labeled All-time record and Last matchup. Slot bars show the points on the bar.
+**Last commit:** "Take the ahead line off the card"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now

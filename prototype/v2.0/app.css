@@ -961,13 +961,17 @@ td.tm .who .tx>span{font-size:10.5px}
 .mh-series b{font:800 18px/1.1 var(--display);letter-spacing:-.03em;white-space:nowrap}
 .mh-series b.w{color:var(--win)}
 .mh-series b.l{color:var(--loss)}
+.mh-series em{font:11px/1.2 var(--body);font-style:normal;color:var(--muted);white-space:nowrap}
 .mh-series>span:last-child{text-align:right}
 .mh-slots{display:grid;gap:8px;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:inherit}
 .mh-sum{font:600 12.5px/1.35 var(--body);color:var(--ink)}
 .mh-cols{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;height:74px;align-items:end}
 .mh-col{display:grid;grid-template-rows:1fr auto;gap:3px;height:100%;min-width:0}
 .mh-bars{display:flex;align-items:flex-end;gap:2px;height:100%}
-.mh-bars i{flex:1;border-radius:3px 3px 0 0;min-height:3px;display:block}
+.mh-bars i{position:relative;flex:1;border-radius:3px 3px 0 0;min-height:3px;display:block;overflow:visible}
+.mh-bars i b{position:absolute;left:50%;top:3px;transform:translateX(-50%);font:700 9px/1 var(--mono);color:#1a1024;white-space:nowrap}
+.mh-bars i.out b{top:auto;bottom:100%;margin-bottom:1px;color:var(--gold)}
+.mh-bars i.him.out b{color:var(--pink)}
 .mh-bars i.you,.mh-legend i.you,.mh-line.you i{background:var(--gold)}
 .mh-bars i.him,.mh-legend i.him,.mh-line.him i{background:var(--pink)}
 .mh-col small{font:9px var(--mono);color:var(--faint);text-align:center;letter-spacing:.02em}
