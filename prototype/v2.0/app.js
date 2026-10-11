@@ -645,7 +645,7 @@ function draftView(){
   else{
     h+='<section class="panel"><div class="ph"><div><div class="kicker">'+d.picks.length+' picks · '+d.rounds+' rounds'+(d.keepers?' · '+d.keepers+' kept':'')+'</div><h2>'+esc(yr)+' grades</h2></div><button class="link" data-drboard="'+esc(yr)+'">Full board ›</button></div><div class="rows">'+
      d.managers.map(function(m){return '<button type="button" class="row dr-g" data-drm="'+esc(yr)+'|'+m.uid+'"><span class="dr-grade g-'+m.grade[0]+'">'+esc(m.grade)+'</span>'+
-       whoS(m.uid,m.hits+' hit · '+m.misses+' miss'+(m.keepers?' · '+m.keepers+' kept':''),26)+drVal(m.value)+CHEV+'</button>'}).join('')+'</div>'+
+       whoS(m.uid,m.picks+' picks · '+m.hits+' hit · '+m.misses+' miss',26)+drVal(m.value)+CHEV+'</button>'}).join('')+'</div>'+
      '<p class="muted" style="font-size:11.5px;margin-top:9px;line-height:1.5">Value is the points a pick scored in our league minus what that slot was worth — the player who finished that high among the picks people actually made. A hit beat its slot by 40+, a miss fell 40+ short. Keepers aren\'t graded.</p></section>';
     if(d.superlatives.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">'+esc(yr)+' draft</div><h2>Superlatives</h2></div></div><div class="rows">'+
       d.superlatives.map(function(x){return '<button type="button" class="row aw-row" data-drm="'+esc(yr)+'|'+x.uid+'"><span class="aw-ic">'+(DR_SUP[x.key]||'⭐')+'</span><span class="aw-m"><b>'+esc(x.title)+'</b><span class="aw-tm">'+av(x.uid,18)+esc(team(x.uid))+'</span><span class="aw-note">'+esc(x.line)+'</span></span>'+CHEV+'</button>'}).join('')+'</div></section>';
