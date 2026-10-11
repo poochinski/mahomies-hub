@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 00:15 (Pacific) · **AI:** Grok
+**Last updated:** 2026-10-11 00:20 (Pacific) · **AI:** Grok
 **Current phase:** Home matchup desk is live under Your game. Jayson is looking at it. Do not restyle the page. If he says take it off, remove the blocks added in `home()` (`needLine`, `stakeBlock`, `slotBlock`, `formBlock`, `seriesBlock`) and the `slots_a` / `slots_b` fields.
-**Last commit:** "Your game: the weekly desk"
+**Last commit:** "Slot chart shows points, not projections"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -11,7 +11,7 @@ Jayson asked for the home card to carry the weekly match, using numbers the app 
 ## Done (newest first)
 - 2026-10-11 — **Your game desk** (Grok; Jayson: build the five things we listed, from numbers we already have, and deploy). All of it sits under the score on Home, only after this phone has picked a team. No spreads, win %, or playoff odds.
   - **Needs line** (`needLine`): from the pulse. Once the trailing team is down to 4 players or fewer, it says "You need 18.4 more" (to catch the other side's projection, or to win if that side is done). Earlier than that, while most of the lineup is still waiting, it just says the current margin and how many each side has left, so a Thursday score doesn't turn into "needs 130 more." If you're down late but projected to catch them, it says that instead. Hidden until someone has actually played. Tap opens the live game.
-  - **Slot vs slot** (`slotBlock` / `slotSheet`): `/api/pulse` games now include `slots_a` and `slots_b`, built in `packSide` from the starters `weekState` already had. Empty slots stay in order and do not become lineup warnings. Before a player starts, the bar is his projection. Tap the chart for every name.
+  - **Slot vs slot** (`slotBlock` / `slotSheet`): `/api/pulse` games now include `slots_a` and `slots_b`, built in `packSide` from the starters `weekState` already had. Empty slots stay in order and do not become lineup warnings. Home bars are points so far only (a guy who hasn't played is a flat bar). Tap the chart for every name, with his projection in small type until he finishes. (Jayson, 2026-10-11: don't show projections on the home chart.)
   - **Series and last meeting** (`seriesBlock` / `seriesSheet`): from `D.h2h`. Tap for every meeting, newest first, and a meeting opens that game.
   - **Last four scored weeks** (`formBlock`): bars for you and the opponent. Tap a bar for that game.
   - **Seed if you win / if you lose** (`seedOutlook`, next to the median line): adds one win or one loss to the current standings and re-sorts by wins, then points. This week's points are included in the tiebreaker only when both lineups are final. Not shown in the playoffs, or once `last_scored` already includes this week. Tap for both tables.

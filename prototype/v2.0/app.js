@@ -282,7 +282,7 @@ function myDesk(){
   return {me:me,opp:opp,id:l.id,sMe:sg?slateSide(sg,me):null,sOpp:sg?slateSide(sg,opp):null,
     mine:sg?((l.a===me?sg.slots_a:sg.slots_b)||[]):[],his:sg?((l.a===me?sg.slots_b:sg.slots_a)||[]):[]};
 }
-function slotPts(p){if(!p||p.e)return 0;if(p.st==='pre')return p.j!=null?p.j:0;return p.p||0}
+function slotPts(p){if(!p||p.e)return 0;return Number(p.p)||0}
 function leftPhrase(opp,sMe,sOpp){return 'you have '+((sMe.now||0)+(sMe.left||0))+' left, '+esc(team(opp))+' has '+((sOpp.now||0)+(sOpp.left||0))+' left'}
 function needLine(id,opp,sMe,sOpp){
   if(!sMe||!sOpp||(sMe.fin&&sOpp.fin)||(!sMe.on&&!sOpp.on))return '';
@@ -322,15 +322,14 @@ function seedBtn(me,opp,sMe,sOpp){
 }
 function stakeBlock(me,opp,sMe,sOpp){var med=medianLine(me),seed=seedBtn(me,opp,sMe,sOpp);return (med||seed)?'<div class="yg-stake">'+med+seed+'</div>':''}
 function slotSummary(desk){
-  var mine=desk.mine,his=desk.his,n=Math.max(mine.length,his.length),you=0,him=0,seen=0,live=false;
+  var mine=desk.mine,his=desk.his,n=Math.max(mine.length,his.length),you=0,him=0,seen=0;
   for(var i=0;i<n;i++){var a=mine[i],b=his[i];
-    if(a&&!a.e&&a.st!=='pre'&&a.st!=='bye')live=true;if(b&&!b.e&&b.st!=='pre'&&b.st!=='bye')live=true;
-    if((!a||a.e)&&(!b||b.e))continue;var av=slotPts(a),bv=slotPts(b);seen++;if(Math.abs(av-bv)<0.05)continue;if(av>bv)you++;else him++}
-  if(!seen)return 'Slot vs slot';
-  var pre=live?'':'Projected: ';
-  if(you===him)return pre+(you?'Slots are split '+you+'–'+him:'Slots are even');
-  if(you>him)return pre+'You lead '+you+' of '+seen+' slots';
-  return pre+esc(team(desk.opp))+' leads '+him+' of '+seen+' slots';
+    if((!a||a.e)&&(!b||b.e))continue;var av=slotPts(a),bv=slotPts(b);if(av<0.05&&bv<0.05)continue;
+    seen++;if(Math.abs(av-bv)<0.05)continue;if(av>bv)you++;else him++}
+  if(!seen)return 'Points so far';
+  if(you===him)return you?'Slots are split '+you+'–'+him:'Slots are even';
+  if(you>him)return 'You lead '+you+' of '+seen+' slots';
+  return esc(team(desk.opp))+' leads '+him+' of '+seen+' slots';
 }
 function slotBlock(desk){
   if(!desk.mine.length)return '';
@@ -338,7 +337,9 @@ function slotBlock(desk){
   for(var i=0;i<n;i++)vals.push(slotPts(desk.mine[i]),slotPts(desk.his[i]));
   var mx=Math.max.apply(null,vals.concat([1])),cols='';
   for(var i=0;i<n;i++){var a=desk.mine[i],b=desk.his[i],lab=(a&&a.s)||(b&&b.s)||'';
-    cols+='<span class="mh-col"><span class="mh-bars"><i class="you" style="height:'+Math.max(3,Math.round(slotPts(a)/mx*100))+'%"></i><i class="him" style="height:'+Math.max(3,Math.round(slotPts(b)/mx*100))+'%"></i></span><small>'+esc(lab)+'</small></span>'}
+    var ah=slotPts(a),bh=slotPts(b);
+    var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;return '<i class="'+cls+'" style="'+(pct?'height:'+pct+'%':'height:0;min-height:0')+'"></i>'};
+    cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><small>'+esc(lab)+'</small></span>'}
   return '<button type="button" class="mh-slots" data-mh="slots"><div class="mh-sum">'+slotSummary(desk)+'</div><span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
 }
 function formBlock(me,opp){
@@ -374,8 +375,9 @@ function seriesSheet(me,opp){
 }
 function slotSide(p,mx,side){
   if(!p||p.e)return '<div class="mh-line '+side+' empty"><span>Empty</span><b></b><i style="width:0"></i></div>';
-  var pre=p.st==='pre',v=slotPts(p),name=p.id?'<span class="plk" data-pl="'+esc(p.id)+'">'+esc(p.n)+'</span>':'<span>'+esc(p.n||'—')+'</span>';
-  return '<div class="mh-line '+side+'">'+name+'<b class="num">'+f1(v)+(pre?'<small> proj</small>':'')+'</b><i style="width:'+Math.max(4,Math.round(v/mx*100))+'%"></i></div>';
+  var v=slotPts(p),pre=p.j!=null&&p.st!=='post'&&p.st!=='bye',w=v>0&&mx>0?Math.max(4,Math.round(v/mx*100)):0;
+  var name=p.id?'<span class="plk" data-pl="'+esc(p.id)+'">'+esc(p.n)+'</span>':'<span>'+esc(p.n||'—')+'</span>';
+  return '<div class="mh-line '+side+'">'+name+'<b class="num">'+f1(v)+(pre?'<small>proj '+f1(p.j)+'</small>':'')+'</b><i style="width:'+w+'%"></i></div>';
 }
 function slotSheet(){
   var d=myDesk(),h='<div class="ph" style="margin:0 0 8px"><div><div class="kicker">This week\'s starters</div><h2>Slot vs slot</h2></div></div>';
@@ -386,7 +388,7 @@ function slotSheet(){
   h+='<p class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(d.opp))+'</p>';
   for(i=0;i<n;i++){var a=d.mine[i],b=d.his[i];
     h+='<div class="mh-pair"><div class="mh-slab">'+esc((a&&a.s)||(b&&b.s)||'')+'</div>'+slotSide(a,mx,'you')+slotSide(b,mx,'him')+'</div>'}
-  return h+'<p class="gc-key">Before a player starts, the number is his projection. After that, it\'s the points he has now.</p>';
+  return h+'<p class="gc-key">Bars are points so far. The small number is the projection for anyone who hasn\'t finished.</p>';
 }
 function seedSheet(){
   var d=myDesk();if(!d)return '<p class="muted">Pick your team first.</p>';
