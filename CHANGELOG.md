@@ -2,6 +2,7 @@
 
 Newest on top. One line per push.
 
+- 2026-10-11 — **Game Center shows real stat lines**: under every player is what he actually did this week — "21 CAR, 165 YD, 1 TD, 2/3 REC, 10 YD, 1 TD" — instead of the NFL clock and score. Before his game kicks off you get his season instead (points a game, yards, TDs, games played), and a gold tag marks a 100-yard game, a 40+ yard play or a multi-TD day. Bench players get the same line. The game clock is still there, just small. (Claude)
 - 2026-10-11 — **Slot score lines up under its bar.** It was italic, so it looked crooked, and it was centered on the pair instead of the bar that scored. (Grok)
 - 2026-10-11 — **Slot score sits under the bar.** The points were bigger than the bar and spilled off the side. They are a small number under that column now. (Grok)
 - 2026-10-11 — **Ahead line off the card.** The score already shows the margin, so that line is gone until a team is down to a few players. The series row is labeled All-time record and Last matchup. Slot bars carry the points on them. (Grok)

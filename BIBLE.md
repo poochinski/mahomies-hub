@@ -458,6 +458,7 @@ GET  /api/trades?season=             Trade grader v2: got/gave, picks, FAAB, wee
 GET  /api/draft                      every draft: seasons, loyalty, position habits, market, all-time drafters (built)
 GET  /api/draft/:season              one draft: full board with keepers marked, grades, superlatives (built)
 GET  /api/records/frontoffice        the 20 Front Office boards: trades, waivers/FAAB, draft (built, cached 15 min)
+GET  /api/live/:week/:mid            Game Center: both lineups with live points, projections and each player's real stat line (built, polled ~1 min)
 GET  /api/season/:season            standings, power, luck, playoff odds
 GET  /api/h2h                       matrix
 GET  /api/recap/:season/:week

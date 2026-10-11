@@ -1,14 +1,21 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 00:45 (Pacific) · **AI:** Grok
-**Current phase:** Home matchup desk is live. The slot score is straight and centered under the bar that scored.
-**Last commit:** "Line the slot score up"
+**Last updated:** 2026-10-11 11:40 (Pacific) · **AI:** Claude
+**Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
+**Last commit:** "Game Center: show what each player actually did"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **Game Center: real stat lines** (Claude; Jayson compared our matchup page with Sleeper's: "we want fantasy information, not game info necessarily").
+  - New `server/stats/weekly.js`. Sleeper publishes one file per week with every player's raw stats and it updates during games: `/stats/nfl/regular/{season}/{week}` (cached 45 s for the live week, a week otherwise) and `/stats/nfl/regular/{season}` for season totals (30 min). One call covers the whole NFL — far cheaper than the per-player endpoint `server/player.js` uses. **Team defenses are keyed by their NFL abbreviation ("DAL") in the same file**, which is exactly how Sleeper ids a DEF on a roster, so they need no special path.
+  - `statLine(pos, stats)` writes the box-score line (QB cmp/att, yds, TD, INT; RB/WR/TE carries, yards, catches/targets, TDs, fumbles lost; K field goals and extra points; DEF sacks, INT, fumbles, TDs, points allowed). `seasonForm()` gives points a game + yards + TDs for a player who hasn't kicked off. `bigPlay()` is the gold tag (100-yard game, 40+ yard play, multi-TD day).
+  - `scoreTotals()` runs Sleeper's season totals through **our** scoring settings — their totals include the bonus counters (`bonus_rec_yd_100` etc.), so this comes out right. If fewer than 6 scoring keys match, it falls back to Sleeper's `pts_ppr` rather than reporting a half-scored total (the local mock has only 2 scoring keys, which is how that bug showed up).
+  - `gameCenter()` in `server/book/data.js` now attaches `line`, `big` and `form` to every starter and bench player. The NFL score was dropped from the player rows — that's the game info Jayson didn't want.
+  - Client: `gcStat(p, side)` renders a full-half-width line under each player, as a second row inside the existing 5-column `.gc-r` grid (`grid-column: 1/3` and `4/6`). `gcCell` lost its score line and now carries the game clock small. New CSS prefix `gc-sl`.
+  - Tested on the local mock with a synthetic stats feed added to `scratchpad/booktest/db.json` (`/stats/nfl/regular/2026/6` and `/stats/nfl/regular/2026`) — the mock Sleeper had no stats endpoint before this.
 - 2026-10-11 — **Your game desk** (Grok; Jayson: build the five things we listed, from numbers we already have, and deploy). All of it sits under the score on Home, only after this phone has picked a team. No spreads, win %, or playoff odds.
   - **Needs line** (`needLine`): from the pulse. Once the trailing team is down to 4 players or fewer, it says "You need 18.4 more" (to catch the other side's projection, or to win if that side is done). Earlier than that, while most of the lineup is still waiting, it just says the current margin and how many each side has left, so a Thursday score doesn't turn into "needs 130 more." If you're down late but projected to catch them, it says that instead. Hidden until someone has actually played. Tap opens the live game.
   - **Slot vs slot** (`slotBlock` / `slotSheet`): `/api/pulse` games now include `slots_a` and `slots_b`, built in `packSide` from the starters `weekState` already had. Empty slots stay in order and do not become lineup warnings. Home bars are points so far only (a guy who hasn't played is a flat bar). Tap the chart for every name, with his projection in small type until he finishes. (Jayson, 2026-10-11: don't show projections on the home chart.)

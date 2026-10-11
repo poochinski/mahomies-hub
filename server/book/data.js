@@ -3,6 +3,7 @@
 import { sleeper, getPlayers } from '../sleeper/client.js';
 import { LEAGUE_ID } from '../config.js';
 import { kickoffs, kickShort } from './kickoffs.js';
+import { weekStats, seasonStats, statLine, seasonForm, bigPlay } from '../stats/weekly.js';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -250,9 +251,11 @@ export async function playerPoints(L, week, maxAgeMs = 0) {
 export async function gameCenter(week, matchupId) {
   const L = await league();
   const w = Number(week) || L.nflWeek;
-  const [k, ms, players, proj] = await Promise.all([
+  const liveWk = w >= L.nflWeek;
+  const [k, ms, players, proj, wst, sst] = await Promise.all([
     kickoffs(L.season, w, { maxAgeMs: 45 * 1000 }).catch(() => ({ gameOf: {}, games: [] })),
-    matchups(L.leagueId, w, 45 * 1000), getPlayers().catch(() => ({})), projections(L, w)]);
+    matchups(L.leagueId, w, 45 * 1000), getPlayers().catch(() => ({})), projections(L, w),
+    weekStats(L.season, w, { live: liveWk }), seasonStats(L.season)]);
   const pair = ms.filter((m) => String(m.matchup_id) === String(matchupId));
   if (pair.length !== 2) return { week: w, error: 'Matchup not found' };
   const teamOf = (pid) => (/^[A-Z]{2,3}$/.test(pid) ? pid : players[pid]?.t || '');
@@ -267,8 +270,14 @@ export async function gameCenter(week, matchupId) {
     if (g && g.state === 'pre') status = kickShort(g.at);
     else if (g && g.state === 'in') status = g.detail || 'Live';
     else if (g) status = 'Final';
+    // The fantasy half: what he actually did this week, or what he's been doing all year
+    // if his game hasn't kicked off yet.
+    const pos = posOf(pid);
+    const line = statLine(pos, wst?.[pid]);
+    const form = seasonForm(pos, sst?.[pid], L.scoring);
     return {
-      slot, pid, name: players[pid]?.n || pid, pos: posOf(pid), nfl, inj: players[pid]?.i || null, espn: players[pid]?.e || null,
+      slot, pid, name: players[pid]?.n || pid, pos, nfl, inj: players[pid]?.i || null, espn: players[pid]?.e || null,
+      line, big: line ? bigPlay(pos, wst[pid]) : '', form,
       pts: Math.round(got * 100) / 100, proj_full: pj ?? null,
       proj: !g ? Math.round(got * 10) / 10 : pj == null ? null : Math.round((got + pj * (1 - prog)) * 10) / 10,
       state, status, opp: opp ? (g.home === nfl ? 'vs ' : '@ ') + opp : '',
