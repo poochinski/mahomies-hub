@@ -52,6 +52,44 @@ router.get('/projhist', async (req, res) => {
   catch (err) { console.error('projhist failed', err.message); res.json({ weeks: {} }); }
 });
 
+// GET /api/live/pbpdebug/:pid — what ESPN's play feed looks like for this player's game (diagnostics).
+router.get('/live/pbpdebug/:pid', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const out = { pid: req.params.pid };
+  try {
+    const { league } = await import('../book/data.js');
+    const { kickoffs } = await import('../book/kickoffs.js');
+    const { getPlayers } = await import('../sleeper/client.js');
+    const L = await league();
+    const players = await getPlayers();
+    const pl = players[req.params.pid] || {};
+    out.player = { n: pl.n, t: pl.t, p: pl.p, e: pl.e || null };
+    const k = await kickoffs(L.season, L.nflWeek, { maxAgeMs: 60 * 1000 });
+    const g = k.gameOf?.[pl.t];
+    out.game = g ? { id: g.id, state: g.state, teams: g.teams, home: g.home } : null;
+    if (g && g.id) {
+      const CORE = (process.env.ESPN_CORE_BASE || 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl').replace(/\/$/, '');
+      const url = `${CORE}/events/${g.id}/competitions/${g.id}/plays?limit=500&page=1`;
+      out.url = url;
+      const r = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.9' }, signal: AbortSignal.timeout(15000) });
+      out.status = r.status;
+      const text = await r.text();
+      out.bytes = text.length;
+      let j = null; try { j = JSON.parse(text); } catch { out.head = text.slice(0, 300); }
+      if (j) {
+        out.count = j.count; out.pageCount = j.pageCount; out.pageSize = j.pageSize; out.items = (j.items || []).length;
+        out.firstItemKeys = Object.keys((j.items || [])[0] || {});
+        const withParts = (j.items || []).filter((x) => x.participants && x.participants.length);
+        out.withParticipants = withParts.length;
+        out.partTypes = [...new Set(withParts.flatMap((x) => x.participants.map((p) => p.type)))];
+        out.sample = withParts.slice(-3).map((x) => ({ type: x.type?.text, text: x.text, start: x.start, parts: x.participants.map((p) => ({ ref: p.athlete?.$ref, type: p.type })) }));
+        out.mentions = (j.items || []).filter((x) => pl.n && x.text && x.text.includes((pl.n.split(' ')[1] || ''))).slice(-2).map((x) => ({ text: x.text, parts: (x.participants || []).map((p) => ({ ref: p.athlete?.$ref, type: p.type })) }));
+      }
+    }
+  } catch (err) { out.error = err.message; }
+  res.json(out);
+});
+
 // GET /api/live/breakdown/:pid?week= — stat × points-per × points, like Sleeper's Score Breakdown.
 router.get('/live/breakdown/:pid', async (req, res) => {
   res.set('Cache-Control', 'no-store');
