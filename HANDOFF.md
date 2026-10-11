@@ -1,14 +1,21 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 15:00 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-11 15:45 (Pacific) · **AI:** Claude
 **Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
-**Last commit:** "Slot vs slot: stat lines, game clock, player week sheet with scoring timeline"
+**Last commit:** "Play by play from ESPN + Sleeper-style score breakdown"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **Play by play + score breakdown** (Claude; Jayson sent Sleeper's Score Breakdown and play feed: tap the points → breakdown, tap the row (not the name) → player week with a play-by-play instead of the "Before tracking" scoring summary).
+  - **Removed:** `server/stats/timeline.js`, its test, and `startTimeline()` in `server/index.js`. The `live_timeline` Postgres table may exist on Railway; nothing reads it, safe to drop.
+  - **Play-by-play** (`server/stats/plays.js`): ESPN core API `{CORE}/events/{id}/competitions/{id}/plays?limit=500` (paged), cached 10 s live / 6 h final, shared in-flight. Each play's `participants[]` carries `athlete.$ref` (ESPN athlete id) + `type` (rusher, receiver, passer, kicker…); matched to Sleeper's `espn_id` (slim `e`). `playStats()` turns a play into Sleeper stat keys (rush/rec/pass, 40+ bonuses, first downs, position reception bonus, fumble lost; kickers: FG by distance bucket from the text, XP from "(X.Name kick)" on the TD play). `playerGameLog()` adds 100/200/300/400-yd crossing bonuses, scores each play with `L.scoring`, and returns down & distance (`start.downDistanceText`, falling back to the previous play's `end`), Q/clock, away–home score, what happened, points, running total and the cumulative `statLine`. ESPN event id is now kept on each kickoffs game (`g.id`). DEF: no play-by-play (team unit) — sheet says so.
+  - `playerWeek()` returns `plays`, `plays_total`, `plays_err`, `def` instead of `timeline`. If plays sum ≠ Sleeper's points the sheet says so (bonus / stat correction / crediting difference).
+  - **Score breakdown:** `GET /api/live/breakdown/:pid?week=` → `scoreBreakdown()` in `server/stats/playerweek.js`: every scoring key in `L.scoring` the player has this week → label (`LABEL` map, fallback prettifier), stat, pts per, points; sorted by size; total vs Sleeper's `players_points`.
+  - **Client:** points in a slot row are `<b class="mh-pts" data-brk>`; a capture listener opens `brkOpen()` (like `data-pl` for names). Row body → `pwOpen()`. `pbpHtml()` cards: `.pbp-c` (TD = gold), `.pbp-top/.pbp-mid/.pbp-tx/.pbp-bot`. `brkHtml()` table `.brk`.
+  - Tests: `test/plays.test.js` (RB rush/catch/TD/incomplete, kicker FG + XP, name abbreviation). **Not checkable from Claude's sandbox:** the live ESPN core API (blocked). Field names were confirmed by reading a real 2024 game's response; first real check is the next live game — if a player shows "No plays for him yet" mid-game, look at `participants[].type` values in a live response.
 - 2026-10-11 — **Slot vs slot: stat lines, clock, player week + timeline** (Claude; Jayson: more data in the rows, row tap → that week's point timeline + snap %, name tap → player card, quarter/clock next to live players).
   - **Rows:** `/api/pulse` slots gain `l` (box-score line via `statLine`, only once his game has started) and `c` (ESPN clock, e.g. "Q3 8:12", live only). `homeCard` now also pulls `weekStats` (same 10 s live cache). Row = `<button class="mh-line" data-plw=pid>`; name keeps `data-pl` (capture listener → player card wins). Tag: pulsing green dot + clock + on pace; stat line as a third line (`.mh-sl`). The dot is a `<u>` because `.mh-line i` is the bar fill.
   - **Player week sheet:** `pwOpen/pwLoad/pwHtml/pwTimer` (refresh at `pollMs()`, and on return to the app via `backInApp`). Shows NFL game clock + score, Points / On pace / Projected / Snaps (`off_snp/tm_off_snp`, kickers `st_snp`), gold big-play tag, box-score tiles, timeline (newest first), "Full player card ›". New `GET /api/live/player/:pid?week=` → `server/stats/playerweek.js` `playerWeek()`.

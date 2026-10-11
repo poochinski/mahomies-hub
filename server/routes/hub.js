@@ -4,7 +4,7 @@ import { Router } from 'express';
 import { getHub } from '../hub/cache.js';
 import { kickoffs, describeWeek, liveAge, isGameLive, LIVE_MS } from '../book/kickoffs.js';
 import { homeCard, gameCenter, pregameProjections } from '../book/data.js';
-import { playerWeek } from '../stats/playerweek.js';
+import { playerWeek, scoreBreakdown } from '../stats/playerweek.js';
 import { playerProfile } from '../player.js';
 import { teamPage, playerSearch, wire } from '../team.js';
 import { draftIndex, draftSeason } from '../draft.js';
@@ -52,7 +52,14 @@ router.get('/projhist', async (req, res) => {
   catch (err) { console.error('projhist failed', err.message); res.json({ weeks: {} }); }
 });
 
-// GET /api/live/player/:pid?week= — one player's week: box score, snaps, NFL game, scoring timeline.
+// GET /api/live/breakdown/:pid?week= — stat × points-per × points, like Sleeper's Score Breakdown.
+router.get('/live/breakdown/:pid', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { res.json(await scoreBreakdown(req.params.pid, req.query.week)); }
+  catch (err) { console.error('breakdown failed', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/live/player/:pid?week= — one player's week: box score, snaps, NFL game, play by play.
 router.get('/live/player/:pid', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try { res.json(await playerWeek(req.params.pid, req.query.week)); }

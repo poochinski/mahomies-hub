@@ -263,6 +263,7 @@ function nav(f){if($('#sheet').classList.contains('open')){var b=$('#sheetBody')
   SH.push({html:b.innerHTML,top:$('#sheet').scrollTop,gc:document.getElementById('gc')?GC.id:null});if(SH.length>12)SH.shift()}f()}
 function shBack(){var s=SH.pop();if(!s)return;openSheet(s.html);$('#sheet').scrollTop=s.top;var q=document.getElementById('srQ');if(q)q.value=SR.q;
   if(s.gc){GC.id=s.gc;gcLoad();gcTimer()}}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-brk]');if(!t||!t.dataset.brk)return;e.stopPropagation();e.preventDefault();var pid=t.dataset.brk;nav(function(){brkOpen(pid)})},true);
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl)return;e.stopPropagation();e.preventDefault();nav(function(){plOpen(t.dataset.pl)})},true);
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bsh],[data-shback],b[data-team]');if(!t)return;e.stopPropagation();
   if(t.dataset.team){var u=t.dataset.team;nav(function(){teamOpen(u)});return}
@@ -453,7 +454,7 @@ function slotSide(p,mx,side){
   var v=slotPts(p),w=v>0&&mx>0?Math.max(4,Math.round(v/mx*100)):0;
   var name=p.id?'<span class="plk" data-pl="'+esc(p.id)+'">'+esc(p.n)+'</span>':'<span>'+esc(p.n||'—')+'</span>';
   var tap=p.id?' data-plw="'+esc(p.id)+'"':'';
-  return '<button type="button" class="mh-line '+side+(p.st==='in'?' on':'')+'"'+tap+'><span class="mh-nm">'+name+slotTag(p)+(p.l?'<em class="mh-sl">'+esc(p.l)+'</em>':'')+'</span><b class="num">'+f1(v)+'</b><i style="width:'+w+'%"></i></button>';
+  return '<button type="button" class="mh-line '+side+(p.st==='in'?' on':'')+'"'+tap+'><span class="mh-nm">'+name+slotTag(p)+(p.l?'<em class="mh-sl">'+esc(p.l)+'</em>':'')+'</span><b class="num mh-pts"'+(p.id?' data-brk="'+esc(p.id)+'"':'')+'>'+f1(v)+'</b><i style="width:'+w+'%"></i></button>';
 }
 function slotSheet(){
   var d=myDesk(),h='<div id="mhss"><div class="ph" style="margin:0 0 8px"><div><div class="kicker">This week\'s starters</div><h2>Slot vs slot</h2></div></div>';
@@ -487,16 +488,43 @@ function pwHtml(){
   if(d.big)h+='<p class="pw-big">'+esc(d.big)+'</p>';
   if(d.box&&d.box.length)h+='<div class="pw-box">'+d.box.map(function(t){return '<div><small>'+esc(t.k)+'</small><b>'+esc(t.v)+'</b></div>'}).join('')+'</div>';
   else if(d.state==='pre')h+='<p class="muted">Hasn\'t played yet. Kicks off '+esc(d.status)+(d.game?' '+esc(d.game.opp):'')+'.</p>';
-  h+='<div class="yg-k" style="margin-top:14px">Scoring timeline</div>';
-  var tl=(d.timeline||[]).slice().reverse();
-  if(!tl.length)h+='<p class="muted">'+(d.state==='pre'?'Nothing yet. Every catch, carry and score gets logged here as it happens.':'Nothing logged for this week yet. The log starts the first time the app sees his game live.')+'</p>';
-  else h+='<div class="pw-tl">'+tl.map(function(e){
-    var t=new Date(e.at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    var dl=Math.abs(e.delta)<0.005?'':'<b class="'+(e.delta>0?'up':'dn')+'">'+(e.delta>0?'+':'−')+f1(Math.abs(e.delta))+'</b>';
-    return '<div class="pw-ev'+(e.kind==='start'?' pw-pre':'')+'"><span class="pw-when">'+esc(e.kind==='start'?'Before tracking':(e.clock||t))+'<small>'+esc(e.kind==='start'?'':t)+'</small></span><span class="pw-what">'+esc(e.what||(e.kind==='start'?'Points already on the board':'Stat correction'))+'</span>'+dl+'<em>'+f1(e.pts)+'</em></div>'}).join('')+'</div>';
+  h+='<div class="yg-k" style="margin-top:14px">Play by play</div>'+pbpHtml(d);
   h+='<button type="button" class="ghost pw-card" data-pl="'+esc(d.pid)+'">Full player card ›</button>';
   h+='<p class="gc-up" id="pwErr">Updated '+hms(d.updated)+' · '+paceTxt()+'</p></div>';
   return h;
+}
+function pbpHtml(d){
+  if(d.def)return '<p class="muted">Team defenses score as a unit, not play by play. Tap his points for the breakdown.</p>';
+  if(d.state==='pre'||d.state==='bye')return '<p class="muted">'+(d.state==='bye'?'On bye this week.':'No snaps yet. Every play he\'s part of shows up here as it happens.')+'</p>';
+  if(d.plays_err)return '<p class="muted">'+esc(d.plays_err)+' Trying again shortly.</p>';
+  var ps=(d.plays||[]).slice().reverse();
+  if(!ps.length)return '<p class="muted">No plays for him yet.</p>';
+  var h='<div class="pbp">'+ps.map(function(p){
+    var sc=p.score||{},hl=sc.h>sc.a,al=sc.a>sc.h;
+    var pts=Math.abs(p.pts)<0.005?'<b class="pbp-p z">+0.0</b>':'<b class="pbp-p '+(p.pts>0?'up':'dn')+'">'+(p.pts>0?'+':'−')+f1(Math.abs(p.pts))+'</b>';
+    return '<div class="pbp-c'+(p.td?' td':'')+'">'+
+      '<div class="pbp-top"><span>'+esc(p.dd||'')+'</span><span><b>Q'+(p.q>4?'OT':p.q)+'</b> '+esc(p.clock||'')+'</span></div>'+
+      '<div class="pbp-mid"><b>'+esc(shortNm(d.name))+' '+esc(p.what)+'</b><span class="pbp-sc"><i'+(al?' class="lead"':'')+'>'+esc(sc.away)+' '+sc.a+'</i>–<i'+(hl?' class="lead"':'')+'>'+sc.h+' '+esc(sc.home)+'</i></span></div>'+
+      (p.text?'<div class="pbp-tx">'+esc(p.text)+'</div>':'')+
+      '<div class="pbp-bot"><span>'+esc(p.line||'')+'</span>'+pts+'</div></div>'}).join('')+'</div>';
+  if(d.plays_total!=null&&Math.abs(d.plays_total-d.pts)>=0.05)h+='<p class="gc-key">These plays add up to '+f1(d.plays_total)+'. Sleeper has him at '+f1(d.pts)+' — the difference is a bonus, a stat correction, or a play ESPN and Sleeper credit differently. Tap his points for the official breakdown.</p>';
+  return h;
+}
+function shortNm(n){var w=String(n||'').split(' ');return w.length>1?w[0][0]+'. '+w.slice(1).join(' '):n}
+/* Score breakdown (tap the points): stat × points per × points, like Sleeper's. */
+var BRK={pid:''};
+function brkOpen(pid){BRK.pid=pid;openSheet('<div id="brk"><p class="muted">Loading…</p></div>'+CLOSE);
+  fetch('/api/live/breakdown/'+encodeURIComponent(pid),{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(BRK.pid!==pid)return;var el=document.getElementById('brk');if(!el)return;if(!d||d.error){el.innerHTML='<p class="muted">Couldn\'t load the breakdown just now.</p>';return}el.outerHTML=brkHtml(d)})
+   .catch(function(){var el=document.getElementById('brk');if(el)el.innerHTML='<p class="muted">Couldn\'t reach Sleeper just now.</p>'})}
+function f2(n){return Number(n).toFixed(2)}
+function brkHtml(d){
+  var h='<div id="brk"><div class="ph" style="margin:0 0 10px"><div><div class="kicker">Week '+d.week+' · score breakdown</div><h2><span class="plk" data-pl="'+esc(d.pid)+'">'+esc(d.name)+'</span></h2></div></div>';
+  if(!d.rows||!d.rows.length)return h+'<p class="muted">No scoring stats yet this week.</p></div>';
+  h+='<table class="brk"><thead><tr><th></th><th>Stat</th><th>Pts per</th><th>Points</th></tr></thead><tbody>'+
+    d.rows.map(function(r){return '<tr><td>'+esc(r.label)+'</td><td>'+r.stat+'</td><td>'+f2(r.per)+'</td><td class="'+(r.pts<0?'dn':'')+'">'+f2(r.pts)+'</td></tr>'}).join('')+
+    '</tbody><tfoot><tr><td>Total</td><td></td><td></td><td>'+f2(d.total)+'</td></tr></tfoot></table>';
+  if(d.sleeper!=null&&Math.abs(d.sleeper-d.total)>=0.05)h+='<p class="gc-key">Sleeper has him at '+f2(d.sleeper)+' right now; their stat feed and scoreboard can be a few seconds apart during a game.</p>';
+  return h+'<p class="gc-key">Scored with our league\'s settings.</p></div>';
 }
 function seedSheet(){
   var d=myDesk();if(!d)return '<p class="muted">Pick your team first.</p>';

@@ -41,6 +41,7 @@ async function fetchKickoffs(season, week, key, hit) {
     if (!res.ok) throw new Error(`ESPN ${res.status}`);
     const json = await res.json();
     const games = (json.events || []).map((e) => ({
+      id: String(e.id || ''), // ESPN event id (play-by-play)
       at: new Date(e.date),
       teams: (e.competitions?.[0]?.competitors || []).map((c) => { const t = c.team?.abbreviation || ''; return FIX[t] || t; }),
       state: e.status?.type?.state || 'pre', // pre | in | post
