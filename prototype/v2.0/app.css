@@ -969,8 +969,8 @@ td.tm .who .tx>span{font-size:10.5px}
 .mh-col{display:grid;grid-template-rows:1fr 9px auto;gap:2px;height:100%;min-width:0}
 .mh-bars{display:flex;align-items:flex-end;gap:2px;height:100%}
 .mh-bars i{flex:1;border-radius:3px 3px 0 0;min-height:3px;display:block}
-.mh-n{display:flex;justify-content:center;gap:2px;height:9px;font:700 8px/1 var(--mono);overflow:hidden}
-.mh-n.pair{font-size:7px;letter-spacing:-.03em}
+.mh-n{display:grid;grid-template-columns:1fr 1fr;gap:2px;height:10px;font:700 8px/1 var(--mono)}
+.mh-n i{font-style:normal;text-align:center;white-space:nowrap}
 .mh-n .you{color:var(--gold)}
 .mh-n .him{color:var(--pink)}
 .mh-bars i.you,.mh-legend i.you,.mh-line.you i{background:var(--gold)}

@@ -342,8 +342,8 @@ function slotBlock(desk){
   for(var i=0;i<n;i++){var a=desk.mine[i],b=desk.his[i],lab=(a&&a.s)||(b&&b.s)||'';
     var ah=slotPts(a),bh=slotPts(b);
     var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;return '<i class="'+cls+'" style="'+(pct?'height:'+pct+'%':'height:0;min-height:0')+'"></i>'};
-    var num=(ah>0?'<i class="you">'+f1(ah)+'</i>':'')+(bh>0?'<i class="him">'+f1(bh)+'</i>':'');
-    cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><b class="mh-n'+(ah>0&&bh>0?' pair':'')+'">'+num+'</b><small>'+esc(lab)+'</small></span>'}
+    var num='<i class="you">'+(ah>0?f1(ah):'')+'</i><i class="him">'+(bh>0?f1(bh):'')+'</i>';
+    cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><b class="mh-n">'+num+'</b><small>'+esc(lab)+'</small></span>'}
   var sum=slotSummary(desk);
   return '<button type="button" class="mh-slots" data-mh="slots">'+(sum?'<div class="mh-sum">'+sum+'</div>':'')+'<span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
 }

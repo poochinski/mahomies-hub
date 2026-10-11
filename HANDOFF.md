@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 00:40 (Pacific) · **AI:** Grok
-**Current phase:** Home matchup desk is live. Slot points are a small number under the bar, not printed on it (Jayson: the number was too big).
-**Last commit:** "Shrink the slot score"
+**Last updated:** 2026-10-11 00:45 (Pacific) · **AI:** Grok
+**Current phase:** Home matchup desk is live. The slot score is straight and centered under the bar that scored.
+**Last commit:** "Line the slot score up"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
