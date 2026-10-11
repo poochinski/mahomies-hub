@@ -5,15 +5,27 @@ const BASE = process.env.SLEEPER_BASE || 'https://api.sleeper.app/v1'; // overri
 const cache = new Map(); // path -> { at, data }
 export const clearSleeperCache = () => cache.clear(); // tests only
 
+// Game day: a dozen phones polling every few seconds share one request per path, so
+// Sleeper sees at most one call per path per cache window no matter how many people are on.
+const inflight = new Map(); // path -> Promise
 export async function sleeper(path, { maxAgeMs = 5 * 60 * 1000 } = {}) {
   const hit = cache.get(path);
   if (hit && Date.now() - hit.at < maxAgeMs) return hit.data;
-
-  const res = await fetch(BASE + path, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(15000) });
-  if (!res.ok) throw new Error(`Sleeper ${path} → ${res.status}`);
-  const data = await res.json();
-  cache.set(path, { at: Date.now(), data });
-  return data;
+  if (inflight.has(path)) return inflight.get(path);
+  const p = (async () => {
+    try {
+      const res = await fetch(BASE + path, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(15000) });
+      if (!res.ok) throw new Error(`Sleeper ${path} → ${res.status}`);
+      const data = await res.json();
+      cache.set(path, { at: Date.now(), data });
+      return data;
+    } catch (err) {
+      if (hit) return hit.data; // a slow or failed refresh keeps the last good numbers on screen
+      throw err;
+    } finally { inflight.delete(path); }
+  })();
+  inflight.set(path, p);
+  return p;
 }
 
 // Every NFL player, slimmed to { id: { n: name, p: position, t: team } }.

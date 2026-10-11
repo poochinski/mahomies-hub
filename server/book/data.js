@@ -2,7 +2,7 @@
 // scores so far, live/final points and current starters.
 import { sleeper, getPlayers } from '../sleeper/client.js';
 import { LEAGUE_ID } from '../config.js';
-import { kickoffs, kickShort } from './kickoffs.js';
+import { kickoffs, kickShort, liveAge } from './kickoffs.js';
 import { weekStats, seasonStats, statLine, seasonForm, bigPlay } from '../stats/weekly.js';
 
 const HOUR = 60 * 60 * 1000;
@@ -118,7 +118,7 @@ export async function homeCard(week) {
   const L = await league();
   const w = Number(week) || (L.seasonType === 'regular' ? L.nflWeek : 0);
   if (!w || w >= L.P) return { week: w, games: [] };
-  const [pairs, st] = await Promise.all([pairsFor(L, w), weekState(L, w, 45 * 1000)]);
+  const [pairs, st] = await Promise.all([pairsFor(L, w), weekState(L, w, liveAge(45 * 1000))]);
   const games = pairs.map((p) => {
     const A = packSide(st.rosters[p.roster_a]);
     const B = packSide(st.rosters[p.roster_b]);
@@ -285,8 +285,8 @@ export async function gameCenter(week, matchupId) {
   const w = Number(week) || L.nflWeek;
   const liveWk = w >= L.nflWeek;
   const [k, ms, players, proj, wst, sst] = await Promise.all([
-    kickoffs(L.season, w, { maxAgeMs: 45 * 1000 }).catch(() => ({ gameOf: {}, games: [] })),
-    matchups(L.leagueId, w, 45 * 1000), getPlayers().catch(() => ({})), projections(L, w),
+    kickoffs(L.season, w, { maxAgeMs: liveAge(45 * 1000) }).catch(() => ({ gameOf: {}, games: [] })),
+    matchups(L.leagueId, w, liveWk ? liveAge(45 * 1000) : 45 * 1000), getPlayers().catch(() => ({})), projections(L, w),
     weekStats(L.season, w, { live: liveWk }), seasonStats(L.season)]);
   const pair = ms.filter((m) => String(m.matchup_id) === String(matchupId));
   if (pair.length !== 2) return { week: w, error: 'Matchup not found' };

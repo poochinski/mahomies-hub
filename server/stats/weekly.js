@@ -9,13 +9,14 @@
 // Team defenses sit in the same file under their NFL abbreviation ("DAL"), which is
 // exactly how Sleeper ids a DEF on a fantasy roster, so they need no special handling.
 import { sleeper } from '../sleeper/client.js';
+import { liveAge } from '../book/kickoffs.js';
 
 const MIN = 60 * 1000;
 const WEEK = 7 * 24 * 60 * MIN;
 const num = (s, k) => Number(s?.[k]) || 0;
 
 export async function weekStats(season, week, { live = false } = {}) {
-  return sleeper(`/stats/nfl/regular/${season}/${week}`, { maxAgeMs: live ? 45 * 1000 : WEEK }).catch(() => ({}));
+  return sleeper(`/stats/nfl/regular/${season}/${week}`, { maxAgeMs: live ? liveAge(45 * 1000) : WEEK }).catch(() => ({}));
 }
 export async function seasonStats(season) {
   return sleeper(`/stats/nfl/regular/${season}`, { maxAgeMs: 30 * MIN }).catch(() => ({}));

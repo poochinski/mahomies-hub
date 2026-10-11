@@ -1,14 +1,22 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 14:20 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-11 14:40 (Pacific) · **AI:** Claude
 **Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
-**Last commit:** "Home desk: live slot tags, grouped slot chart, last 4 weeks vs projection"
+**Last commit:** "Game day: 10-second live refresh, instant refresh on return"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **Game-day live speed** (Claude; Jayson: switch between Sleeper and Mahomie's Hub and see the same numbers).
+  - **Before:** server cached Sleeper matchups/stats and ESPN for 45 s, the phone polled `/api/pulse` and the Game Center every 60 s → up to ~105 s behind Sleeper.
+  - **Server** (`server/book/kickoffs.js`): `LIVE_MS = 10 s`, `isGameLive()`, `liveAge(otherwise)`. Every ESPN fetch that shows a game in progress (or a kickoff time that has passed) marks the server live for 2 min; while cached ESPN data shows a game on, ESPN itself refreshes every 15 s. `liveAge()` is used for: `homeCard` → `weekState`, `gameCenter` (kickoffs + matchups for the current week), `weekStats` live week, and `/api/pulse`. Book's own `weekState` calls are unchanged (betting locks don't need it).
+  - `server/sleeper/client.js` `sleeper()` now shares one in-flight request per path (12 phones = 1 Sleeper call per window) and returns the last good data if a refresh fails. `kickoffs()` dedupes in-flight the same way. Worst case on game day ≈ 20 calls/min to Sleeper — far under their 1000/min.
+  - `/api/pulse` returns `poll` (10000 live, 60000 otherwise) and `at`.
+  - **Client:** `pollMs()` reads `PULSE.poll`; a 2.5 s ticker calls `loadPulse()` when it's due (`PULSE_ASK`); Game Center re-arms with `gcTimer()` (setTimeout at `pollMs()`). `backInApp()` on `visibilitychange`/`focus`/`pageshow` refreshes the pulse and an open Game Center right away (throttled 3 s). `hms()`/`paceTxt()` → "Updated 2:31:07 PM · live · every 10 sec".
+  - Test: `test/live-refresh.test.js` (live switch-on, 12 concurrent calls = 1 fetch, stale-on-error). Headless check: 3 pulse calls in 23 s with `poll:10000`.
+  - **Still slower by design:** standings / `/api/hub` stays on its 3-min rebuild (nothing there moves play to play). Points always come from Sleeper's own matchups feed, so they match the Sleeper app; projections can differ slightly because we use our own live-projection math.
 - 2026-10-11 — **Home desk fixes** (Claude; Jayson sent three screenshots: Slot vs slot showed "proj" for live players, the slot chart numbers ran together, Last 4 weeks needed results and vs-projection).
   - **The stale projection.** `packSide` put each starter's *pregame* Sleeper projection in `j` regardless of game state, so Malik Nabers read "22.7 proj 14.1" mid-game. `j` is now: pregame projection when `st==='pre'`; points + projection × (1 − progress) when `st==='in'` (same math as `proj_live`); `null` once final or on bye. Slots also carry `k` (kickoff ISO) for players still waiting. Test added in `test/home-desk.test.js`.
   - **Slot sheet** (`slotSheet`/`slotSide`/`slotTag`/`kickTxt`): under each name, "LIVE · on pace X" (green, row outlined), "5:20 PM · proj X" (weekday added if not today), "Final" or "Bye". Header shows "Updated h:mm". `loadPulse` now redraws `#mhss` in place when the sheet is open, so it refreshes every minute instead of freezing at open time (`PULSE_AT` holds the last pulse time).

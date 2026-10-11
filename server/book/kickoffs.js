@@ -6,7 +6,17 @@ const ESPN = (process.env.ESPN_BASE || 'https://site.api.espn.com/apis/site/v2/s
 const FIX = { WSH: 'WAS', JAC: 'JAX', LA: 'LAR' };
 
 const cache = new Map(); // "season|week" -> { at, data }
-export const clearKickoffCache = () => cache.clear(); // tests only
+export const clearKickoffCache = () => { cache.clear(); liveUntil = 0; }; // tests only
+
+// While any NFL game is being played, everything live (Sleeper matchups, stat lines, ESPN
+// clocks) is refreshed every LIVE_MS so the app stays within seconds of the Sleeper app.
+export const LIVE_MS = 10 * 1000;
+let liveUntil = 0;
+const gameOn = (data) => (data?.games || []).some((g) => g.state === 'in' || (g.state === 'pre' && g.at.getTime() <= Date.now()));
+export function isGameLive() { return Date.now() < liveUntil; }
+/** Cache age for anything that moves during games: LIVE_MS while games are on, otherwise the caller's own. */
+export function liveAge(otherwise) { return isGameLive() ? LIVE_MS : otherwise; }
+const kInflight = new Map();
 
 /**
  * Kickoffs for one NFL week.
@@ -15,7 +25,15 @@ export const clearKickoffCache = () => cache.clear(); // tests only
 export async function kickoffs(season, week, { maxAgeMs = 30 * 60 * 1000 } = {}) {
   const key = `${season}|${week}`;
   const hit = cache.get(key);
+  // During games the clocks matter (live projections use them), so never hold ESPN longer than 15 s.
+  if (hit && gameOn(hit.data)) maxAgeMs = Math.min(maxAgeMs, 15 * 1000);
   if (hit && Date.now() - hit.at < maxAgeMs) return hit.data;
+  if (kInflight.has(key)) return kInflight.get(key);
+  const p = fetchKickoffs(season, week, key, hit);
+  kInflight.set(key, p);
+  try { return await p; } finally { kInflight.delete(key); }
+}
+async function fetchKickoffs(season, week, key, hit) {
   try {
     const res = await fetch(`${ESPN}/scoreboard?seasontype=2&week=${week}&dates=${season}`, {
       headers: { 'user-agent': 'MahomiesHub/1.8' }, signal: AbortSignal.timeout(15000)
@@ -44,6 +62,7 @@ export async function kickoffs(season, week, { maxAgeMs = 30 * 60 * 1000 } = {})
     const times = games.map((g) => g.at.getTime());
     const data = { games, byTeam, gameOf, first: new Date(Math.min(...times)), last: new Date(Math.max(...times)) };
     cache.set(key, { at: Date.now(), data });
+    if (gameOn(data)) liveUntil = Date.now() + 2 * 60 * 1000; // stays "live" briefly between ESPN checks
     return data;
   } catch (err) {
     if (hit) return hit.data; // stale beats nothing

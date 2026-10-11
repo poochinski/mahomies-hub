@@ -70,7 +70,7 @@ function loadHub(){
 setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&!$('#sheet').classList.contains('open')){loadHub();loadWire()}},3*60*1000);
 /* Home "Live" is an NFL game in progress, not "the server answered". Polled once a minute. */
 var PULSE=null,PULSE_AT=0;
-function loadPulse(){
+function loadPulse(){PULSE_ASK=Date.now();
   fetch('/api/pulse',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
     if(!j)return;
     var same=PULSE&&PULSE.live===j.live&&PULSE.next===j.next&&PULSE.phase===j.phase&&PULSE.delayed===j.delayed&&PULSE.week===j.week&&gsig(PULSE)===gsig(j);
@@ -79,7 +79,17 @@ function loadPulse(){
     if(!same&&S.tab==='home'&&!$('#sheet').classList.contains('open'))render();
   }).catch(function(){});
 }
-setInterval(function(){if(LIVE&&document.visibilityState==='visible')loadPulse()},60*1000);
+/* Game day: the server says how often to ask (10 s while NFL games are on, 60 s otherwise).
+   Coming back to this app from Sleeper refreshes everything right away. */
+function paceTxt(){var ms=pollMs();return ms<60000?'live · every '+Math.round(ms/1000)+' sec':'refreshes every minute'}
+function hms(d){return new Date(d).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})}
+function pollMs(){return PULSE&&PULSE.poll?Math.max(5000,PULSE.poll):60*1000}
+var PULSE_ASK=0;
+setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&Date.now()-PULSE_ASK>=pollMs()-500)loadPulse()},2500);
+var LAST_BACK=0;
+function backInApp(){if(!LIVE||document.visibilityState!=='visible')return;var t=Date.now();if(t-LAST_BACK<3000)return;LAST_BACK=t;
+  loadPulse();if(document.getElementById('gc')&&$('#sheet').classList.contains('open'))gcLoad();}
+document.addEventListener('visibilitychange',backInApp);window.addEventListener('focus',backInApp);window.addEventListener('pageshow',backInApp);
 function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
 function gsig(j){return (j&&j.games||[]).map(function(g){var ss=function(k){return (g['slots_'+k]||[]).map(function(p){return p.p}).join(',')};return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b,(g.warn_a||[]).length,(g.warn_b||[]).length,g.empty_a,g.empty_b,ss('a'),ss('b')].join(':')}).join('|')}
 function savedTeam(){return (store('auth')||{}).user_id||store('me')||''}
@@ -175,10 +185,11 @@ function recapOne(s,w){
 /* ---------- LIVE GAME CENTER (v2.1): one matchup, player by player. Fantasy only, no odds. ---------- */
 var GC={id:null,data:null,timer:null};
 function gcOpen(id){GC.id=id;GC.data=null;openSheet(gcHtml());gcLoad();clearInterval(GC.timer);
-  GC.timer=setInterval(function(){if(!document.getElementById('gc')||!$('#sheet').classList.contains('open')){clearInterval(GC.timer);GC.timer=null;return}if(document.visibilityState==='visible')gcLoad()},60*1000)}
+  gcTimer()}
+function gcTimer(){clearTimeout(GC.timer);GC.timer=setTimeout(function(){if(!document.getElementById('gc')||!$('#sheet').classList.contains('open')){GC.timer=null;return}if(document.visibilityState==='visible')gcLoad();gcTimer()},pollMs())}
 function gcLoad(){var m=/^w(\d+)m(\d+)$/.exec(GC.id||'');if(!m)return;var id=GC.id;
   fetch('/api/live/'+m[1]+'/'+m[2],{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(GC.id!==id)return;GC.data=d;var el=document.getElementById('gc');if(el)el.outerHTML=gcHtml()})
-   .catch(function(){var el=document.getElementById('gcErr');if(el)el.textContent='Couldn\'t reach Sleeper just now. Trying again in a minute.'})}
+   .catch(function(){var el=document.getElementById('gcErr');if(el)el.textContent='Couldn\'t reach Sleeper just now. Trying again shortly.'})}
 function gcState(p){if(p.state==='in')return 'live';if(p.state==='post')return 'fin';if(p.state==='bye')return 'bye';return 'pre'}
 /* The photo is its own grid column, not floated inside the name. Floating it inside a
    two-line clamped heading made it break out of the box and land on top of the row above. */
@@ -237,7 +248,7 @@ function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})
   var bench=function(X){var tot=X.bench.reduce(function(s,p){return s+(p.pts||0)},0);return '<details class="gc-bench"><summary>'+esc(team(X.user))+' bench · '+f1(tot)+' pts</summary>'+
     X.bench.map(function(p){return '<div class="gc-br">'+gcCell(p,'a')+gcPts(p,'b',false)+gcStat(p,'bn')+'</div>'}).join('')+'</details>'};
   h+=bench(A)+bench(B);
-  h+='<p class="gc-up" id="gcErr">Updated '+new Date(d.updated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' · refreshes every minute</p>';
+  h+='<p class="gc-up" id="gcErr">Updated '+hms(d.updated)+' · '+paceTxt()+'</p>';
   var au=A.user,bu=B.user;if(au&&bu)h+='<div class="gc-story"><div class="kicker" style="margin:14px 0 8px">The matchup</div>'+matchupStory(au,bu)+'</div>';
   return h+CLOSE+'</div>'}
 /* ---------- PLAYER CARD (v2.2): tap any NFL player's name anywhere ---------- */
@@ -251,7 +262,7 @@ var SH=[];
 function nav(f){if($('#sheet').classList.contains('open')){var b=$('#sheetBody').cloneNode(true);[].forEach.call(b.querySelectorAll('[data-shback]'),function(x){x.remove()});
   SH.push({html:b.innerHTML,top:$('#sheet').scrollTop,gc:document.getElementById('gc')?GC.id:null});if(SH.length>12)SH.shift()}f()}
 function shBack(){var s=SH.pop();if(!s)return;openSheet(s.html);$('#sheet').scrollTop=s.top;var q=document.getElementById('srQ');if(q)q.value=SR.q;
-  if(s.gc){GC.id=s.gc;gcLoad();clearInterval(GC.timer);GC.timer=setInterval(function(){if(!document.getElementById('gc')||!$('#sheet').classList.contains('open')){clearInterval(GC.timer);GC.timer=null;return}if(document.visibilityState==='visible')gcLoad()},60*1000)}}
+  if(s.gc){GC.id=s.gc;gcLoad();gcTimer()}}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl)return;e.stopPropagation();e.preventDefault();nav(function(){plOpen(t.dataset.pl)})},true);
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bsh],[data-shback],b[data-team]');if(!t)return;e.stopPropagation();
   if(t.dataset.team){var u=t.dataset.team;nav(function(){teamOpen(u)});return}
@@ -446,7 +457,7 @@ function slotSide(p,mx,side){
 function slotSheet(){
   var d=myDesk(),h='<div id="mhss"><div class="ph" style="margin:0 0 8px"><div><div class="kicker">This week\'s starters</div><h2>Slot vs slot</h2></div></div>';
   if(!d||!d.mine.length)return h+'<p class="muted">Lineups show up with the live scores. Give it a minute and open this again.</p></div>';
-  if(PULSE_AT)h+='<p class="mh-upd">Updated '+esc(new Date(PULSE_AT).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))+(PULSE&&PULSE.live?' · refreshes every minute':'')+'</p>';
+  if(PULSE_AT)h+='<p class="mh-upd">Updated '+esc(hms(PULSE_AT))+' · '+paceTxt()+'</p>';
   var n=Math.max(d.mine.length,d.his.length),vals=[],i;
   for(i=0;i<n;i++)vals.push(slotPts(d.mine[i]),slotPts(d.his[i]));
   var mx=Math.max.apply(null,vals.concat([1]));

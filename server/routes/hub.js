@@ -2,7 +2,7 @@
 // Rebuilt at most every 3 minutes (past weeks are cached for days inside the Sleeper client).
 import { Router } from 'express';
 import { getHub } from '../hub/cache.js';
-import { kickoffs, describeWeek } from '../book/kickoffs.js';
+import { kickoffs, describeWeek, liveAge, isGameLive, LIVE_MS } from '../book/kickoffs.js';
 import { homeCard, gameCenter, pregameProjections } from '../book/data.js';
 import { playerProfile } from '../player.js';
 import { teamPage, playerSearch, wire } from '../team.js';
@@ -33,10 +33,11 @@ router.get('/pulse', async (_req, res) => {
     const season = String(state.season || '');
     const week = Number(state.week) || 0;
     if (state.season_type !== 'regular' || !week) return res.json({ season, week, ...blank });
-    const k = await kickoffs(season, week, { maxAgeMs: 45 * 1000 });
+    const k = await kickoffs(season, week, { maxAgeMs: liveAge(45 * 1000) });
     let games = [];
     try { games = (await homeCard(week)).games || []; } catch (e) { console.error('home card', e.message); }
-    res.json({ season, week, ...describeWeek(k), games });
+    // poll tells the phone how often to ask again: fast while games are on, slow otherwise.
+    res.json({ season, week, ...describeWeek(k), games, poll: isGameLive() ? LIVE_MS : 60 * 1000, at: new Date().toISOString() });
   } catch (err) {
     console.error('pulse failed', err.message);
     res.json(blank);
