@@ -69,12 +69,13 @@ function loadHub(){
 }
 setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&!$('#sheet').classList.contains('open')){loadHub();loadWire()}},3*60*1000);
 /* Home "Live" is an NFL game in progress, not "the server answered". Polled once a minute. */
-var PULSE=null;
+var PULSE=null,PULSE_AT=0;
 function loadPulse(){
   fetch('/api/pulse',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
     if(!j)return;
     var same=PULSE&&PULSE.live===j.live&&PULSE.next===j.next&&PULSE.phase===j.phase&&PULSE.delayed===j.delayed&&PULSE.week===j.week&&gsig(PULSE)===gsig(j);
-    PULSE=j;
+    PULSE=j;PULSE_AT=Date.now();
+    var ss=document.getElementById('mhss');if(ss&&$('#sheet').classList.contains('open'))ss.outerHTML=slotSheet();
     if(!same&&S.tab==='home'&&!$('#sheet').classList.contains('open'))render();
   }).catch(function(){});
 }
@@ -374,23 +375,38 @@ function slotBlock(desk){
   for(var i=0;i<n;i++){var a=desk.mine[i],b=desk.his[i],lab=(a&&a.s)||(b&&b.s)||'';
     var ah=slotPts(a),bh=slotPts(b);
     var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;return '<i class="'+cls+'" style="'+(pct?'height:'+pct+'%':'height:0;min-height:0')+'"></i>'};
-    var num='<i class="you">'+(ah>0?f1(ah):'')+'</i><i class="him">'+(bh>0?f1(bh):'')+'</i>';
+    var num='<i class="you">'+(ah>0?f1(ah):'·')+'</i><i class="him">'+(bh>0?f1(bh):'·')+'</i>';
     cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><b class="mh-n">'+num+'</b><small>'+esc(lab)+'</small></span>'}
   var sum=slotSummary(desk);
   return '<button type="button" class="mh-slots" data-mh="slots">'+(sum?'<div class="mh-sum">'+sum+'</div>':'')+'<span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
+}
+/* Pregame projections for finished weeks, fetched once per set of weeks. */
+var PH={key:'',weeks:{},busy:false};
+function loadProjHist(weeks){
+  var key=CUR()+'|'+weeks.join(',');if(PH.key===key||PH.busy)return;PH.busy=true;
+  fetch('/api/projhist?weeks='+weeks.join(','),{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
+    PH.busy=false;PH.key=key;PH.weeks=(j&&j.weeks)||{};
+    if(S.tab==='home'&&!$('#sheet').classList.contains('open'))render();
+  }).catch(function(){PH.busy=false;PH.key=key});
 }
 function formBlock(me,opp){
   var end=D.league.last_scored||0;if(end<1)return '';
   var start=Math.max(1,end-3),weeks=[],max=1,w;
   for(w=start;w<=end;w++)weeks.push(w);
+  loadProjHist(weeks);
   weeks.forEach(function(w){var a=P26(w,me),b=P26(w,opp);if(a!=null)max=Math.max(max,a);if(b!=null)max=Math.max(max,b)});
   function row(u,mine){
-    var bars=weeks.map(function(w){var p=P26(w,u),h=p==null?0:Math.max(8,Math.round(p/max*100)),g=p==null?-1:gi(CUR(),w,u);
-      var inner='<i style="height:'+h+'%"></i><span>'+(p==null?'–':Math.round(p))+'</span><small>W'+w+'</small>';
+    var bars=weeks.map(function(w){var p=P26(w,u),h=p==null?0:Math.max(4,Math.round(p/max*44)),g=p==null?-1:gi(CUR(),w,u);
+      var gm=g<0?null:D.games[g],won=gm?gm.win===u:null,their=gm?(won?gm.lp:gm.wp):null;
+      var pj=(PH.weeks[w]||{})[u],dif=(p!=null&&pj!=null)?p-pj:null;
+      var res=gm?'<em class="mh-wl '+(won?'w':'l')+'">'+(won?'W':'L')+'</em>':'<em class="mh-wl">–</em>';
+      var vs=dif==null?'<u class="mh-dif">'+(PH.key?'no proj':'&nbsp;')+'</u>':'<u class="mh-dif '+(dif>=0?'up':'dn')+'">'+(dif>=0?'+':'−')+f1(Math.abs(dif))+' proj</u>';
+      var inner=res+'<i style="height:'+h+'px"></i><span>'+(p==null?'–':f1(p))+'</span>'+(their!=null?'<b class="mh-opp">vs '+f1(their)+'</b>':'')+vs+'<small>W'+w+'</small>';
       return g<0?'<span class="mh-fb">'+inner+'</span>':'<button type="button" class="mh-fb" data-game="'+g+'">'+inner+'</button>'}).join('');
-    return '<div class="mh-frow '+(mine?'you':'him')+'"><span class="mh-who">'+(mine?'You':esc(team(u)))+'</span><span class="mh-fbars">'+bars+'</span></div>';
+    var wins=weeks.filter(function(w){var g=gi(CUR(),w,u);return g>=0&&D.games[g].win===u}).length,played=weeks.filter(function(w){return gi(CUR(),w,u)>=0}).length;
+    return '<div class="mh-frow '+(mine?'you':'him')+'"><span class="mh-who">'+(mine?'You':esc(team(u)))+(played?' <small>'+wins+'–'+(played-wins)+'</small>':'')+'</span><span class="mh-fbars">'+bars+'</span></div>';
   }
-  return '<div class="mh-form"><div class="yg-k">Last '+(weeks.length>1?weeks.length+' weeks':'week')+'</div>'+row(me,true)+row(opp,false)+'</div>';
+  return '<div class="mh-form"><div class="yg-k">Last '+(weeks.length>1?weeks.length+' weeks':'week')+'</div>'+row(me,true)+row(opp,false)+'<p class="mh-fkey">Score, who they played, and how it landed against the pregame projection. Tap a week for the game.</p></div>';
 }
 function seriesBlock(me,opp){
   var r=D.h2h&&D.h2h[me+'|'+opp];
@@ -409,22 +425,35 @@ function seriesSheet(me,opp){
     return ix<0?'<div class="row" style="grid-template-columns:52px minmax(0,1fr) auto">'+body+'</div>':'<button type="button" class="row" data-game="'+ix+'" style="grid-template-columns:52px minmax(0,1fr) auto 10px">'+body+CHEV+'</button>'}).join('');
   return h+'</div>';
 }
+function kickTxt(iso){
+  var d=new Date(iso);if(isNaN(d))return '';
+  var t=d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  return d.toDateString()===new Date().toDateString()?t:d.toLocaleDateString([],{weekday:'short'})+' '+t;
+}
+function slotTag(p){
+  if(p.st==='in')return '<em class="mh-tag live">LIVE'+(p.j!=null?' · on pace '+f1(p.j):'')+'</em>';
+  if(p.st==='pre')return '<em class="mh-tag">'+(p.k?esc(kickTxt(p.k)):'Not started')+(p.j!=null?' · proj '+f1(p.j):'')+'</em>';
+  if(p.st==='post')return '<em class="mh-tag">Final</em>';
+  if(p.st==='bye')return '<em class="mh-tag">Bye</em>';
+  return '';
+}
 function slotSide(p,mx,side){
-  if(!p||p.e)return '<div class="mh-line '+side+' empty"><span>Empty</span><b></b><i style="width:0"></i></div>';
-  var v=slotPts(p),pre=p.j!=null&&p.st!=='post'&&p.st!=='bye',w=v>0&&mx>0?Math.max(4,Math.round(v/mx*100)):0;
+  if(!p||p.e)return '<div class="mh-line '+side+' empty"><span class="mh-nm"><span>Empty</span></span><b></b><i style="width:0"></i></div>';
+  var v=slotPts(p),w=v>0&&mx>0?Math.max(4,Math.round(v/mx*100)):0;
   var name=p.id?'<span class="plk" data-pl="'+esc(p.id)+'">'+esc(p.n)+'</span>':'<span>'+esc(p.n||'—')+'</span>';
-  return '<div class="mh-line '+side+'">'+name+'<b class="num">'+f1(v)+(pre?'<small>proj '+f1(p.j)+'</small>':'')+'</b><i style="width:'+w+'%"></i></div>';
+  return '<div class="mh-line '+side+(p.st==='in'?' on':'')+'"><span class="mh-nm">'+name+slotTag(p)+'</span><b class="num">'+f1(v)+'</b><i style="width:'+w+'%"></i></div>';
 }
 function slotSheet(){
-  var d=myDesk(),h='<div class="ph" style="margin:0 0 8px"><div><div class="kicker">This week\'s starters</div><h2>Slot vs slot</h2></div></div>';
-  if(!d||!d.mine.length)return h+'<p class="muted">Lineups show up with the live scores. Give it a minute and open this again.</p>';
+  var d=myDesk(),h='<div id="mhss"><div class="ph" style="margin:0 0 8px"><div><div class="kicker">This week\'s starters</div><h2>Slot vs slot</h2></div></div>';
+  if(!d||!d.mine.length)return h+'<p class="muted">Lineups show up with the live scores. Give it a minute and open this again.</p></div>';
+  if(PULSE_AT)h+='<p class="mh-upd">Updated '+esc(new Date(PULSE_AT).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))+(PULSE&&PULSE.live?' · refreshes every minute':'')+'</p>';
   var n=Math.max(d.mine.length,d.his.length),vals=[],i;
   for(i=0;i<n;i++)vals.push(slotPts(d.mine[i]),slotPts(d.his[i]));
   var mx=Math.max.apply(null,vals.concat([1]));
   h+='<p class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(d.opp))+'</p>';
   for(i=0;i<n;i++){var a=d.mine[i],b=d.his[i];
     h+='<div class="mh-pair"><div class="mh-slab">'+esc((a&&a.s)||(b&&b.s)||'')+'</div>'+slotSide(a,mx,'you')+slotSide(b,mx,'him')+'</div>'}
-  return h+'<p class="gc-key">Bars are points so far. The small number is the projection for anyone who hasn\'t finished.</p>';
+  return h+'<p class="gc-key">Bars are points so far. LIVE players show where they\'re on pace to finish; anyone who hasn\'t kicked off shows his kickoff and projection.</p></div>';
 }
 function seedSheet(){
   var d=myDesk();if(!d)return '<p class="muted">Pick your team first.</p>';

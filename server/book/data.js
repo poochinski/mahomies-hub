@@ -91,11 +91,22 @@ export function packSide(R) {
     else if (/^(out|ir|doubtful|sus|pup|na|dnr)/i.test(p.inj || '')) warn.push({ name: p.name, pos: p.pos, why: p.inj });
   }
   const empty = ((R && R.out) || []).filter((x) => x === 'empty').length;
-  const slots = players.map((p) => ({
-    s: slotShort(p.slot), n: p.empty ? '' : (p.name || ''), id: p.empty ? '' : (p.pid || ''),
-    p: Math.round((p.pts || 0) * 10) / 10, j: p.proj == null ? null : Math.round(Number(p.proj) * 10) / 10,
-    e: p.empty ? 1 : 0, st: p.state || ''
-  }));
+  // j is what each starter is headed for right now: his pregame projection before kickoff,
+  // points so far plus the unplayed part of his projection while he's live (Sleeper's way),
+  // and nothing once his game is over. k is the kickoff for anyone still waiting.
+  const r1 = (x) => Math.round(Number(x) * 10) / 10;
+  const slots = players.map((p) => {
+    let j = null;
+    if (!p.empty && p.proj != null) {
+      if (p.state === 'pre') j = r1(p.proj);
+      else if (p.state === 'in') j = r1((p.pts || 0) + Number(p.proj) * Math.max(0, 1 - (Number(p.progress) || 0)));
+    }
+    return {
+      s: slotShort(p.slot), n: p.empty ? '' : (p.name || ''), id: p.empty ? '' : (p.pid || ''),
+      p: r1(p.pts || 0), j, e: p.empty ? 1 : 0, st: p.state || '',
+      k: p.state === 'pre' && p.kick ? new Date(p.kick).toISOString() : null
+    };
+  });
   return {
     pts: Math.round(((R && R.pts) || 0) * 100) / 100,
     proj: proj == null ? null : proj,
@@ -121,6 +132,27 @@ export async function homeCard(week) {
     };
   });
   return { week: w, games };
+}
+
+// Each team's pregame projection for finished weeks of this season: the sum of Sleeper's
+// projections for the starters it actually played, scored our way. Past weeks never change,
+// so each one is worked out once per server start.
+const projHist = new Map();
+export async function pregameProjections(weeks) {
+  const L = await league();
+  const out = {};
+  for (const w of weeks) {
+    if (!(w >= 1) || w >= L.P || (L.nflWeek && w >= L.nflWeek)) continue;
+    const key = `${L.season}|${w}`;
+    if (!projHist.has(key)) {
+      const ws = await weekState(L, w, 7 * 24 * 3600 * 1000);
+      const row = {};
+      for (const [rid, x] of Object.entries(ws.rosters)) if (x.proj_pre > 0 && L.owner[rid]) row[L.owner[rid]] = x.proj_pre;
+      projHist.set(key, row);
+    }
+    out[w] = projHist.get(key);
+  }
+  return out;
 }
 
 // Live or final points for every roster in a week.

@@ -24,3 +24,19 @@ test('packSide keeps slot order and does not warn on an empty slot', () => {
   assert.equal(s.started, false);
   assert.equal(s.proj, 100);
 });
+
+test('packSide gives a live player his on-pace finish, not the pregame projection', () => {
+  const R = {
+    pts: 30, proj_pre: 100, proj_live: 110, out: [],
+    players: [
+      { slot: 'WR', empty: false, name: 'Malik Nabers', pid: '3', pts: 22.7, proj: 14.1, state: 'in', progress: 0.5, pos: 'WR', nfl: 'NYG' },
+      { slot: 'WR', empty: false, name: 'Done Guy', pid: '4', pts: 2.6, proj: 11, state: 'post', progress: 1, pos: 'WR', nfl: 'GB' },
+      { slot: 'TE', empty: false, name: 'Late Guy', pid: '5', pts: 0, proj: 18.1, state: 'pre', progress: 0, kick: new Date('2026-10-11T20:25:00Z'), pos: 'TE', nfl: 'ARI' }
+    ]
+  };
+  const s = packSide(R);
+  assert.equal(s.slots[0].j, 29.8); // 22.7 + 14.1 * 0.5
+  assert.equal(s.slots[1].j, null);
+  assert.equal(s.slots[2].j, 18.1);
+  assert.equal(s.slots[2].k, '2026-10-11T20:25:00.000Z');
+});

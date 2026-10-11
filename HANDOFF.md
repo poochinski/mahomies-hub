@@ -1,14 +1,20 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 11:40 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-11 14:20 (Pacific) · **AI:** Claude
 **Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
-**Last commit:** "Game Center: show what each player actually did"
+**Last commit:** "Home desk: live slot tags, grouped slot chart, last 4 weeks vs projection"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **Home desk fixes** (Claude; Jayson sent three screenshots: Slot vs slot showed "proj" for live players, the slot chart numbers ran together, Last 4 weeks needed results and vs-projection).
+  - **The stale projection.** `packSide` put each starter's *pregame* Sleeper projection in `j` regardless of game state, so Malik Nabers read "22.7 proj 14.1" mid-game. `j` is now: pregame projection when `st==='pre'`; points + projection × (1 − progress) when `st==='in'` (same math as `proj_live`); `null` once final or on bye. Slots also carry `k` (kickoff ISO) for players still waiting. Test added in `test/home-desk.test.js`.
+  - **Slot sheet** (`slotSheet`/`slotSide`/`slotTag`/`kickTxt`): under each name, "LIVE · on pace X" (green, row outlined), "5:20 PM · proj X" (weekday added if not today), "Final" or "Bye". Header shows "Updated h:mm". `loadPulse` now redraws `#mhss` in place when the sheet is open, so it refreshes every minute instead of freezing at open time (`PULSE_AT` holds the last pulse time).
+  - **Slot chart** (`slotBlock` CSS): each `.mh-col` is its own tile (background + border), gap 5px, chart 104px tall; the two numbers are stacked (you over him) instead of side by side; a dot marks a zero.
+  - **Last 4 weeks** (`formBlock`): each tile shows W/L, score (1 decimal), "vs" the opponent's score, and "+/−X proj" against that week's pregame projection; each row gets the 4-week record. Bars are sized in px now. Projections come from new `GET /api/projhist?weeks=` → `pregameProjections()` in `server/book/data.js` (sum of Sleeper projections for the starters actually played, our scoring; cached per week for the life of the server). Client cache `PH` + `loadProjHist`.
+  - Checked at 390px with sample live data (headless browser): no JS errors, no sideways scroll. **Real projection numbers for past weeks are only verified after deploy** — Sleeper's projections endpoint for an old week should still return the pregame numbers; if a week shows "no proj", that's why.
 - 2026-10-11 — **Game Center: photos fixed, scoreboard filled out** (Claude; Jayson circled the broken headshots and said the header "isn't displaying useful information like the Sleeper app does").
   - **The photo bug.** `.gc-p b` was `display:-webkit-box` with `-webkit-line-clamp:2`, and the headshot was an inline `.plpic` inside it — `float:right` on the B side. A float inside a line-clamped box escapes it, so the photo landed on top of the row above. The photo is now its own grid column: `.gc-p` is `22px | 1fr`, mirrored to `1fr | 22px` on the B side, with the name, position line and game clock in a `.gc-tx` stack. `data-pl` moved from the `<b>` to the wrapping div, so the photo is tappable too.
   - **Second bug found while fixing it:** that clamp never worked — the rule set `overflow:visible`, so `-webkit-line-clamp` was a no-op and a long name just overflowed into the line below (Jaxon Smith-Njigba). Dropped the clamp entirely; names wrap to as many lines as they need.

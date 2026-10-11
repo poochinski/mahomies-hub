@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import { getHub } from '../hub/cache.js';
 import { kickoffs, describeWeek } from '../book/kickoffs.js';
-import { homeCard, gameCenter } from '../book/data.js';
+import { homeCard, gameCenter, pregameProjections } from '../book/data.js';
 import { playerProfile } from '../player.js';
 import { teamPage, playerSearch, wire } from '../team.js';
 import { draftIndex, draftSeason } from '../draft.js';
@@ -41,6 +41,13 @@ router.get('/pulse', async (_req, res) => {
     console.error('pulse failed', err.message);
     res.json(blank);
   }
+});
+
+// GET /api/projhist?weeks=2,3,4,5 — each team's pregame projection for finished weeks (Home "Last 4 weeks").
+router.get('/projhist', async (req, res) => {
+  const weeks = String(req.query.weeks || '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 6);
+  try { res.json({ weeks: await pregameProjections(weeks) }); }
+  catch (err) { console.error('projhist failed', err.message); res.json({ weeks: {} }); }
 });
 
 // GET /api/live/:week/:mid — Live Game Center for one matchup (player by player). Polled about once a minute.
