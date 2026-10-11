@@ -22,15 +22,16 @@ const proto = path.join(root, 'prototype');
 // v2.0 source of truth: prototype/v2.0/ (app.html + app.css + app.js, edited directly, no build step).
 // snapshot.json is the bundled Sleeper data used until /api/hub answers; it's put into app.html here.
 const V2 = path.join(proto, 'v2.0');
-let appHtml = null;
-function appPage() {
-  if (!appHtml || process.env.NODE_ENV !== 'production') {
-    const html = fs.readFileSync(path.join(V2, 'app.html'), 'utf8');
-    const data = fs.readFileSync(path.join(V2, 'snapshot.json'), 'utf8').replace(/<\//g, '<\\/');
-    appHtml = html.replace('__DATA__', () => data);
+const pageCache = new Map();
+function pageFrom(dir) {
+  if (!pageCache.has(dir) || process.env.NODE_ENV !== 'production') {
+    const html = fs.readFileSync(path.join(dir, 'app.html'), 'utf8');
+    const data = fs.readFileSync(path.join(dir, 'snapshot.json'), 'utf8').replace(/<\//g, '<\\/');
+    pageCache.set(dir, html.replace('__DATA__', () => data));
   }
-  return appHtml;
+  return pageCache.get(dir);
 }
+const appPage = () => pageFrom(V2);
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -82,6 +83,10 @@ app.use(express.static(path.join(root, 'public'), { index: false }));
 
 // Older builds, kept in case we need to go back.
 app.use('/v2', express.static(V2, { index: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
+// v2.3 frozen before the v2.4 look, so the old design can be compared or restored.
+const V23 = path.join(proto, 'v2.3');
+app.get('/test/v2.3', (_req, res) => res.set('Cache-Control', 'no-store').type('html').send(pageFrom(V23)));
+app.use('/test/v2.3', express.static(V23, { index: false, redirect: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
 app.get('/test/v1.8', (_req, res) => res.sendFile(path.join(proto, 'v1.8', 'night.html')));
 app.get('/test/v1.7', (_req, res) => res.sendFile(path.join(proto, 'v1.7', 'night.html')));
 app.get('/test/v1.6', (_req, res) => res.sendFile(path.join(proto, 'v1.6', 'night.html')));
