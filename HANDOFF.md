@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 22:45 (Pacific) · **AI:** Claude
-**Current phase:** Draft rebuilt in the League tab (keeper fix + full board + habits). Next from the fantasyhoff sweep: a free weekly pick'em, then Trade Court and Matchup Hype.
-**Last commit:** "Draft in the League tab: keeper fix, full board, habits"
+**Last updated:** 2026-10-10 23:30 (Pacific) · **AI:** Claude
+**Current phase:** Front Office records shipped (v2.5) — 20 new boards in the Records tab about moves, not points. Next two record-book pushes are proposed but not started (see "Next steps"). Then from the fantasyhoff sweep: a free weekly pick'em, Trade Court, Matchup Hype.
+**Last commit:** "Front office records: 20 boards about the moves, not the points"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,15 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **Front Office records, v2.5** (Claude; Jayson: "build front office first", then "change some of the names of the record so we're not copying them completely unless it's a generic record").
+  - `server/records/frontoffice.js` → `GET /api/records/frontoffice`, cached 15 min. Nothing new is fetched: it reuses `leagueIndex()` (every completed transaction in league history) and `draftSeason()` (every graded draft).
+  - **Twenty boards, each with a top-10 leaderboard** — Activity: Most trades, Most roster moves. Trades: Best trader, The robbery, The one he regrets, Trade buddies. Waivers & FAAB: Best on the wire, Best free agent grab, Dropped too soon, Best money spent, Worst money spent, Biggest FAAB bid, Points per dollar. Draft: Steal of the draft, Draft day bust, Best keeper call, Best drafter, Best draft night, Worst draft night, Position specialist.
+  - **Names are ours.** fantasyhoff's catalog was the starting point for *what* to measure, not what to call it. Only the three genuinely generic ones keep a plain name (Most trades, Most roster moves, Biggest FAAB bid). Rules written into BIBLE §8.
+  - **The math** (all of it in BIBLE §8 "Front Office records"): a move is worth the points it put in your **starting lineup**; a player stops counting once dropped or traded away; dropping somebody costs you the points he goes on to start for another team that season; a trade side is measured against what the other side got. Each board carries its own plain-English "How this one is worked out" note from the server, so the explanation can never drift from the code.
+  - A player's tenure on a roster is bounded by the next drop of that player by that roster, so a guy added, dropped and re-added isn't double counted (`until()` in `readSeason`).
+  - Client: `FORECS` (static titles so the picker opens instantly), `FO` + `foLoad()` (lazy, first time a Front Office board is picked), `foRecords()`, `foWho()`, `foSub()` (server leaves `{{user id}}` in a sub for the client to turn into a team name), `isFO()`. `records()` and `shareRecord()` branch on the `fo:` key prefix. New CSS prefix `fo-`. New How-it-works topic `frontoffice`.
+  - Footer version bumped to **v2.5** (`server/hub/build.js`).
+  - Tested on the local mock: all 20 boards render with zero JS errors at 390px, no horizontal scroll, and `npm test` is still green. **The mock has almost no trade/waiver history, so the numbers themselves are only verified against real Sleeper data after deploy** — see "In progress".
 - 2026-10-10 — **Draft rebuilt, moved to League** (Claude; Jayson picked items 1–3 off the fantasyhoff sweep and asked for the draft to live in the League tab).
   - **The keeper bug is fixed.** Sleeper's `is_keeper` was never read, so kept players were being graded as if someone drafted them at that slot (22 of 180 picks in 2025). They now show on the board marked "kept" and sit out of grades, superlatives and hit/miss counts.
   - `server/draft.js`: `draftSeason(season)` (board, per-manager grades, superlatives) and `draftIndex()` (seasons, loyalty, position habits, market, all-time drafter table). Routes in `server/routes/hub.js`. The old `/api/draft?season=` in `server/routes/lab.js` is deleted, along with `draftHtml` on the client.
@@ -89,13 +98,16 @@ Where things stand (Grok, 2026-10-10):
 - 2026-10-09 — Sportsbook batch 1, live odds, player props, tickets, commish Bucks, Gridiron Gold slot (secret: Book tab, 2nd footer dot, the pink one). Payback 92.51%. See CHANGELOG.md for the rest of Oct 9.
 
 ## In progress (not finished)
+- **Front Office numbers need one real-data pass.** The engine is verified for shape and the page for layout, but the mock Sleeper has almost no trade/waiver history. On the live app, open Records › Change ▾ › Front office and sanity-check: The robbery and The one he regrets should be two sides of the same trade with mirrored numbers; Best on the wire totals should line up with what League Wire shows for this season; Steal of the draft / Draft day bust / Best draft night should agree with League › Draft for the same season.
 - **Yahoo import: PARKED (Jayson, 2026-10-10).** Part 1 is live at /yahoo. Login works, but Yahoo still refuses the find-leagues call ("not authorized"), even after he checked the app permissions and the login started asking for `scope=fspt-r`. When we pick it up again: get a screenshot of the app's API Permissions on developer.yahoo.com, check `/api/yahoo/status` (connected_at/scope show whether a fresh login happened), and try a new Yahoo app with only Fantasy Sports → Read. Fallback: Jayson screenshots Yahoo's History pages (standings + champions).
 
 ## Next steps (in order)
 0. **More "clickable" passes** (Jayson wants everything to open relevant info; expand as the app grows): award rows → the game/week that won it; standings stats (PF, all-play, luck) → week-by-week breakdown; power-ranking score → the four ingredients; H2H cell → rivalry (exists); recap names → games; Last-week top player tile → player card; playoff odds row → that team's remaining schedule.
 1. ~~2.1 Live Game Center~~ done. Ideas for later: highlight players currently on the field, show big plays, push alerts.
 2. ~~Sportsbook batch 2~~ done (v2.3). Check the Week 6 post **Tue Oct 13, 6 AM PT** (lines + Specials); first settlement **Wed Oct 21, 3 AM PT**.
-3. Jayson: confirm Gridiron Gold sound on a real iPhone.
+3. **Record book push 2 (proposed, not started):** restructure the whole record book the way Front Office is built — categories and sections, plus timeframe / manager / stage / measure filters — and wire up the ~70 career, season, matchup and streak boards the hub already computes but doesn't surface.
+4. **Record book push 3 (proposed, not started):** add Sleeper's bulk weekly stats feed (`/v1/stats/nfl/regular/{season}/{week}`, ~260 players a call, 72 calls covers 2023–2026) for raw-stat boards — passing/rushing/receiving yards, TDs, receptions — about 66 more boards plus player records.
+5. Jayson: confirm Gridiron Gold sound on a real iPhone.
 
 ## Decisions made (and why)
 - Fantasy / history first. Betting numbers (win %, lines, odds, spreads) only inside the Book tab. (Jayson, 2026-10-09)

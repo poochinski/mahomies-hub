@@ -931,3 +931,14 @@ td.tm .who .tx>span{font-size:10.5px}
   font:700 9.5px var(--mono);color:var(--faint)}
 .dr-at{grid-template-columns:24px minmax(0,1fr) auto}
 .dr-g .who .tx>span{font-size:11.5px}
+
+/* ---------- FRONT OFFICE records (v2.5) ---------- */
+.fo-div{margin:16px 0 2px;padding-top:12px;border-top:1px solid var(--line)}
+.fo-div>b{display:block;font:600 15px var(--display);color:var(--pink);letter-spacing:.01em}
+.fo-div>span{display:block;font:12px var(--body);color:var(--muted);margin-top:2px;line-height:1.4}
+.rec-hero .big.fo-neg{color:var(--loss);text-shadow:0 0 24px rgba(255,95,110,.22)}
+.fo-pair .av+.av{margin-left:-12px;box-shadow:0 0 0 2px var(--panel)}
+.fo-pair .tx{margin-left:3px}
+.fo-hold{display:flex;align-items:center;gap:9px;margin-top:10px}
+.fo-hold .tx>b{font-size:14px;white-space:normal}
+.rec-list .fo-pair .tx>b{font-size:13px;white-space:normal;line-height:1.3}

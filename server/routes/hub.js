@@ -7,6 +7,7 @@ import { homeCard, gameCenter } from '../book/data.js';
 import { playerProfile } from '../player.js';
 import { teamPage, playerSearch, wire } from '../team.js';
 import { draftIndex, draftSeason } from '../draft.js';
+import { frontOffice } from '../records/frontoffice.js';
 import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
@@ -83,6 +84,12 @@ router.get('/draft', async (_req, res) => {
 router.get('/draft/:season', async (req, res) => {
   try { res.json(await draftSeason(req.params.season)); }
   catch (err) { if (err.status !== 404) console.error('draft failed', err.message); res.status(err.status || 500).json({ error: err.message }); }
+});
+
+// GET /api/records/frontoffice — the twenty Front Office boards (trades, wire, draft).
+router.get('/records/frontoffice', async (_req, res) => {
+  try { res.json(await frontOffice()); }
+  catch (err) { console.error('front office failed', err.message); res.status(500).json({ error: err.message }); }
 });
 
 export default router;

@@ -701,6 +701,7 @@ function recGame(k,x){var t=recType(k);
   if(t==='team'||t==='player')return gi(x.s,x.w,x.uid);
   if(t==='game')return gi(x.s,x.w,x.win);return -1}
 function records(){
+  if(isFO(S.rec))return foRecords();
   var k=S.rec,list=recList(k),t=recType(k),name=RECS.find(function(r){return r[0]===k})[1];
   var h='<button type="button" class="picker" data-recpick="1"><span><small>Record</small><b>'+name+'</b></span><i>Change ▾</i></button>';
   if(t!=='season'&&t!=='streak')h+='<div class="seg">'+[['all','All games'],['reg','Regular'],['post','Playoffs']].map(function(x){return '<button type="button" class="'+(S.rf===x[0]?'on':'')+'" data-rf="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
@@ -718,7 +719,57 @@ function records(){
 }
 function recPickSheet(){
   var groups=[['Team scores',['high','low','seasonhi','seasonlo']],['Games',['blowout','close','hiloss','lowin']],['Players & streaks',['player','wstreak','lstreak']]];
-  return '<div class="ph" style="margin:0"><div><div class="kicker">Record book</div><h2>Pick a record</h2></div></div>'+groups.map(function(g){return '<div class="kicker" style="margin-top:4px">'+g[0]+'</div><div class="pick-grid">'+g[1].map(function(k){var r=RECS.find(function(x){return x[0]===k});return '<button type="button" class="pk'+(k===S.rec?' on':'')+'" data-rec="'+k+'">'+r[1]+'</button>'}).join('')+'</div>'}).join('');
+  var pk=function(k,label){return '<button type="button" class="pk'+(k===S.rec?' on':'')+'" data-rec="'+k+'">'+esc(label)+'</button>'};
+  var h='<div class="ph" style="margin:0"><div><div class="kicker">Record book</div><h2>Pick a record</h2></div></div>'+
+   groups.map(function(g){return '<div class="kicker" style="margin-top:4px">'+g[0]+'</div><div class="pick-grid">'+g[1].map(function(k){return pk(k,RECS.find(function(x){return x[0]===k})[1])}).join('')+'</div>'}).join('');
+  h+='<div class="fo-div"><b>Front office</b><span>How you built the team, not how it scored</span></div>'+
+   FORECS.map(function(g){return '<div class="kicker" style="margin-top:4px">'+esc(g[0])+'</div><div class="pick-grid">'+g[1].map(function(x){return pk(x[0],x[1])}).join('')+'</div>'}).join('');
+  return h;
+}
+
+/* ---------- FRONT OFFICE records (v2.5): the boards about moves, not points ---------- */
+/* Titles live here so the picker opens instantly; the numbers come from /api/records/frontoffice. */
+var FORECS=[
+ ['Activity',[['fo:trades','Most trades'],['fo:moves','Most roster moves']]],
+ ['Trades',[['fo:career','Best trader'],['fo:heist','The robbery'],['fo:regret','The one he regrets'],['fo:buddies','Trade buddies']]],
+ ['Waivers & FAAB',[['fo:wire','Best on the wire'],['fo:grab','Best free agent grab'],['fo:gotaway','Dropped too soon'],['fo:spent','Best money spent'],['fo:wasted','Worst money spent'],['fo:bid','Biggest FAAB bid'],['fo:perdollar','Points per dollar']]],
+ ['Draft',[['fo:steal','Steal of the draft'],['fo:bust','Draft day bust'],['fo:keeper','Best keeper call'],['fo:drafter','Best drafter'],['fo:bestnight','Best draft night'],['fo:worstnight','Worst draft night'],['fo:specialist','Position specialist']]]];
+var FO={d:null,busy:false};
+function isFO(k){return String(k).indexOf('fo:')===0}
+function foTitle(k){var t=null;FORECS.forEach(function(g){g[1].forEach(function(x){if(x[0]===k)t=x[1]})});return t||'Front office'}
+function foLoad(){
+  if(!LIVE||FO.busy||FO.d)return;FO.busy=true;
+  fetch('/api/records/frontoffice',{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){
+    FO.busy=false;if(d&&d.boards)FO.d=d;
+    if(S.tab==='records'&&!$('#sheet').classList.contains('open'))render();
+  }).catch(function(){FO.busy=false;var e=document.getElementById('foErr');if(e)e.textContent="Couldn't read the move history from Sleeper. Try again in a minute."});
+}
+/* Subs can name a second manager; the server leaves a {{user id}} for us to fill in. */
+function foSub(s){return String(s==null?'':s).replace(/\{\{([^}]+)\}\}/g,function(_,u){return team(u)})}
+function foWho(x,sz,tap){var sub=foSub(x.sub);
+  if(x.uid2)return '<span class="who fo-pair">'+av(x.uid,sz)+av(x.uid2,sz)+'<span class="tx"><b>'+esc(team(x.uid))+' &amp; '+esc(team(x.uid2))+'</b><span>'+esc(sub)+'</span></span></span>';
+  return tap?who(x.uid,sub,sz):whoS(x.uid,sub,sz)}
+function foRecords(){
+  var k=S.rec;
+  var h='<button type="button" class="picker" data-recpick="1"><span><small>Front office</small><b>'+esc(foTitle(k))+'</b></span><i>Change ▾</i></button>';
+  if(!LIVE)return h+'<section class="panel"><p class="lab-off">Turns on when the app is live on Railway</p></section>'+foot();
+  if(!FO.d){foLoad();return h+'<section class="panel"><p class="muted" id="foErr">Reading every trade, waiver claim and draft pick we have on Sleeper…</p></section>'+foot()}
+  var b=FO.d.boards[k];
+  if(!b)return h+'<section class="panel"><p class="muted">That board isn\'t in this season\'s data.</p></section>'+foot();
+  if(!b.rows.length)return h+'<section class="panel"><div class="ph" style="margin:0"><div><div class="kicker">'+esc(b.kicker)+'</div><h2>'+esc(b.title)+'</h2></div></div><p class="muted">Nothing qualifies yet — this one needs more league history.</p><p class="muted" style="font-size:11.5px;line-height:1.5;margin-top:8px">'+esc(b.note)+'</p></section>'+foot();
+  var r0=b.rows[0];
+  h+='<section class="hero rec-hero"><div class="eyebrow">'+esc(b.kicker)+'</div><div class="big'+(String(r0.vfmt).charAt(0)==='-'?' fo-neg':'')+'">'+esc(r0.vfmt)+'</div><div class="rec-unit">'+esc(b.unit)+'</div>'+
+   (r0.uid2?'<div class="fo-hold">'+foWho(r0,34)+'</div>':'<button class="holder who" type="button" data-mgr="'+r0.uid+'">'+av(r0.uid,36)+'<span class="tx"><b>'+esc(team(r0.uid))+'</b><span>'+esc(foSub(r0.sub))+'</span></span></button>')+
+   '<button type="button" class="share-btn" data-share-rec="1">Share</button>'+
+   (r0.pid?'<button type="button" class="share-btn" data-pl="'+esc(r0.pid)+'">Player card</button>':'')+info('frontoffice')+'</section>';
+  h+='<section class="panel tight rec-list"><div class="rows">'+
+   b.rows.slice(1,S.recMore?10:5).map(function(x,j){
+     var inner='<span class="rk">'+(j+2)+'</span>'+foWho(x,28,!x.pid)+'<span class="aw-vb"><span class="val">'+esc(x.vfmt)+'</span><small>'+esc(b.unit)+'</small></span>';
+     if(x.pid)return '<button type="button" class="row" data-pl="'+esc(x.pid)+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>';
+     return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
+   '</div>'+(b.rows.length>5?'<button type="button" class="more" data-more="rec">'+(S.recMore?'Show top 5':'Show top '+b.rows.length)+'</button>':'')+'</section>';
+  h+='<section class="panel tight"><div class="kicker">How this one is worked out</div><p class="muted" style="font-size:12px;line-height:1.55;margin:6px 0 0">'+esc(b.note)+'</p></section>';
+  return h+foot();
 }
 
 /* ---------- SPORTSBOOK (live, v1.8): talks to /api/book ---------- */
@@ -1160,6 +1211,14 @@ var EXPLAIN={
   ['Still on the board','For a pick that fell short, this is the best player taken later in the same draft, how many picks later he went, and who took him.'],
   ['Grades','Managers are ranked on total value for that draft and given a letter from A down to F. Only live picks count, so somebody with a lot of keepers is graded on the few picks he actually made.'],
   ['The small print','Points are what a player scored while on a roster in this league, using our scoring. A player dropped in October stops adding points, which is part of why the pick didn\'t work out.']]},
+ frontoffice:{t:'Front office records',b:[
+  ['What this half of the record book is for','The rest of the record book is about points — who scored the most, who got blown out. Front office is about the moves: trades, waiver claims, free agent grabs and draft picks. It grades how you built the team, not how it happened to score.'],
+  ['The one rule behind all of it','A move is worth the points it put in your STARTING lineup. Points a guy piles up on your bench never won you a game, so they don\'t count here. Once you drop or trade a player away, he stops counting for you.'],
+  ['Letting somebody go costs you','Drop a player and the points he goes on to start for another team that same season count against you. That\'s what "Dropped too soon" and "Best on the wire" are built on.'],
+  ['Trades','Each side of a trade is worth the points its new players started, measured against what the other side got out of it. One side\'s gain is the other\'s loss, so The robbery and The one he regrets are usually two ends of the same deal.'],
+  ['FAAB','FAAB is the in-league waiver budget on Sleeper — nothing to do with Mahomie Bucks. Best money spent and Worst money spent only look at players somebody actually bid on.'],
+  ['Draft','Same grading as the Draft section in the League tab: a pick is worth its points minus what that slot was worth. Keepers aren\'t graded that way, so Best keeper call is simply the points the kept player scored that year.'],
+  ['How far back it goes','Every season we have on Sleeper. The Yahoo years aren\'t in here yet.']]},
  book:{t:'How the odds work',b:[
   ['Pregame lines','Posted Tuesday 6 AM. Each team\'s projection is 60% Sleeper\'s projection for the lineup as it\'s set that morning and 40% league history (last 3 weeks, season average, last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
   ['Live odds','Once the first player in a matchup kicks off, the odds go live and update about every minute: projected final = points already scored + Sleeper\'s projection for every starter still to play (the same projected totals Sleeper shows). The "proj" under each team is that live number. The further ahead a team gets, the worse its price.'],
@@ -1171,7 +1230,7 @@ var EXPLAIN={
   ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],
   ['Settling','Wednesday 3 AM, after Sleeper\'s stat corrections. Exact ties on a spread or total push (stake back).']]}
 };
-var EXPLAIN_ORDER=['data','standings','median','power','odds','awards','records','alltime','h2h','preview','book','bench','trades','draft'];
+var EXPLAIN_ORDER=['data','standings','median','power','odds','awards','records','frontoffice','alltime','h2h','preview','book','bench','trades','draft'];
 function info(k){return '<button type="button" class="info" data-info="'+k+'" aria-label="How '+esc(EXPLAIN[k].t)+' works">ⓘ How it works</button>'}
 function explainSheet(k){var x=EXPLAIN[k];if(!x)return '';
   return '<div class="ph" style="margin:0"><div><div class="kicker">How it works</div><h2>'+esc(x.t)+'</h2></div></div><div class="rows">'+
@@ -1901,7 +1960,10 @@ function showShare(o){
   var go=function(){var url=shareCard(o);openSheet('<div class="ph" style="margin:0"><div><div class="kicker">Share card</div><h2>Ready for the group chat</h2></div></div><img class="share-img" src="'+url+'" alt="'+esc(o.title+': '+o.big+' by '+o.team)+'"><p class="muted" style="font-size:12.5px;text-align:center">Press and hold the image to save or share it.</p><button type="button" class="ghost" id="closeP">Close</button>')};
   try{(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go)}catch(e){go()}
 }
-function shareRecord(){var k=S.rec,list=recList(k),top=recVal(k,list[0]),name=RECS.find(function(r){return r[0]===k})[1];
+function shareRecord(){var k=S.rec;
+  if(isFO(k)){var b=FO.d&&FO.d.boards[k];if(!b||!b.rows.length)return;var r=b.rows[0];
+    showShare({eyebrow:'Front office record · '+b.unit,title:b.title,big:r.vfmt,team:team(r.uid)+(r.uid2?' & '+team(r.uid2):''),sub:foSub(r.sub)});return}
+  var list=recList(k),top=recVal(k,list[0]),name=RECS.find(function(r){return r[0]===k})[1];
   var t=recType(k);showShare({eyebrow:'All-time record · '+(t==='season'||t==='streak'?'regular season':{all:'all games',reg:'regular season',post:'playoffs'}[S.rf]),title:name,big:top.v,team:team(top.u),sub:top.sub})}
 function shareGame(i){var g=D.games[i];showShare({eyebrow:g.s+' · Week '+g.w+' · '+g.k,title:tnS(g.s,g.win)+' def. '+tnS(g.s,g.lose),big:f2(g.wp),team:'to '+f2(g.lp),sub:'Won by '+f2(g.m)})}
 function shareAwards(s){var A=D.awards[s]||[],f=function(k){return A.find(function(a){return a.key===k})};var c=f('champ'),p=f('points'),tb=f('topb');

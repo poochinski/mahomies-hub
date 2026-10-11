@@ -331,6 +331,32 @@ Status tags: **MVP** (Phase 2), **v1** (Phases 3–5), **v2** (Phase 6–7), **C
 - Each record shows holder, value, season/week, and the runner-up list (top 10)
 - "NEW RECORD" badge when a record falls this week
 
+### Front Office records (built 2026-10-10, `server/records/frontoffice.js`)
+The second half of the record book. The rest of the book is about points scored; this half is
+about the moves — trades, waivers, free agents, draft picks. Twenty boards, every one with a
+top-10 leaderboard, in four groups: Activity (2), Trades (4), Waivers & FAAB (7), Draft (7).
+
+**The rule all twenty are built on:** a move is worth the points it put in your **starting
+lineup**. Bench points never won a game, so they don't count. A player stops counting for you
+the week he's dropped or traded away.
+
+- **Letting a player go has a cost.** Drop him and the points he goes on to start for another
+  team *in the same season* count against you. That's what "Best on the wire" and "Dropped too
+  soon" are built on.
+- **A trade side** is worth the points its new players started, measured against what the other
+  side got out of its own haul. One side's gain is the other's loss, so "The robbery" and "The
+  one he regrets" are usually the two ends of the same deal.
+- **FAAB** is the in-league Sleeper waiver budget. Nothing to do with Mahomie Bucks, and the
+  Front Office boards carry no betting numbers (Records tab is fantasy only, same rule as League).
+- **Draft boards** reuse `server/draft.js` exactly, keepers and all: pick value = points minus
+  what that slot was worth. Keepers aren't graded that way, so "Best keeper call" is simply the
+  points the kept player scored the year he was kept.
+- Minimums so one lucky move can't own a board: Best drafter 15 picks, Position specialist 5
+  picks at that position, Points per dollar $50 spent, Worst money spent a $10+ bid.
+- **Naming rule (Jayson, 2026-10-10):** boards get our own names. Only genuinely generic
+  records keep a plain name — Most trades, Most roster moves, Biggest FAAB bid.
+- Covers every season on Sleeper. The Yahoo years are not in it (import still parked).
+
 ### Manager Profiles (MVP)
 - Career stats, season-by-season line, trophies, best/worst week, favorite trade partner, biggest rival
 
@@ -429,7 +455,9 @@ GET  /api/managers/:id              profile
 GET  /api/game?season=&week=&users=a,b   box score: starters by slot + bench, names, positions, points (built)
 GET  /api/bench?season=              Bench Shame: optimal minus actual, per team + worst week (built)
 GET  /api/trades?season=             Trade grader v2: got/gave, picks, FAAB, week-by-week tracker, team before/after, verdict by pts started per week (built)
-GET  /api/draft?season=              Draft re-grade: steals and busts by pick vs points rank (built)
+GET  /api/draft                      every draft: seasons, loyalty, position habits, market, all-time drafters (built)
+GET  /api/draft/:season              one draft: full board with keepers marked, grades, superlatives (built)
+GET  /api/records/frontoffice        the 20 Front Office boards: trades, waivers/FAAB, draft (built, cached 15 min)
 GET  /api/season/:season            standings, power, luck, playoff odds
 GET  /api/h2h                       matrix
 GET  /api/recap/:season/:week
