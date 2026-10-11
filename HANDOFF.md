@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 00:20 (Pacific) · **AI:** Grok
-**Current phase:** Home matchup desk is live under Your game. Jayson is looking at it. Do not restyle the page. If he says take it off, remove the blocks added in `home()` (`needLine`, `stakeBlock`, `slotBlock`, `formBlock`, `seriesBlock`) and the `slots_a` / `slots_b` fields.
-**Last commit:** "Slot chart shows points, not projections"
+**Last updated:** 2026-10-11 00:25 (Pacific) · **AI:** Grok
+**Current phase:** Home matchup desk is live under Your game. The lines under the score are short tiles now (Jayson: the sentences were wrapping team names). Do not go back to paragraph copy.
+**Last commit:** "Matchup desk fits on one line"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now

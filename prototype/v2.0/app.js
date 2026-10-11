@@ -91,11 +91,11 @@ function medianLine(me){
   var all=[];PULSE.games.forEach(function(g){[g.a,g.b].forEach(function(u){var s=slateSide(g,u);all.push({u:u,v:finalOf(s),fin:s.fin,on:s.on})})});
   if(all.length<4||!all.some(function(x){return x.u===me}))return '';
   all.sort(function(a,b){return b.v-a.v});var n=all.length,half=n/2,rk=0;all.forEach(function(x,i){if(x.u===me)rk=i+1});
-  var cut=(all[half-1].v+all[half].v)/2,mine=all[rk-1].v,done=all.every(function(x){return x.fin}),started=all.some(function(x){return x.on});
-  var top=rk<=half,t;
-  if(done)t='Median game: you finished <b>'+ord(rk)+' of '+n+'</b> · '+(top?'<em class="ok">extra win ✓</em>':'<em class="no">extra loss</em>');
-  else t='Median game: '+(started?'projected':'projected')+' <b>'+ord(rk)+' of '+n+'</b> · '+(top?'<em class="ok">on track for the extra win</em>':'<em class="no">'+f1(Math.max(.1,cut-mine))+' pts short of the top '+half+'</em>')+' <span>(top-'+half+' line ≈ '+f1(cut)+')</span>';
-  return '<button type="button" class="yg-med" data-info="median">'+t+'</button>'}
+  var cut=(all[half-1].v+all[half].v)/2,mine=all[rk-1].v,done=all.every(function(x){return x.fin});
+  var top=rk<=half,sub;
+  if(done)sub=top?'extra win':'extra loss';
+  else sub=top?'on track':f1(Math.max(.1,cut-mine))+' short';
+  return '<button type="button" class="mh-fact" data-info="median"><small>Median</small><b>'+ord(rk)+'</b><span>of '+n+' · '+sub+'</span></button>'}
 function warnLine(s){if(!s)return '';var bits=s.warn.map(function(w){return esc(w.name)+(w.pos?' ('+esc(w.pos)+')':'')+' '+(w.why==='bye'?'is on bye':w.why==='no team'?'has no NFL team':'is '+esc(String(w.why).toUpperCase()))});
   if(s.empty)bits.push(s.empty+' empty starting slot'+(s.empty>1?'s':''));
   return bits.length?'<div class="yg-warn">⚠️ Lineup check: '+bits.join(' · ')+' <span>Fix it in Sleeper.</span></div>':''}
@@ -283,19 +283,16 @@ function myDesk(){
     mine:sg?((l.a===me?sg.slots_a:sg.slots_b)||[]):[],his:sg?((l.a===me?sg.slots_b:sg.slots_a)||[]):[]};
 }
 function slotPts(p){if(!p||p.e)return 0;return Number(p.p)||0}
-function leftPhrase(opp,sMe,sOpp){return 'you have '+((sMe.now||0)+(sMe.left||0))+' left, '+esc(team(opp))+' has '+((sOpp.now||0)+(sOpp.left||0))+' left'}
 function needLine(id,opp,sMe,sOpp){
   if(!sMe||!sOpp||(sMe.fin&&sOpp.fin)||(!sMe.on&&!sOpp.on))return '';
-  var tail=leftPhrase(opp,sMe,sOpp),btn=function(html){return '<button type="button" class="yg-need" data-prev="'+id+'">'+html+'</button>'};
-  if(Math.abs(sMe.pts-sOpp.pts)<0.05)return ((sMe.now||sMe.left||sOpp.now||sOpp.left)?btn('Tied · '+tail):'');
+  var btn=function(html){return '<button type="button" class="yg-need" data-prev="'+id+'">'+html+'</button>'};
+  if(Math.abs(sMe.pts-sOpp.pts)<0.05)return ((sMe.now||sMe.left||sOpp.now||sOpp.left)?btn('Tied'):'');
   var youBehind=sMe.pts<sOpp.pts,b=youBehind?sMe:sOpp,a=youBehind?sOpp:sMe;
   var bLeft=(b.now||0)+(b.left||0),aLeft=(a.now||0)+(a.left||0),est=(aLeft&&a.proj!=null)?a.proj:a.pts,gap=a.pts-b.pts,need=est-b.pts;
-  if(!bLeft&&gap>0.05)return btn((youBehind?'Short by <b class="num">'+f1(gap)+'</b>, and you have nobody left':esc(team(opp))+' is short by <b class="num">'+f1(gap)+'</b> with nobody left')+' · '+tail);
-  // Chasing a full projection while eight guys haven't played reads as "down by 130".
-  // Save "needs X" for when the trailing team is actually down to a few players.
-  if(bLeft>4&&gap>0.05)return btn((youBehind?'Down <b class="num">'+f1(gap)+'</b>':esc(team(opp))+' is down <b class="num">'+f1(gap)+'</b>')+' · '+tail);
-  if(bLeft&&need>0.05&&b.proj!=null&&b.proj+0.05>=est)return btn((youBehind?'Down <b class="num">'+f1(gap)+'</b> · projected to finish ahead':esc(team(opp))+' is down <b class="num">'+f1(gap)+'</b> · projected to catch you')+' · '+tail);
-  if(bLeft&&need>0.05)return btn((youBehind?'You need':esc(team(opp))+' needs')+' <b class="num">'+f1(need)+'</b>'+(aLeft?' more':' more to win')+' · '+tail);
+  if(!bLeft&&gap>0.05)return btn(youBehind?'Short <b class="num">'+f1(gap)+'</b>':'They\'re short <b class="num">'+f1(gap)+'</b>');
+  if(bLeft>4&&gap>0.05)return btn((youBehind?'Down ':'Ahead ')+'<b class="num">'+f1(gap)+'</b>');
+  if(bLeft&&need>0.05&&b.proj!=null&&b.proj+0.05>=est)return btn(youBehind?'Down <b class="num">'+f1(gap)+'</b> · on track':'They can catch you');
+  if(bLeft&&need>0.05)return btn((youBehind?'Need ':'They need ')+'<b class="num">'+f1(need)+'</b>'+(aLeft?' more':' to win'));
   return '';
 }
 function seedOutlook(me,opp,sMe,sOpp){
@@ -314,22 +311,28 @@ function seedOutlook(me,opp,sMe,sOpp){
   }
   return {cur:mine.seed,win:place(true),lose:place(false),counted:counted};
 }
-function seedMove(n,from,win){var word=win?'A win':'A loss';if(n<from)return word+' moves you up to <b>'+ord(n)+'</b>';if(n>from)return word+' drops you to <b>'+ord(n)+'</b>';return word+' keeps you at <b>'+ord(n)+'</b>'}
-function seedBtn(me,opp,sMe,sOpp){
-  var o=seedOutlook(me,opp,sMe,sOpp);if(!o)return '';
-  var t=o.win.seed===o.cur&&o.lose.seed===o.cur?'Win or lose, you stay <b>'+ord(o.cur)+'</b>':seedMove(o.win.seed,o.cur,true)+'. '+seedMove(o.lose.seed,o.cur,false)+'.';
-  return '<button type="button" class="yg-seed" data-mh="seed">'+t+'</button>';
+function seedCell(label,seed,from){
+  var sub=seed<from?'up from '+ord(from):seed>from?'down from '+ord(from):'same';
+  return '<button type="button" class="mh-fact" data-mh="seed"><small>'+label+'</small><b>'+ord(seed)+'</b><span>'+sub+'</span></button>';
 }
-function stakeBlock(me,opp,sMe,sOpp){var med=medianLine(me),seed=seedBtn(me,opp,sMe,sOpp);return (med||seed)?'<div class="yg-stake">'+med+seed+'</div>':''}
+function stakeBlock(me,opp,sMe,sOpp){
+  var med=medianLine(me),o=seedOutlook(me,opp,sMe,sOpp);if(!med&&!o)return '';
+  return '<div class="mh-facts">'+med+(o?seedCell('If you win',o.win.seed,o.cur)+seedCell('If you lose',o.lose.seed,o.cur):'')+'</div>';
+}
 function slotSummary(desk){
-  var mine=desk.mine,his=desk.his,n=Math.max(mine.length,his.length),you=0,him=0,seen=0;
+  var mine=desk.mine,his=desk.his,n=Math.max(mine.length,his.length),you=0,him=0,one='';
   for(var i=0;i<n;i++){var a=mine[i],b=his[i];
     if((!a||a.e)&&(!b||b.e))continue;var av=slotPts(a),bv=slotPts(b);if(av<0.05&&bv<0.05)continue;
-    seen++;if(Math.abs(av-bv)<0.05)continue;if(av>bv)you++;else him++}
-  if(!seen)return 'Points so far';
-  if(you===him)return you?'Slots are split '+you+'–'+him:'Slots are even';
-  if(you>him)return 'You lead '+you+' of '+seen+' slots';
-  return esc(team(desk.opp))+' leads '+him+' of '+seen+' slots';
+    var lab=(a&&a.s)||(b&&b.s)||'',side=Math.abs(av-bv)<0.05?'tie':av>bv?'you':'him';
+    if(side==='you')you++;else if(side==='him')him++;
+    if(!one)one=side==='you'?'Ahead at '+lab:side==='him'?'Behind at '+lab:'Tied at '+lab;else one='';
+  }
+  var seen=you+him+(one&&one.indexOf('Tied')===0?1:0);
+  if(you+him===0)return one||'';
+  if(you+him===1&&one)return one;
+  if(you===him)return 'Split '+you+'–'+him;
+  if(you>him)return 'Ahead '+you+'–'+him;
+  return 'Behind '+him+'–'+you;
 }
 function slotBlock(desk){
   if(!desk.mine.length)return '';
@@ -340,7 +343,8 @@ function slotBlock(desk){
     var ah=slotPts(a),bh=slotPts(b);
     var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;return '<i class="'+cls+'" style="'+(pct?'height:'+pct+'%':'height:0;min-height:0')+'"></i>'};
     cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><small>'+esc(lab)+'</small></span>'}
-  return '<button type="button" class="mh-slots" data-mh="slots"><div class="mh-sum">'+slotSummary(desk)+'</div><span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
+  var sum=slotSummary(desk);
+  return '<button type="button" class="mh-slots" data-mh="slots">'+(sum?'<div class="mh-sum">'+sum+'</div>':'')+'<span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
 }
 function formBlock(me,opp){
   var end=D.league.last_scored||0;if(end<1)return '';
@@ -356,11 +360,10 @@ function formBlock(me,opp){
   return '<div class="mh-form"><div class="yg-k">Last '+(weeks.length>1?weeks.length+' weeks':'week')+'</div>'+row(me,true)+row(opp,false)+'</div>';
 }
 function seriesBlock(me,opp){
-  var r=D.h2h&&D.h2h[me+'|'+opp],t;
-  if(!r||!r.games||!r.games.length)t='First time these two have played.';
-  else {var lead=r.w===r.l?'Series tied '+r.w+'–'+r.l:(r.w>r.l?'You lead the series '+r.w+'–'+r.l:esc(team(opp))+' leads the series '+r.l+'–'+r.w);
-    var last=r.games[r.games.length-1];t=lead+'. Last meeting '+last.s+' Wk '+last.w+': '+(last.m>last.o?'you won ':'you lost ')+f1(last.m)+'–'+f1(last.o)}
-  return '<button type="button" class="yg-series" data-mh="series">'+t+'</button>';
+  var r=D.h2h&&D.h2h[me+'|'+opp];
+  if(!r||!r.games||!r.games.length)return '<button type="button" class="mh-series" data-mh="series"><span><small>Series</small><b>First meeting</b></span></button>';
+  var last=r.games[r.games.length-1],won=last.m>last.o,tag=r.w>r.l?'You lead':r.w<r.l?'You trail':'Tied';
+  return '<button type="button" class="mh-series" data-mh="series"><span><small>'+tag+'</small><b class="'+(r.w>r.l?'w':r.w<r.l?'l':'')+'">'+r.w+'–'+r.l+'</b></span><span><small>'+(won?'Won':'Lost')+' · '+String(last.s).slice(-2)+' W'+last.w+'</small><b class="'+(won?'w':'l')+'">'+Math.round(last.m)+'–'+Math.round(last.o)+'</b></span></button>';
 }
 function seriesSheet(me,opp){
   var r=(D.h2h&&D.h2h[me+'|'+opp])||{w:0,l:0,games:[]};

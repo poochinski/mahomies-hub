@@ -946,11 +946,22 @@ td.tm .who .tx>span{font-size:10.5px}
 .fo-val.fo-neg{color:var(--loss)}
 
 /* ---------- Home matchup desk: the story under Your game. Fantasy only. ---------- */
-.yg-need,.yg-series{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:var(--muted);font:12.5px/1.45 var(--body)}
-.yg-need b,.yg-series b,.yg-seed b{color:var(--ink);font-weight:650}
-.yg-stake{display:grid;gap:3px;border-top:1px solid var(--line);padding-top:8px}
-.yg-stake .yg-med{border-top:0;padding-top:0}
-.yg-seed{display:block;width:100%;border:0;background:none;padding:0;text-align:left;color:var(--muted);font:12.5px/1.45 var(--body)}
+.yg-need{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:var(--ink);font:700 15px/1.2 var(--display);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yg-need b{font-weight:800}
+.mh-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.mh-facts:has(.mh-fact:nth-child(2):last-child){grid-template-columns:1fr 1fr}
+.mh-facts:has(.mh-fact:only-child){grid-template-columns:1fr}
+.mh-fact{display:grid;gap:1px;min-width:0;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);padding:7px 8px 6px;text-align:left;color:inherit}
+.mh-fact small{font:500 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-fact b{font:800 18px/1.1 var(--display);letter-spacing:-.03em;color:var(--gold);white-space:nowrap}
+.mh-fact span{font:11px/1.2 var(--body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-series{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:inherit}
+.mh-series>span{display:grid;gap:1px;min-width:0}
+.mh-series small{font:500 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.mh-series b{font:800 18px/1.1 var(--display);letter-spacing:-.03em;white-space:nowrap}
+.mh-series b.w{color:var(--win)}
+.mh-series b.l{color:var(--loss)}
+.mh-series>span:last-child{text-align:right}
 .mh-slots{display:grid;gap:8px;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:inherit}
 .mh-sum{font:600 12.5px/1.35 var(--body);color:var(--ink)}
 .mh-cols{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;height:74px;align-items:end}
