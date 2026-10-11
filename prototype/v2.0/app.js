@@ -179,10 +179,17 @@ function gcLoad(){var m=/^w(\d+)m(\d+)$/.exec(GC.id||'');if(!m)return;var id=GC.
   fetch('/api/live/'+m[1]+'/'+m[2],{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(GC.id!==id)return;GC.data=d;var el=document.getElementById('gc');if(el)el.outerHTML=gcHtml()})
    .catch(function(){var el=document.getElementById('gcErr');if(el)el.textContent='Couldn\'t reach Sleeper just now. Trying again in a minute.'})}
 function gcState(p){if(p.state==='in')return 'live';if(p.state==='post')return 'fin';if(p.state==='bye')return 'bye';return 'pre'}
-function gcCell(p,side){if(!p)return '<div class="gc-p '+side+'"></div>';if(p.empty)return '<div class="gc-p '+side+' gc-empty"><b>Empty slot</b><span>no player</span></div>';
+/* The photo is its own grid column, not floated inside the name. Floating it inside a
+   two-line clamped heading made it break out of the box and land on top of the row above. */
+function gcCell(p,side){if(!p)return '<div class="gc-p '+side+'"></div>';
+  if(p.empty)return '<div class="gc-p '+side+' gc-empty"><span class="gc-pp"></span><span class="gc-tx"><b>Empty slot</b><span>no player</span></span></div>';
   var st=gcState(p),inj=p.inj&&st==='pre'&&/^(out|ir|doubt|sus|pup|na|q)/i.test(p.inj)?'<em class="gc-inj">'+esc(String(p.inj).toUpperCase().slice(0,4))+'</em>':'';
-  return '<div class="gc-p '+side+'"><b'+(p.pid?' class="plk" data-pl="'+esc(p.pid)+'"':'')+'>'+(p.pid?plPic(p.pid,p.name,20,p.pos,p.espn):'')+esc(p.name)+'</b><span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+inj+'</span>'+
-   '<span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+'</span></div>'}
+  return '<div class="gc-p '+side+'"'+(p.pid?' data-pl="'+esc(p.pid)+'"':'')+'>'+
+   '<span class="gc-pp">'+(p.pid?plPic(p.pid,p.name,22,p.pos,p.espn):'')+'</span>'+
+   '<span class="gc-tx"><b'+(p.pid?' class="plk"':'')+'>'+esc(p.name)+'</b>'+
+   '<span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+inj+'</span>'+
+   '<span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+'</span></span></div>'}
+function slotShort(s){return String(s||'').replace('SUPER_FLEX','SF').replace('WRRB_FLEX','W/R').replace('REC_FLEX','RFX').replace('FLEX','FLX')}
 /* What he actually did. Before kickoff there's nothing to show, so his season so far goes there instead. */
 function gcStat(p,side){if(!p||p.empty)return '<div class="gc-sl '+side+'"></div>';
   var st=gcState(p),h='';
@@ -196,6 +203,23 @@ function gcPts(p,side,hi){if(!p||p.empty)return '<div class="gc-v '+side+'"></di
 function gcNeed(X,Y){var left=X.playing+X.left;if(!left)return '';var est=(Y.playing+Y.left)?Y.proj:Y.pts,need=est-X.pts;if(need<=0||X.proj>=est)return '';
   var rest=Math.max(0,X.proj-X.pts),names=X.starters.filter(function(p){return !p.empty&&(p.state==='pre'||p.state==='in')}).map(function(p){return p.name.split(' ').slice(-1)[0]});
   return '<p class="gc-need"><b>'+esc(team(X.user))+'</b> needs <b class="num">'+f1(need)+'</b> more'+((Y.playing+Y.left)?' to pass '+esc(team(Y.user))+'\'s projection':' to win')+' · '+left+' left'+(names.length&&names.length<=4?' ('+esc(names.join(', '))+')':'')+', projected <b class="num">'+f1(rest)+'</b></p>'}
+/* The scoreboard card. Record and place come from the standings; "yet to play" lists the
+   actual slots still to come, which is the thing you want at a glance. Fantasy only —
+   win probability stays in the Book. */
+function gcTeam(X,k,lead){
+  var st=((D.seasons[CUR()]||{}).standings||[]).filter(function(x){return x.uid===X.user})[0];
+  var live=X.starters.filter(function(p){return !p.empty&&p.state==='in'});
+  var soon=X.starters.filter(function(p){return !p.empty&&p.state==='pre'});
+  var bench=(X.bench||[]).reduce(function(s,p){return s+(p.pts||0)},0);
+  var h='<div class="gc-tb '+k+(lead===k?' lead':'')+'">'+av(X.user,34)+'<b class="gc-tn">'+esc(team(X.user))+'</b>';
+  if(st)h+='<small class="gc-rec">'+st.w+'-'+st.l+' · '+ord(st.seed)+'</small>';
+  h+='<span class="gc-big num">'+f2(X.pts)+'</span><small>proj '+f1(X.proj)+'</small>';
+  if(live.length)h+='<small class="gc-pl">'+live.length+' on the field</small>';
+  h+='<span class="gc-yet"><em>'+(soon.length?'Yet to play ('+soon.length+')':'Everyone has played')+'</em>'+
+   (soon.length?'<span class="gc-slots">'+soon.map(function(p){return '<i>'+esc(slotShort(p.slot))+'</i>'}).join('')+'</span>':'')+'</span>';
+  h+='<small class="gc-bp">Bench '+f1(bench)+'</small>';
+  return h+'</div>';
+}
 function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})||{};
   // One game page: Preview before anyone plays, Live while players are on the field, Final when both lineups are done.
   var stage=!d||!d.a?'':(d.a.playing+d.b.playing)?' · <span class="live"><i></i>Live</span>':(d.a.left+d.b.left===0&&(d.a.done+d.b.done)>0)?' · <span class="gc-stage fin">Final</span>':(d.a.done+d.b.done)>0?' · <span class="gc-stage">In progress</span>':' · <span class="gc-stage pre">Preview</span>';
@@ -203,12 +227,11 @@ function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})
   if(!d)return h+'<p class="muted">Loading the lineups from Sleeper…</p></div>';
   if(d.error)return h+'<p class="err">'+esc(d.error)+'</p></div>';
   var A=d.a,B=d.b,started=A.playing+A.done+B.playing+B.done>0,lead=started&&A.pts!==B.pts?(A.pts>B.pts?'a':'b'):'';
-  var tb=function(X,k){return '<div class="gc-tb '+k+(lead===k?' lead':'')+'">'+av(X.user,34)+'<b class="gc-tn">'+esc(team(X.user))+'</b><span class="gc-big num">'+f2(X.pts)+'</span><small>proj '+f1(X.proj)+'</small><small class="gc-pl">'+(X.playing?X.playing+' playing · ':'')+X.left+' left</small></div>'};
-  h+='<div class="gc-sb">'+tb(A,'a')+'<span class="gc-vs">vs</span>'+tb(B,'b')+'</div>'+gcNeed(A,B)+gcNeed(B,A);
+  h+='<div class="gc-sb">'+gcTeam(A,'a',lead)+'<span class="gc-vs">vs</span>'+gcTeam(B,'b',lead)+'</div>'+gcNeed(A,B)+gcNeed(B,A);
   h+='<div class="gc-rows"><div class="gc-r gc-hd"><span>'+esc(team(A.user))+'</span><span></span><span></span><span></span><span>'+esc(team(B.user))+'</span></div>';
   var n=Math.max(A.starters.length,B.starters.length);
   for(var i=0;i<n;i++){var a=A.starters[i],b=B.starters[i],ap=a&&!a.empty?a.pts:-1,bp=b&&!b.empty?b.pts:-1;
-    h+='<div class="gc-r">'+gcCell(a,'a')+gcPts(a,'a',ap>bp&&ap>0)+'<span class="gc-slot">'+esc(((a||b).slot||'').replace('SUPER_FLEX','SF').replace('FLEX','FLX').replace('REC_FLEX','RFX').replace('WRRB_FLEX','W/R'))+'</span>'+gcPts(b,'b',bp>ap&&bp>0)+gcCell(b,'b')+gcStat(a,'a')+gcStat(b,'b')+'</div>'}
+    h+='<div class="gc-r">'+gcCell(a,'a')+gcPts(a,'a',ap>bp&&ap>0)+'<span class="gc-slot">'+esc(slotShort((a||b).slot))+'</span>'+gcPts(b,'b',bp>ap&&bp>0)+gcCell(b,'b')+gcStat(a,'a')+gcStat(b,'b')+'</div>'}
   h+='</div><p class="gc-key">Big number = points so far · small = projected final (points + Sleeper\'s projection for the rest of his game). Under each name is his real stat line this week — before his game starts you get his season instead.</p>';
   var bench=function(X){var tot=X.bench.reduce(function(s,p){return s+(p.pts||0)},0);return '<details class="gc-bench"><summary>'+esc(team(X.user))+' bench · '+f1(tot)+' pts</summary>'+
     X.bench.map(function(p){return '<div class="gc-br">'+gcCell(p,'a')+gcPts(p,'b',false)+gcStat(p,'bn')+'</div>'}).join('')+'</details>'};
