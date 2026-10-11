@@ -6,6 +6,7 @@ import { kickoffs, describeWeek } from '../book/kickoffs.js';
 import { homeCard, gameCenter } from '../book/data.js';
 import { playerProfile } from '../player.js';
 import { teamPage, playerSearch, wire } from '../team.js';
+import { draftIndex, draftSeason } from '../draft.js';
 import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
 
@@ -70,6 +71,18 @@ router.get('/players/search', async (req, res) => {
 router.get('/wire', async (req, res) => {
   try { res.json(await wire({ limit: Math.min(100, Number(req.query.limit) || 40) })); }
   catch (err) { console.error('wire failed', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/draft — every draft, plus the habits that only show across seasons.
+router.get('/draft', async (_req, res) => {
+  try { res.json(await draftIndex()); }
+  catch (err) { console.error('draft index failed', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/draft/:season — one draft: the whole board, graded.
+router.get('/draft/:season', async (req, res) => {
+  try { res.json(await draftSeason(req.params.season)); }
+  catch (err) { if (err.status !== 404) console.error('draft failed', err.message); res.status(err.status || 500).json({ error: err.message }); }
 });
 
 export default router;

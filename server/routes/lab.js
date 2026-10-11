@@ -1,7 +1,7 @@
-// League Lab: Bench Shame, Trade grader, Draft re-grade.
+// League Lab: Bench Shame and the Trade grader. (The draft moved to its own
+// section in the League tab — see server/draft.js.)
 //   GET /api/bench?season=2026
 //   GET /api/trades?season=2026
-//   GET /api/draft?season=2026
 import { Router } from 'express';
 import { sleeper, leagueChain, getPlayers } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
@@ -231,36 +231,5 @@ export async function tradeReport(season) {
   });
   return { season: String(season), through: last, playoff_start: P, ongoing, trades: out };
 }
-
-// ---------- Draft re-grade ----------
-router.get('/draft', wrap(async (season) => {
-  const { league, ownerOf, players, weeks, last } = await loadSeason(season);
-  if (!league.draft_id) return { season: String(season), steals: [], busts: [] };
-  const picks = await sleeper(`/draft/${league.draft_id}/picks`, { maxAgeMs: 7 * 24 * HOUR });
-
-  const pts = {};
-  for (let w = 1; w <= last; w++) {
-    for (const m of weeks[w] || []) {
-      for (const [pid, p] of Object.entries(pointsMap(m))) pts[pid] = (pts[pid] || 0) + (p || 0);
-    }
-  }
-  const rows = picks
-    .filter((p) => p.player_id)
-    .map((p) => ({
-      pick_no: p.pick_no,
-      round: p.round,
-      slot: p.draft_slot,
-      user_id: p.picked_by || ownerOf[p.roster_id],
-      id: p.player_id,
-      name: p.metadata?.first_name ? `${p.metadata.first_name} ${p.metadata.last_name}` : nameOf(players, p.player_id),
-      pos: p.metadata?.position || posOf(players, p.player_id),
-      points: Math.round((pts[p.player_id] || 0) * 100) / 100
-    }))
-    .filter((p) => p.pos !== 'K' && p.pos !== 'DEF');
-  [...rows].sort((a, b) => b.points - a.points).forEach((p, i) => { p.rank = i + 1; });
-  const steals = [...rows].sort((a, b) => (b.pick_no - b.rank) - (a.pick_no - a.rank)).slice(0, 5);
-  const busts = [...rows].sort((a, b) => (b.rank - b.pick_no) - (a.rank - a.pick_no)).slice(0, 5);
-  return { season: String(season), steals, busts };
-}));
 
 export default router;

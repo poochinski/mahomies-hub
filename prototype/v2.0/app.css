@@ -892,3 +892,42 @@ td.tm .who .tx>span{font-size:10.5px}
 .fu-row{display:grid;grid-template-columns:minmax(0,1fr) 72px 72px;gap:6px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.sp-grid .fu-row:first-child{border-top:0}
 .fu-row.me .who b{color:var(--gold)}.fu-row .ob{min-height:40px;padding:4px 2px}
 .fu-off{text-align:center;color:var(--faint);font:12px var(--mono)}
+
+/* ---------- Draft (v2.5) ---------- */
+.dr-p{display:grid;grid-template-columns:42px 26px minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.panel .dr-p:first-of-type,.dr-rd+.dr-p{border-top:0}
+.dr-keep{opacity:.72}
+.dr-no{display:grid;justify-items:center;line-height:1.15}
+.dr-no b{font:700 13px var(--display);font-variant-numeric:tabular-nums}
+.dr-no small{font:500 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.dr-n{display:grid;min-width:0}
+.dr-n b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-n small{font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-pos{font-style:normal;font-weight:600}
+.dr-r{display:grid;justify-items:end;line-height:1.2}
+.dr-r b{font:700 15px var(--display);font-variant-numeric:tabular-nums}
+.dr-r small{font:500 9.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.dr-v{font:700 15px var(--display);font-variant-numeric:tabular-nums;color:var(--muted)}
+.dr-v.up{color:var(--win)}.dr-v.dn{color:var(--loss)}.dr-na{color:var(--faint)}
+.dr-alt{margin:-2px 0 8px 51px;font-size:12px;line-height:1.45;color:var(--muted)}
+.dr-alt b{color:var(--cyan)}
+.dr-rd{margin:14px 0 2px;font:600 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.dr-g{width:100%;background:none;border-left:0;border-right:0;border-bottom:0;color:inherit;text-align:left;
+  display:grid;grid-template-columns:40px minmax(0,1fr) auto 10px;gap:10px;align-items:center}
+.dr-grade{display:grid;place-items:center;height:34px;border-radius:9px;background:var(--panel-3);
+  font:700 15px var(--display);letter-spacing:-.02em}
+.dr-grade.g-A{background:rgba(93,255,143,.16);color:var(--win)}
+.dr-grade.g-B{background:rgba(76,236,255,.14);color:var(--cyan)}
+.dr-grade.g-C{background:rgba(246,207,76,.14);color:var(--gold)}
+.dr-grade.g-D,.dr-grade.g-F{background:rgba(255,84,112,.14);color:var(--loss)}
+.dr-team{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);margin-top:3px}
+.dr-key{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:11px;color:var(--muted)}
+.dr-key span{display:inline-flex;align-items:center;gap:4px}
+.dr-key i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.dr-heat{overflow-x:auto;margin-inline:-14px;padding-inline:14px}
+.dr-hrow{display:grid;grid-template-columns:24px repeat(15,20px);gap:3px;align-items:center;margin-bottom:3px}
+.dr-hhead span{font:500 9px var(--mono);color:var(--faint);text-align:center}
+.dr-c{height:20px;border-radius:4px;background:rgba(255,255,255,.05);display:grid;place-items:center;
+  font:700 9.5px var(--mono);color:var(--faint)}
+.dr-at{grid-template-columns:24px minmax(0,1fr) auto}
+.dr-g .who .tx>span{font-size:11.5px}

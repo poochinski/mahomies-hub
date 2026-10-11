@@ -348,10 +348,10 @@ function mv(m){return '<span class="mv '+(m>0?'up':m<0?'dn':'eq')+'">'+(m>0?'▲
 function foot(){return '<p class="foot"><span class="dots"><i style="background:var(--gold)"></i><i style="background:var(--pink)" data-egg="1"></i><i style="background:var(--cyan)"></i><i style="background:var(--win)"></i></span>v'+D.version+' · Sleeper data as of '+esc(D.updated_label)+'</p>'}
 
 /* ---------- LEAGUE ---------- */
-var LSEGS=[['season','📊','Standings'],['odds','🎯','Playoff odds'],['awards','🏆','Awards'],['history','📜','History'],['alltime','👑','All-time'],['h2h','⚔️','Rivals'],['lab','🧪','Lab']];
+var LSEGS=[['season','📊','Standings'],['odds','🎯','Playoff odds'],['awards','🏆','Awards'],['draft','📋','Draft'],['history','📜','History'],['alltime','👑','All-time'],['h2h','⚔️','Rivals'],['lab','🧪','Lab']];
 function league(){
   var h='<div class="chips lchips">'+LSEGS.map(function(x){return '<button type="button" class="chip'+(S.lseg===x[0]?' on':'')+'" data-lseg="'+x[0]+'">'+x[1]+' '+x[2]+'</button>'}).join('')+'</div>';
-  h+=({season:seasonView,odds:oddsView,history:historyView,alltime:alltimeView,h2h:h2hView,awards:awardsView,lab:labView}[S.lseg]||seasonView)();
+  h+=({season:seasonView,odds:oddsView,history:historyView,alltime:alltimeView,h2h:h2hView,awards:awardsView,draft:draftView,lab:labView}[S.lseg]||seasonView)();
   return h+foot();
 }
 function seasonView(){
@@ -444,7 +444,7 @@ function awardsView(){
 function labView(){
   var cards=[['bench','🪑 Bench Shame','Points each team left on the bench compared with its best possible lineup, every week, plus a season leaderboard.'],
     ['trades','🤝 Trade grader','Every trade, with the points each side got from the players they received after the deal.'],
-    ['draft','📋 Draft re-grade','Every pick compared with where its season points rank: the biggest steals and busts.']];
+    ];
   var h='<section class="hero"><div class="eyebrow">League Lab</div><h1 style="font-size:28px">Deep stats</h1><p class="sub">These read full lineups, transactions and drafts straight from Sleeper.</p></section>';
   if(!LIVE){h+=cards.map(function(c){return '<section class="panel"><h2 style="font-size:19px">'+c[1]+'</h2><p class="muted" style="font-size:13px;margin-top:6px;line-height:1.5">'+c[2]+'</p><p class="lab-off">Turns on when the app is live on Railway</p></section>'}).join('');return h}
   h+='<div class="chips wrap">'+cards.map(function(c){return '<button type="button" class="chip'+(S.lab===c[0]?' on':'')+'" data-lab="'+c[0]+'">'+c[1]+'</button>'}).join('')+'</div>';
@@ -459,7 +459,7 @@ function loadLab(){
     if(S.lab+'|'+S.labs!==key)return;el=document.getElementById('labOut');if(!el)return;
     if(d.error){el.innerHTML='<p class="err">'+esc(d.error)+'</p>';return}
     if(S.lab==='bench')BSH=d;
-    el.innerHTML=S.lab==='bench'?benchHtml(d):S.lab==='trades'?tradesHtml(d):draftHtml(d)}).catch(function(){var e=document.getElementById('labOut');if(e)e.innerHTML='<p class="err">Couldn\'t reach the server.</p>'})
+    el.innerHTML=S.lab==='bench'?benchHtml(d):tradesHtml(d)}).catch(function(){var e=document.getElementById('labOut');if(e)e.innerHTML='<p class="err">Couldn\'t reach the server.</p>'})
 }
 function benchHtml(d){
   return '<div class="ph"><div><div class="kicker">'+d.season+' · through Week '+d.through+'</div><h2>Bench Shame</h2></div>'+info('bench')+'</div><div class="rows">'+
@@ -588,16 +588,93 @@ function tradeInsights(t){
   return out.slice(0,6);
 }
 
-function draftHtml(d){
-  var row=function(p,bust){var mv=p.pick_no-p.rank;
-    return '<div class="row dr-row"><span class="dr-pk"><small>Rd '+p.round+'</small>#'+p.pick_no+'</span><div style="min-width:0"><b style="font-size:14px"'+(p.id?' class="plk" data-pl="'+esc(p.id)+'"':'')+'>'+nb(p.name)+'</b> <span class="muted" style="font-size:11px">'+esc(p.pos)+'</span>'+
-     '<div class="dr-team">'+av(p.user_id,16)+esc(team(p.user_id))+'</div>'+
-     '<div class="dr-mv">Drafted <b>#'+p.pick_no+'</b> → finished <b>#'+p.rank+'</b> <span class="'+(mv>=0?'up':'dn')+'">'+(mv>=0?'▲'+mv:'▼'+Math.abs(mv))+(Math.abs(mv)===1?' spot':' spots')+'</span></div></div>'+
-     '<span class="aw-vb"><span class="val num" style="font-size:18px">'+f1(p.points)+'</span><small>season pts</small></span></div>'};
-  if(!d.steals.length)return '<div class="ph"><div><div class="kicker">'+d.season+' draft</div><h2>Draft re-grade</h2></div>'+info('draft')+'</div><p class="muted">No draft found for '+d.season+'.</p>';
-  return '<div class="ph"><div><div class="kicker">'+d.season+' draft</div><h2>Biggest steals</h2></div>'+info('draft')+'</div>'+
-   '<p class="muted" style="font-size:12px;margin:-4px 0 6px">Late picks who scored like early ones. "Finished" = where his points rank among every drafted player (no kickers or defenses).</p><div class="rows">'+d.steals.map(function(p){return row(p)}).join('')+'</div>'+
-   '<div class="ph" style="margin-top:16px"><div><div class="kicker">'+d.season+' draft</div><h2>Biggest busts</h2></div></div><p class="muted" style="font-size:12px;margin:-4px 0 6px">Early picks whose points ranked furthest below where they went.</p><div class="rows">'+d.busts.map(function(p){return row(p,true)}).join('')+'</div>'}
+/* ---------- DRAFT (v2.5): the board, the grades, the habits ---------- */
+var DR_={idx:null,yr:{},busy:{}};
+var DR_POS={QB:'#ff9fb2',RB:'#5dff8f',WR:'#4cecff',TE:'#f6cf4c',K:'#b18cff',DEF:'#9aa3c7'};
+function drLoad(what){
+  if(!LIVE||DR_.busy[what])return;DR_.busy[what]=true;
+  var url=what==='idx'?'/api/draft':'/api/draft/'+what;
+  fetch(url,{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){
+    DR_.busy[what]=false;if(what==='idx')DR_.idx=d;else DR_.yr[what]=d;
+    if(S.tab==='league'&&S.lseg==='draft'&&!$('#sheet').classList.contains('open'))render();
+  }).catch(function(){DR_.busy[what]=false;var e=document.getElementById('drErr');if(e)e.textContent="Couldn't load the draft from Sleeper. Try again in a minute."});
+}
+function drVal(v,sz){if(v==null)return '<span class="dr-v dr-na">–</span>';
+  return '<span class="dr-v '+(v>0?'up':v<0?'dn':'')+'" style="font-size:'+(sz||15)+'px">'+(v>0?'+':'')+f1(v)+'</span>'}
+function drPick(p,showTeam){
+  var k=p.keeper;
+  return '<div class="dr-p'+(k?' dr-keep':'')+'">'+
+   '<span class="dr-no"><b>'+(k?'—':'#'+p.pick_no)+'</b><small>'+(k?'kept':'R'+p.round)+'</small></span>'+
+   plPic(p.pid,p.name,26,p.pos,null)+
+   '<span class="dr-n"><b class="plk" data-pl="'+esc(p.pid)+'">'+esc(p.name)+'</b>'+
+     '<small><i class="dr-pos" style="color:'+(DR_POS[p.pos]||'var(--muted)')+'">'+esc(p.pos)+'</i>'+(p.nfl?' · '+esc(p.nfl):'')+
+     (showTeam&&p.uid?' · '+esc(team(p.uid)):'')+'</small></span>'+
+   '<span class="dr-r"><b class="num">'+f1(p.points)+'</b>'+(k?'<small>kept</small>':drVal(p.value,13))+'</span></div>'}
+function drBetter(p){if(!p||!p.better)return '';var b=p.better;
+  return '<div class="dr-alt">Still on the board: <b class="plk" data-pl="'+esc(b.pid)+'">'+esc(b.name)+'</b> ('+f1(b.points)+' pts) went '+b.after+' pick'+(b.after===1?'':'s')+' later to '+esc(team(b.uid))+'.</div>'}
+function drBoardSheet(season){
+  var d=DR_.yr[season];if(!d||!d.has_draft)return '<p class="muted">No draft on file for '+esc(season)+'.</p>'+CLOSE;
+  var byRound={};d.picks.forEach(function(p){(byRound[p.round]=byRound[p.round]||[]).push(p)});
+  var h='<div class="ph"><div><div class="kicker">'+esc(season)+' · '+d.picks.length+' picks'+(d.keepers?' · '+d.keepers+' kept':'')+'</div><h2>The board</h2></div></div>'+
+   '<p class="muted" style="font-size:12px;margin:-4px 0 8px">Every pick in order. Tap a player for his card. Kept players are marked and left out of the grades.</p>';
+  Object.keys(byRound).map(Number).sort(function(a,b){return a-b}).forEach(function(r){
+    h+='<div class="dr-rd">Round '+r+'</div>'+byRound[r].map(function(p){return drPick(p,true)}).join('')});
+  return h+CLOSE}
+function drMgrSheet(season,uid){
+  var d=DR_.yr[season],m=d&&(d.managers||[]).filter(function(x){return x.uid===uid})[0];
+  if(!m)return '<p class="muted">No graded picks.</p>'+CLOSE;
+  var mine=d.picks.filter(function(p){return p.uid===uid});
+  var h='<div class="ph pl-head" style="margin:0 0 8px">'+av(uid,46)+'<div><div class="kicker">'+esc(season)+' draft · '+m.grade+' · '+ord(m.rank)+' of '+d.managers.length+'</div><h2>'+esc(team(uid))+'</h2></div></div>'+
+   '<div class="tm-stats"><div><b class="num">'+(m.value>0?'+':'')+f1(m.value)+'</b><small>points vs slot</small></div><div><b class="num">'+m.picks+'</b><small>live picks</small></div><div><b class="num">'+m.keepers+'</b><small>kept</small></div><div><b class="num">'+m.hit_rate+'%</b><small>big hits</small></div></div>';
+  if(m.best)h+='<section class="panel tight" style="margin-top:12px"><div class="kicker">Best pick</div>'+drPick(objPick(mine,m.best.pid))+'</section>';
+  if(m.worst)h+='<section class="panel tight"><div class="kicker">Worst pick</div>'+drPick(objPick(mine,m.worst.pid))+drBetter(objPick(mine,m.worst.pid))+'</section>';
+  h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Where the value came from</div><h2>By round</h2></div></div><div class="tm-stats" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+
+   [['early','Rounds 1–3'],['mid','Rounds 4–8'],['late','Rounds 9+']].map(function(x){return '<div>'+drVal(m.by_tier[x[0]],17)+'<small>'+x[1]+'</small></div>'}).join('')+'</div>'+
+   '<div class="rows" style="margin-top:8px">'+m.by_pos.map(function(x){return '<div class="row"><div><b style="font-size:14px;color:'+(DR_POS[x.pos]||'var(--ink)')+'">'+esc(x.pos)+'</b> <span class="muted" style="font-size:12px">'+x.picks+' pick'+(x.picks===1?'':'s')+'</span></div>'+drVal(x.value)+'</div>'}).join('')+'</div></section>';
+  h+='<section class="panel tight"><div class="ph"><div><div class="kicker">In pick order</div><h2>Every pick</h2></div></div>'+mine.map(function(p){return drPick(p)+drBetter(p)}).join('')+'</section>';
+  return h+CLOSE}
+function objPick(list,pid){return list.filter(function(p){return p.pid===pid})[0]||{pid:pid,name:'?',pos:'',points:0,round:0,pick_no:0}}
+function draftView(){
+  var yrs=ALLS(),yr=S.drs&&yrs.indexOf(S.drs)>=0?S.drs:(S.drs=yrs[0]);
+  var h='<section class="hero"><div class="eyebrow">Draft room</div><h1 style="font-size:28px">The draft</h1><p class="sub">Every pick we have on Sleeper, graded against what that slot is usually worth. Players you kept are marked and left out of the grades.</p>'+info('draft')+'</section>';
+  if(!LIVE)return h+'<section class="panel"><p class="lab-off">Turns on when the app is live on Railway</p></section>';
+  h+='<div class="chips wrap">'+yrs.map(function(x){return '<button type="button" class="chip'+(x===yr?' on':'')+'" data-drs="'+x+'">'+x+'</button>'}).join('')+'</div>';
+  var d=DR_.yr[yr];
+  if(!d){drLoad(yr);h+='<section class="panel"><p class="muted" id="drErr">Reading the '+esc(yr)+' draft from Sleeper…</p></section>'}
+  else if(!d.has_draft)h+='<section class="panel"><p class="muted">Sleeper has no draft on file for '+esc(yr)+'.</p></section>';
+  else{
+    h+='<section class="panel"><div class="ph"><div><div class="kicker">'+d.picks.length+' picks · '+d.rounds+' rounds'+(d.keepers?' · '+d.keepers+' kept':'')+'</div><h2>'+esc(yr)+' grades</h2></div><button class="link" data-drboard="'+esc(yr)+'">Full board ›</button></div><div class="rows">'+
+     d.managers.map(function(m){return '<button type="button" class="row dr-g" data-drm="'+esc(yr)+'|'+m.uid+'"><span class="dr-grade g-'+m.grade[0]+'">'+esc(m.grade)+'</span>'+
+       whoS(m.uid,m.hits+' hit · '+m.misses+' miss'+(m.keepers?' · '+m.keepers+' kept':''),26)+drVal(m.value)+CHEV+'</button>'}).join('')+'</div>'+
+     '<p class="muted" style="font-size:11.5px;margin-top:9px;line-height:1.5">Value is the points a pick scored in our league minus what that slot is usually worth (the player who finished that high). A "hit" beat its slot by 40+, a miss fell 40+ short.</p></section>';
+    if(d.superlatives.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">'+esc(yr)+' draft</div><h2>Superlatives</h2></div></div><div class="rows">'+
+      d.superlatives.map(function(x){return '<button type="button" class="row aw-row" data-drm="'+esc(yr)+'|'+x.uid+'"><span class="aw-ic">'+(DR_SUP[x.key]||'⭐')+'</span><span class="aw-m"><b>'+esc(x.title)+'</b><span class="aw-tm">'+av(x.uid,18)+esc(team(x.uid))+'</span><span class="aw-note">'+esc(x.line)+'</span></span>'+CHEV+'</button>'}).join('')+'</div></section>';
+    var worst=d.picks.filter(function(p){return p.better}).sort(function(a,b){return a.value-b.value}).slice(0,5);
+    if(worst.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">The ones that got away</div><h2>Still on the board</h2></div></div>'+
+      worst.map(function(p){return drPick(p,true)+drBetter(p)}).join('')+'</section>';
+  }
+  var ix=DR_.idx;
+  if(!ix)drLoad('idx');
+  else{
+    if(ix.table.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">Every draft we have</div><h2>All-time drafters</h2></div></div><div class="rows">'+
+      ix.table.map(function(x,i){return '<div class="row dr-at"><span class="rk'+(i===0?' gold':'')+'">'+(i+1)+'</span>'+whoS(x.uid,x.picks+' picks over '+x.seasons+' draft'+(x.seasons===1?'':'s'),26)+'<span class="aw-vb">'+drVal(x.per_pick)+'<small>per pick</small></span></div>'}).join('')+'</div></section>';
+    if(ix.loyalty.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">Drafted by the same manager more than once</div><h2>His guys</h2></div></div><div class="rows">'+
+      ix.loyalty.slice(0,10).map(function(x){return '<div class="row"><div style="min-width:0"><b class="plk" style="font-size:14px" data-pl="'+esc(x.pid)+'">'+esc(x.name)+'</b> <span class="muted" style="font-size:12px">'+esc(x.pos)+'</span><div class="dr-team">'+av(x.uid,16)+esc(team(x.uid))+' · '+x.seasons.map(function(sx){return sx.season+(sx.keeper?' (kept)':'')}).join(', ')+'</div></div><span class="val" style="font-size:15px">'+x.n+'×</span></div>'}).join('')+'</div></section>';
+    if(ix.habits.length)h+=drHeat(ix);
+    if(ix.market.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">First one off the board, on average</div><h2>When positions go</h2></div></div><div class="rows">'+
+      ix.market.map(function(m){return '<div class="row"><div><b style="font-size:14px;color:'+(DR_POS[m.pos]||'var(--ink)')+'">'+esc(m.pos)+'</b></div><span class="val" style="font-size:15px">pick '+m.typical+'<small>earliest #'+m.first+'</small></span></div>'}).join('')+'</div></section>';
+  }
+  return h}
+var DR_SUP={king:'👑',sniper:'🎯',reach:'🧱',late:'💎',boom:'🎢',steady:'🧊',rough:'🫠'};
+function drHeat(ix){
+  var rounds=Math.min(ix.rounds,15);
+  var h='<section class="panel"><div class="ph"><div><div class="kicker">What each manager takes, round by round, across every draft</div><h2>Position habits</h2></div></div>'+
+   '<div class="dr-key">'+Object.keys(DR_POS).map(function(p){return '<span><i style="background:'+DR_POS[p]+'"></i>'+p+'</span>'}).join('')+'</div>'+
+   '<div class="dr-heat"><div class="dr-hrow dr-hhead"><span></span>'+Array.from({length:rounds},function(_,i){return '<span>'+(i+1)+'</span>'}).join('')+'</div>'+
+   ix.habits.map(function(m){return '<div class="dr-hrow">'+av(m.uid,22)+Array.from({length:rounds},function(_,i){var c=m.rounds[i];
+     return '<span class="dr-c"'+(c?' style="background:'+(DR_POS[c.pos]||'#333')+';color:#0b0912"':'')+' title="'+(c?esc(c.pos):'')+'">'+(c?esc(c.pos[0]==='D'?'D':c.pos[0]):'')+'</span>'}).join('')+'</div>'}).join('')+'</div>'+
+   '<p class="muted" style="font-size:11.5px;margin-top:8px">Each square is the position that manager takes most often in that round. Rounds run left to right.</p></section>';
+  return h}
 
 /* ---------- RECORDS ---------- */
 var RECS=[
@@ -1076,10 +1153,13 @@ var EXPLAIN={
   ['Did it help the team?','Each team\'s points per game and record before the trade vs since (regular season, including the median game). Lots of things change a team\'s scoring, so read it as context, not proof.'],
   ['Picks and FAAB','Draft picks and waiver budget that changed hands are listed with the deal, but aren\'t scored.'],
   ['Data','Trades, lineups and every player\'s weekly points come straight from Sleeper and update every few minutes during the season.']]},
- draft:{t:'Draft re-grade',b:[
-  ['How it works','Every drafted player (no kickers or defenses) is ranked by the points he has scored on league rosters this season. That rank is compared with where he was picked.'],
-  ['Steals','Players who have outscored their draft spot the most (late picks playing like early ones).'],
-  ['Busts','Early picks whose points rank is furthest below where they went.']]},
+ draft:{t:'How the draft is graded',b:[
+  ['What a pick is worth','Each pick is compared with what that slot is usually worth. Every drafted player (no kickers or defenses) is ranked by the points he scored on league rosters that season, and pick 1 is measured against the best of them, pick 2 against the second best, and so on. Your pick\'s value is his points minus that. Positive means the pick beat its slot.'],
+  ['Keepers don\'t count','Players you kept from last year show up on the board marked "kept", but they are left out of every grade. Nobody chose them at that slot, so grading them would be crediting a manager for a decision he never made.'],
+  ['Hits and misses','A hit beat its slot by 40 points or more. A miss fell 40 or more short. The hit rate is how often a manager\'s live picks landed on the good side of that.'],
+  ['Still on the board','For a pick that fell short, this is the best player taken later in the same draft, how many picks later he went, and who took him.'],
+  ['Grades','Managers are ranked on total value for that draft and given a letter from A down to F. Only live picks count, so somebody with a lot of keepers is graded on the few picks he actually made.'],
+  ['The small print','Points are what a player scored while on a roster in this league, using our scoring. A player dropped in October stops adding points, which is part of why the pick didn\'t work out.']]},
  book:{t:'How the odds work',b:[
   ['Pregame lines','Posted Tuesday 6 AM. Each team\'s projection is 60% Sleeper\'s projection for the lineup as it\'s set that morning and 40% league history (last 3 weeks, season average, last season). The spread is the projected margin, capped at 20. The total is both projections added. Both pay -110. The moneyline comes from the win chance plus a 4.5% house edge.'],
   ['Live odds','Once the first player in a matchup kicks off, the odds go live and update about every minute: projected final = points already scored + Sleeper\'s projection for every starter still to play (the same projected totals Sleeper shows). The "proj" under each team is that live number. The further ahead a team gets, the worse its price.'],
@@ -1859,6 +1939,9 @@ document.addEventListener('click',function(e){
   if(d.rf){S.rf=d.rf;render();return}
   if(d.aws){S.aws=d.aws;render();return}
   if(d.ats){S.ats=d.ats;render();return}
+  if(d.drs){S.drs=d.drs;render();centerChip('[data-drs="'+d.drs+'"]');return}
+  if(d.drboard){var yb=d.drboard;nav(function(){openSheet(drBoardSheet(yb))});return}
+  if(d.drm){var pm=d.drm.split('|');nav(function(){openSheet(drMgrSheet(pm[0],pm[1]))});return}
   if(d.lab){S.lab=d.lab;render();return}
   if(d.labs){S.labs=d.labs;render();return}
   if(d.recpick){openSheet(recPickSheet()+CLOSE);return}

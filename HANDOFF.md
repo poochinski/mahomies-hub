@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 22:15 (Pacific) · **AI:** Claude
-**Current phase:** v2.4 = the v2.3 design with new typefaces. The full UI overhaul was built, shown, and rolled back; only the fonts were kept. Next open items are in "Next steps".
-**Last commit:** "Back to the v2.3 look, keeping Archivo + Inter"
+**Last updated:** 2026-10-10 22:45 (Pacific) · **AI:** Claude
+**Current phase:** Draft rebuilt in the League tab (keeper fix + full board + habits). Next from the fantasyhoff sweep: a free weekly pick'em, then Trade Court and Matchup Hype.
+**Last commit:** "Draft in the League tab: keeper fix, full board, habits"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
@@ -16,6 +16,13 @@ Where things stand (Grok, 2026-10-10):
 - Next: Live Game Center (2.1).
 
 ## Done (newest first)
+- 2026-10-10 — **Draft rebuilt, moved to League** (Claude; Jayson picked items 1–3 off the fantasyhoff sweep and asked for the draft to live in the League tab).
+  - **The keeper bug is fixed.** Sleeper's `is_keeper` was never read, so kept players were being graded as if someone drafted them at that slot (22 of 180 picks in 2025). They now show on the board marked "kept" and sit out of grades, superlatives and hit/miss counts.
+  - `server/draft.js`: `draftSeason(season)` (board, per-manager grades, superlatives) and `draftIndex()` (seasons, loyalty, position habits, market, all-time drafter table). Routes in `server/routes/hub.js`. The old `/api/draft?season=` in `server/routes/lab.js` is deleted, along with `draftHtml` on the client.
+  - Value = points scored on league rosters that season − the slot's worth (the Nth-best drafted player, N = pick number). K/DEF excluded from the curve. Hit = +40, miss = −40.
+  - "Still on the board" is capped to the next two rounds; searching the whole draft kept naming the same late hit under every bad pick.
+  - Client: `draftView` + `drBoardSheet` + `drMgrSheet` in the League chip row (`S.drs` = season). New CSS prefix `dr-`. The `draft` How-it-works topic was rewritten.
+  - Tested on the local mock (180 picks, 15 rounds). **The mock has no keepers, so the keeper path is only verified against the real 2025 draft after deploy** — check that League › Draft › 2025 shows "22 kept" and that kept players carry no value.
 - 2026-10-10 — **v2.4 look: built, shown, rolled back — fonts kept** (Claude).
   - Jayson asked for a full UI overhaul (same colours, more professional, revertable). It shipped as one appended layer in app.css plus three small JS edits, and he looked at it against the frozen old build.
   - **His call: go back, keep the font.** `prototype/v2.0/{app.css,app.js,app.html}` were restored from the freeze commit `68dbba9`, so the layout, spacing, buttons, uppercase labels and pop-ups are exactly v2.3 again.
