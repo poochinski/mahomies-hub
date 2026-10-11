@@ -1,14 +1,19 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 14:40 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-11 15:00 (Pacific) · **AI:** Claude
 **Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
-**Last commit:** "Game day: 10-second live refresh, instant refresh on return"
+**Last commit:** "Slot vs slot: stat lines, game clock, player week sheet with scoring timeline"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **Slot vs slot: stat lines, clock, player week + timeline** (Claude; Jayson: more data in the rows, row tap → that week's point timeline + snap %, name tap → player card, quarter/clock next to live players).
+  - **Rows:** `/api/pulse` slots gain `l` (box-score line via `statLine`, only once his game has started) and `c` (ESPN clock, e.g. "Q3 8:12", live only). `homeCard` now also pulls `weekStats` (same 10 s live cache). Row = `<button class="mh-line" data-plw=pid>`; name keeps `data-pl` (capture listener → player card wins). Tag: pulsing green dot + clock + on pace; stat line as a third line (`.mh-sl`). The dot is a `<u>` because `.mh-line i` is the bar fill.
+  - **Player week sheet:** `pwOpen/pwLoad/pwHtml/pwTimer` (refresh at `pollMs()`, and on return to the app via `backInApp`). Shows NFL game clock + score, Points / On pace / Projected / Snaps (`off_snp/tm_off_snp`, kickers `st_snp`), gold big-play tag, box-score tiles, timeline (newest first), "Full player card ›". New `GET /api/live/player/:pid?week=` → `server/stats/playerweek.js` `playerWeek()`.
+  - **Timeline logger:** `server/stats/timeline.js`, started from `server/index.js` (`TIMELINE=off` disables). Every 10 s while a game is on (once a minute otherwise just to check), for every rostered player in the league it compares Sleeper `players_points` + the weekly stats feed with the last check; a change writes an entry (ESPN clock, stat diff, points delta, running total). Points-only and stats-only changes within 45 s are folded into one entry because Sleeper's two feeds land a few seconds apart. First sighting of a player with points = one "Before tracking" entry. Stored in new Postgres table `live_timeline` (created on start) and memory; reloaded per week after a restart. Test: `test/timeline.test.js`.
+  - **Limits:** only logs while the server is up and from this deploy on, so today's early games show as "Before tracking". Snap counts depend on Sleeper filling `off_snp` live — if they only post them after the game, the Snaps tile just doesn't show until then.
 - 2026-10-11 — **Game-day live speed** (Claude; Jayson: switch between Sleeper and Mahomie's Hub and see the same numbers).
   - **Before:** server cached Sleeper matchups/stats and ESPN for 45 s, the phone polled `/api/pulse` and the Game Center every 60 s → up to ~105 s behind Sleeper.
   - **Server** (`server/book/kickoffs.js`): `LIVE_MS = 10 s`, `isGameLive()`, `liveAge(otherwise)`. Every ESPN fetch that shows a game in progress (or a kickoff time that has passed) marks the server live for 2 min; while cached ESPN data shows a game on, ESPN itself refreshes every 15 s. `liveAge()` is used for: `homeCard` → `weekState`, `gameCenter` (kickoffs + matchups for the current week), `weekStats` live week, and `/api/pulse`. Book's own `weekState` calls are unchanged (betting locks don't need it).

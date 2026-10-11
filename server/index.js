@@ -12,6 +12,7 @@ import bookRoutes from './routes/book.js';
 import yahooRoutes from './routes/yahoo.js';
 import { initBook, startBookJobs } from './book/book.js';
 import { pool } from './db.js';
+import { startTimeline } from './stats/timeline.js';
 
 // Some hosts can't route IPv6 out; prefer IPv4 so calls to Sleeper don't hang.
 dns.setDefaultResultOrder('ipv4first');
@@ -105,6 +106,9 @@ app.get('*', (_req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Mahomie's Hub running on port ${PORT}`));
+
+// Game-day scoring log for the player-week sheet (checks every 10 s while games are on).
+if (process.env.TIMELINE !== 'off') startTimeline();
 
 // Sportsbook: create tables if needed, then run the clock job every 10 minutes
 // (posts lines Tuesday 6 AM, keeps game locks current, settles Wednesday 3 AM).

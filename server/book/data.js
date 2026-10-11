@@ -104,7 +104,8 @@ export function packSide(R) {
     return {
       s: slotShort(p.slot), n: p.empty ? '' : (p.name || ''), id: p.empty ? '' : (p.pid || ''),
       p: r1(p.pts || 0), j, e: p.empty ? 1 : 0, st: p.state || '',
-      k: p.state === 'pre' && p.kick ? new Date(p.kick).toISOString() : null
+      k: p.state === 'pre' && p.kick ? new Date(p.kick).toISOString() : null,
+      l: p.line || '', c: p.clock || ''
     };
   });
   return {
@@ -118,7 +119,14 @@ export async function homeCard(week) {
   const L = await league();
   const w = Number(week) || (L.seasonType === 'regular' ? L.nflWeek : 0);
   if (!w || w >= L.P) return { week: w, games: [] };
-  const [pairs, st] = await Promise.all([pairsFor(L, w), weekState(L, w, liveAge(45 * 1000))]);
+  const [pairs, st, wst] = await Promise.all([pairsFor(L, w), weekState(L, w, liveAge(45 * 1000)), weekStats(L.season, w, { live: true })]);
+  // Each starter's box score so far, and the game clock for anyone playing right now.
+  for (const R of Object.values(st.rosters)) for (const p of R.players || []) {
+    if (p.empty) continue;
+    p.line = p.state === 'pre' || p.state === 'bye' ? '' : statLine(p.pos, wst?.[p.pid]);
+    const g = st.k.gameOf?.[p.nfl];
+    p.clock = p.state === 'in' && g ? (g.detail || '') : '';
+  }
   const games = pairs.map((p) => {
     const A = packSide(st.rosters[p.roster_a]);
     const B = packSide(st.rosters[p.roster_b]);

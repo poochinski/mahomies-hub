@@ -88,7 +88,7 @@ var PULSE_ASK=0;
 setInterval(function(){if(LIVE&&document.visibilityState==='visible'&&Date.now()-PULSE_ASK>=pollMs()-500)loadPulse()},2500);
 var LAST_BACK=0;
 function backInApp(){if(!LIVE||document.visibilityState!=='visible')return;var t=Date.now();if(t-LAST_BACK<3000)return;LAST_BACK=t;
-  loadPulse();if(document.getElementById('gc')&&$('#sheet').classList.contains('open'))gcLoad();}
+  loadPulse();if(document.getElementById('gc')&&$('#sheet').classList.contains('open'))gcLoad();if(document.getElementById('pw')&&$('#sheet').classList.contains('open'))pwLoad();}
 document.addEventListener('visibilitychange',backInApp);window.addEventListener('focus',backInApp);window.addEventListener('pageshow',backInApp);
 function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
 function gsig(j){return (j&&j.games||[]).map(function(g){var ss=function(k){return (g['slots_'+k]||[]).map(function(p){return p.p}).join(',')};return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b,(g.warn_a||[]).length,(g.warn_b||[]).length,g.empty_a,g.empty_b,ss('a'),ss('b')].join(':')}).join('|')}
@@ -442,7 +442,7 @@ function kickTxt(iso){
   return d.toDateString()===new Date().toDateString()?t:d.toLocaleDateString([],{weekday:'short'})+' '+t;
 }
 function slotTag(p){
-  if(p.st==='in')return '<em class="mh-tag live">LIVE'+(p.j!=null?' · on pace '+f1(p.j):'')+'</em>';
+  if(p.st==='in')return '<em class="mh-tag live"><u class="mh-dot"></u>'+(p.c?esc(p.c):'LIVE')+(p.j!=null?' · on pace '+f1(p.j):'')+'</em>';
   if(p.st==='pre')return '<em class="mh-tag">'+(p.k?esc(kickTxt(p.k)):'Not started')+(p.j!=null?' · proj '+f1(p.j):'')+'</em>';
   if(p.st==='post')return '<em class="mh-tag">Final</em>';
   if(p.st==='bye')return '<em class="mh-tag">Bye</em>';
@@ -452,7 +452,8 @@ function slotSide(p,mx,side){
   if(!p||p.e)return '<div class="mh-line '+side+' empty"><span class="mh-nm"><span>Empty</span></span><b></b><i style="width:0"></i></div>';
   var v=slotPts(p),w=v>0&&mx>0?Math.max(4,Math.round(v/mx*100)):0;
   var name=p.id?'<span class="plk" data-pl="'+esc(p.id)+'">'+esc(p.n)+'</span>':'<span>'+esc(p.n||'—')+'</span>';
-  return '<div class="mh-line '+side+(p.st==='in'?' on':'')+'"><span class="mh-nm">'+name+slotTag(p)+'</span><b class="num">'+f1(v)+'</b><i style="width:'+w+'%"></i></div>';
+  var tap=p.id?' data-plw="'+esc(p.id)+'"':'';
+  return '<button type="button" class="mh-line '+side+(p.st==='in'?' on':'')+'"'+tap+'><span class="mh-nm">'+name+slotTag(p)+(p.l?'<em class="mh-sl">'+esc(p.l)+'</em>':'')+'</span><b class="num">'+f1(v)+'</b><i style="width:'+w+'%"></i></button>';
 }
 function slotSheet(){
   var d=myDesk(),h='<div id="mhss"><div class="ph" style="margin:0 0 8px"><div><div class="kicker">This week\'s starters</div><h2>Slot vs slot</h2></div></div>';
@@ -464,7 +465,38 @@ function slotSheet(){
   h+='<p class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(d.opp))+'</p>';
   for(i=0;i<n;i++){var a=d.mine[i],b=d.his[i];
     h+='<div class="mh-pair"><div class="mh-slab">'+esc((a&&a.s)||(b&&b.s)||'')+'</div>'+slotSide(a,mx,'you')+slotSide(b,mx,'him')+'</div>'}
-  return h+'<p class="gc-key">Bars are points so far. LIVE players show where they\'re on pace to finish; anyone who hasn\'t kicked off shows his kickoff and projection.</p></div>';
+  return h+'<p class="gc-key">Bars are points so far. Players in a game show the quarter, clock and where they\'re on pace to finish. Tap a name for the player card, tap the row for his week play by play.</p></div>';
+}
+/* One player's week (tap a Slot vs slot row): box score, snaps, NFL game, scoring timeline. */
+var PW={pid:'',d:null,timer:null};
+function pwOpen(pid){PW.pid=pid;PW.d=null;openSheet(pwHtml()+CLOSE);pwLoad();pwTimer()}
+function pwTimer(){clearTimeout(PW.timer);PW.timer=setTimeout(function(){if(!document.getElementById('pw')||!$('#sheet').classList.contains('open')){PW.timer=null;return}if(document.visibilityState==='visible')pwLoad();pwTimer()},pollMs())}
+function pwLoad(){var pid=PW.pid;
+  fetch('/api/live/player/'+encodeURIComponent(pid),{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(PW.pid!==pid||d.error)return;PW.d=d;var el=document.getElementById('pw');if(el)el.outerHTML=pwHtml()})
+   .catch(function(){var el=document.getElementById('pwErr');if(el)el.textContent='Couldn\'t reach Sleeper just now. Trying again shortly.'})}
+function pwHtml(){
+  var d=PW.d;if(!d)return '<div id="pw"><p class="muted">Loading his week…</p></div>';
+  var live=d.state==='in';
+  var h='<div id="pw"><div class="pw-hd">'+plPic(d.pid,d.name,52,d.pos)+'<div><div class="kicker">'+esc(d.pos)+(d.nfl?' · '+esc(d.nfl):'')+(d.team?' · '+esc(d.team)+(d.slot==='BN'?' (bench)':''):'')+'</div>'+
+    '<h2><span class="plk" data-pl="'+esc(d.pid)+'">'+esc(d.name)+'</span></h2>'+(d.inj?'<span class="pw-inj">'+esc(d.inj)+'</span>':'')+'</div></div>';
+  h+='<div class="pw-game'+(live?' on':'')+'"><span>'+(live?'<u class="mh-dot"></u>':'')+esc(d.status)+'</span><span>'+esc(d.game?(d.game.score||d.game.opp):'')+'</span></div>';
+  h+='<div class="pw-pts"><div><small>Points</small><b class="num">'+f1(d.pts)+'</b></div>'+
+    (d.pace!=null&&live?'<div><small>On pace</small><b class="num">'+f1(d.pace)+'</b></div>':'')+
+    (d.proj!=null?'<div><small>Projected</small><b class="num">'+f1(d.proj)+'</b></div>':'')+
+    (d.snaps?'<div><small>Snaps</small><b class="num">'+d.snaps.pct+'%</b><em>'+d.snaps.n+' of '+d.snaps.of+'</em></div>':'')+'</div>';
+  if(d.big)h+='<p class="pw-big">'+esc(d.big)+'</p>';
+  if(d.box&&d.box.length)h+='<div class="pw-box">'+d.box.map(function(t){return '<div><small>'+esc(t.k)+'</small><b>'+esc(t.v)+'</b></div>'}).join('')+'</div>';
+  else if(d.state==='pre')h+='<p class="muted">Hasn\'t played yet. Kicks off '+esc(d.status)+(d.game?' '+esc(d.game.opp):'')+'.</p>';
+  h+='<div class="yg-k" style="margin-top:14px">Scoring timeline</div>';
+  var tl=(d.timeline||[]).slice().reverse();
+  if(!tl.length)h+='<p class="muted">'+(d.state==='pre'?'Nothing yet. Every catch, carry and score gets logged here as it happens.':'Nothing logged for this week yet. The log starts the first time the app sees his game live.')+'</p>';
+  else h+='<div class="pw-tl">'+tl.map(function(e){
+    var t=new Date(e.at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    var dl=Math.abs(e.delta)<0.005?'':'<b class="'+(e.delta>0?'up':'dn')+'">'+(e.delta>0?'+':'−')+f1(Math.abs(e.delta))+'</b>';
+    return '<div class="pw-ev'+(e.kind==='start'?' pw-pre':'')+'"><span class="pw-when">'+esc(e.kind==='start'?'Before tracking':(e.clock||t))+'<small>'+esc(e.kind==='start'?'':t)+'</small></span><span class="pw-what">'+esc(e.what||(e.kind==='start'?'Points already on the board':'Stat correction'))+'</span>'+dl+'<em>'+f1(e.pts)+'</em></div>'}).join('')+'</div>';
+  h+='<button type="button" class="ghost pw-card" data-pl="'+esc(d.pid)+'">Full player card ›</button>';
+  h+='<p class="gc-up" id="pwErr">Updated '+hms(d.updated)+' · '+paceTxt()+'</p></div>';
+  return h;
 }
 function seedSheet(){
   var d=myDesk();if(!d)return '<p class="muted">Pick your team first.</p>';
@@ -2211,6 +2243,7 @@ document.addEventListener('click',function(e){
   if(d.twih){nav(function(){openSheet(twihSheet()+CLOSE)});return}
   if(d.rec){closeSheetQuiet();S.rec=d.rec;S.recMore=false;render();centerChip('[data-rec="'+S.rec+'"]');return}
   if(d.pair){var pp=d.pair.split('|');S.h2a=pp[0];S.h2b=pp[1];render();var el=document.getElementById('rivalTop');if(el)el.scrollIntoView({block:'start'});return}
+  if(d.plw){var pw=d.plw;nav(function(){pwOpen(pw)});return}
   if(d.mh){var kind=d.mh;nav(function(){var desk=myDesk();if(!desk){openSheet('<p class="muted">Pick your team first.</p>'+CLOSE);return}if(kind==='series')openSheet(seriesSheet(desk.me,desk.opp)+CLOSE);else if(kind==='slots')openSheet(slotSheet()+CLOSE);else if(kind==='seed')openSheet(seedSheet()+CLOSE)});return}
   if(d.prev){nav(function(){if(S.tab!=='book'&&LIVE&&/^w\d+m\d+$/.test(d.prev)){gcOpen(d.prev);return}openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE)});return}
   if(d.gcprev){nav(function(){openSheet(previewSheet(d.gcprev,false)+CLOSE)});return}

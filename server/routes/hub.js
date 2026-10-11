@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { getHub } from '../hub/cache.js';
 import { kickoffs, describeWeek, liveAge, isGameLive, LIVE_MS } from '../book/kickoffs.js';
 import { homeCard, gameCenter, pregameProjections } from '../book/data.js';
+import { playerWeek } from '../stats/playerweek.js';
 import { playerProfile } from '../player.js';
 import { teamPage, playerSearch, wire } from '../team.js';
 import { draftIndex, draftSeason } from '../draft.js';
@@ -49,6 +50,13 @@ router.get('/projhist', async (req, res) => {
   const weeks = String(req.query.weeks || '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 6);
   try { res.json({ weeks: await pregameProjections(weeks) }); }
   catch (err) { console.error('projhist failed', err.message); res.json({ weeks: {} }); }
+});
+
+// GET /api/live/player/:pid?week= — one player's week: box score, snaps, NFL game, scoring timeline.
+router.get('/live/player/:pid', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { res.json(await playerWeek(req.params.pid, req.query.week)); }
+  catch (err) { console.error('player week failed', err.message); res.status(500).json({ error: err.message }); }
 });
 
 // GET /api/live/:week/:mid — Live Game Center for one matchup (player by player). Polled about once a minute.
