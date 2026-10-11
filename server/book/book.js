@@ -23,14 +23,19 @@ export class BookError extends Error { constructor(msg, status = 400) { super(ms
 
 // ---------- database plumbing ----------
 let ready = false;
+let initializing = null;
 export const isReady = () => ready;
 
 export async function initBook() {
   if (!pool) return false;
-  const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-  await pool.query(sql);
-  ready = true;
-  return true;
+  if (ready) return true;
+  if (!initializing) initializing = (async () => {
+    const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+    await pool.query(sql);
+    ready = true;
+    return true;
+  })().finally(() => { initializing = null; });
+  return initializing;
 }
 
 async function q(text, params) { return (await pool.query(text, params)).rows; }
@@ -44,8 +49,8 @@ async function log(kind, detail, by = null) { await q('INSERT INTO book_log(kind
 
 // ---------- settings ----------
 export const DEFAULTS = { start_week: 6, grant: 1000, min_bet: 10, max_bet: 250, parlay_min_legs: 2, parlay_max_legs: 4, parlay_max_payout: 10000, futures_cap: 250 };
-export async function settings() {
-  const rows = await q('SELECT key, value FROM book_settings');
+export async function settings(c = pool) {
+  const { rows } = await c.query('SELECT key, value FROM book_settings');
   const s = { ...DEFAULTS };
   for (const r of rows) if (r.key in DEFAULTS) s[r.key] = Number(r.value);
   return s;
@@ -73,7 +78,7 @@ export async function teamsList() {
     .sort((a, b) => a.team.localeCompare(b.team));
 }
 
-export async function login(userId, pin, ip = '?') {
+export async function login(userId, pin, ip = '?', invite = '') {
   if (!/^\d{4}$/.test(String(pin || ''))) throw new BookError('PIN must be 4 digits');
   const t = Date.now(); const recent = (ipTries.get(ip) || []).filter((x) => t - x < 15 * MIN);
   if (recent.length >= 30) throw new BookError('Too many tries from this phone. Wait 15 minutes.', 429);
@@ -81,28 +86,38 @@ export async function login(userId, pin, ip = '?') {
 
   const L = await sl.league();
   if (!L.active.includes(userId)) throw new BookError('That team is not in the league this season', 404);
-  await q('INSERT INTO app_users(user_id) VALUES ($1) ON CONFLICT DO NOTHING', [userId]);
-  const [u] = await q('SELECT * FROM app_users WHERE user_id = $1', [userId]);
-  if (u.locked_until && new Date(u.locked_until) > now()) throw new BookError(`Too many wrong PINs. Try again after ${fmtPT(u.locked_until)}.`, 429);
-  let created = false;
-  if (!u.pin_hash) {
-    const salt = crypto.randomBytes(16).toString('hex');
-    await q('UPDATE app_users SET pin_hash=$2, pin_salt=$3, pin_set_at=now(), failed_tries=0, locked_until=NULL WHERE user_id=$1', [userId, hashPin(pin, salt), salt]);
-    created = true;
-    await log('pin_set', { user: userId });
-  } else {
-    const ok = crypto.timingSafeEqual(Buffer.from(hashPin(pin, u.pin_salt), 'hex'), Buffer.from(u.pin_hash, 'hex'));
-    if (!ok) {
-      const tries = u.failed_tries + 1;
-      await q('UPDATE app_users SET failed_tries=$2, locked_until=$3 WHERE user_id=$1', [userId, tries >= 5 ? 0 : tries, tries >= 5 ? new Date(now().getTime() + 15 * MIN) : null]);
-      throw new BookError(tries >= 5 ? 'Wrong PIN 5 times. Locked for 15 minutes.' : `Wrong PIN (${5 - tries} ${5 - tries === 1 ? 'try' : 'tries'} left)`, 401);
+  const result = await tx(async (c) => {
+    const run = async (sql, p) => (await c.query(sql, p)).rows;
+    await run('INSERT INTO app_users(user_id) VALUES ($1) ON CONFLICT DO NOTHING', [userId]);
+    const [u] = await run('SELECT * FROM app_users WHERE user_id = $1 FOR UPDATE', [userId]);
+    if (u.locked_until && new Date(u.locked_until) > now()) throw new BookError(`Too many wrong PINs. Try again after ${fmtPT(u.locked_until)}.`, 429);
+    let created = false;
+    if (!u.pin_hash) {
+      if (!u.pin_invite_hash || !u.pin_invite_expires || new Date(u.pin_invite_expires) <= now() ||
+          !crypto.timingSafeEqual(Buffer.from(sha(String(invite).trim()), 'hex'), Buffer.from(u.pin_invite_hash, 'hex'))) {
+        throw new BookError('Ask the commish for a valid setup code before choosing a PIN.', 403);
+      }
+      const salt = crypto.randomBytes(16).toString('hex');
+      await run('UPDATE app_users SET pin_hash=$2, pin_salt=$3, pin_set_at=now(), failed_tries=0, locked_until=NULL, pin_invite_hash=NULL, pin_invite_expires=NULL WHERE user_id=$1', [userId, hashPin(pin, salt), salt]);
+      created = true;
+    } else {
+      const ok = crypto.timingSafeEqual(Buffer.from(hashPin(pin, u.pin_salt), 'hex'), Buffer.from(u.pin_hash, 'hex'));
+      if (!ok) {
+        const tries = u.failed_tries + 1;
+        await run('UPDATE app_users SET failed_tries=$2, locked_until=$3 WHERE user_id=$1', [userId, tries >= 5 ? 0 : tries, tries >= 5 ? new Date(now().getTime() + 15 * MIN) : null]);
+        // Commit failed-attempt accounting before returning the authentication error.
+        return { error: new BookError(tries >= 5 ? 'Wrong PIN 5 times. Locked for 15 minutes.' : `Wrong PIN (${5 - tries} ${5 - tries === 1 ? 'try' : 'tries'} left)`, 401) };
+      }
+      await run('UPDATE app_users SET failed_tries=0, locked_until=NULL WHERE user_id=$1', [userId]);
     }
-    await q('UPDATE app_users SET failed_tries=0, locked_until=NULL WHERE user_id=$1', [userId]);
-  }
-  const token = crypto.randomBytes(32).toString('base64url');
-  await q('INSERT INTO sessions(token_hash, user_id, expires_at) VALUES ($1,$2,$3)', [sha(token), userId, new Date(now().getTime() + SESSION_DAYS * 24 * 60 * MIN)]);
-  await ensureGrant(userId, L.season);
-  return { token, user_id: userId, created };
+    const token = crypto.randomBytes(32).toString('base64url');
+    await run('INSERT INTO sessions(token_hash, user_id, expires_at) VALUES ($1,$2,$3)', [sha(token), userId, new Date(now().getTime() + SESSION_DAYS * 24 * 60 * MIN)]);
+    await ensureGrant(userId, L.season, c);
+    return { token, user_id: userId, created };
+  });
+  if (result.error) throw result.error;
+  if (result.created) await log('pin_set', { user: userId });
+  return result;
 }
 
 export async function userFromToken(token) {
@@ -113,14 +128,23 @@ export async function userFromToken(token) {
 export async function logout(token) { if (token) await q('DELETE FROM sessions WHERE token_hash=$1', [sha(token)]); }
 
 export async function resetPin(userId, by) {
-  await q('UPDATE app_users SET pin_hash=NULL, pin_salt=NULL, failed_tries=0, locked_until=NULL WHERE user_id=$1', [userId]);
-  await q('DELETE FROM sessions WHERE user_id=$1', [userId]);
+  const L = await sl.league();
+  if (!L.active.includes(userId)) throw new BookError('That team is not in the league this season', 404);
+  const invite = crypto.randomBytes(24).toString('base64url');
+  const expires = new Date(now().getTime() + 24 * 60 * MIN);
+  await tx(async (c) => {
+    await c.query('INSERT INTO app_users(user_id) VALUES ($1) ON CONFLICT DO NOTHING', [userId]);
+    await c.query('SELECT 1 FROM app_users WHERE user_id=$1 FOR UPDATE', [userId]);
+    await c.query('UPDATE app_users SET pin_hash=NULL, pin_salt=NULL, failed_tries=0, locked_until=NULL, pin_invite_hash=$2, pin_invite_expires=$3 WHERE user_id=$1', [userId, sha(invite), expires]);
+    await c.query('DELETE FROM sessions WHERE user_id=$1', [userId]);
+  });
   await log('pin_reset', { user: userId }, by);
+  return { user_id: userId, invite, expires_at: expires.toISOString() };
 }
 
 // ---------- bankroll ----------
 async function ensureGrant(userId, season, c = null) {
-  const s = await settings();
+  const s = await settings(c || pool);
   const run = (sql, p) => (c ? c.query(sql, p) : pool.query(sql, p));
   await run(`INSERT INTO bankroll_ledger(user_id, season, amount, kind, note) VALUES ($1,$2,$3,'grant',$4)
              ON CONFLICT (user_id, season) WHERE kind = 'grant' DO NOTHING`, [userId, season, s.grant, `${season} season bankroll`]);
@@ -252,8 +276,8 @@ async function postFutures(season, week, firstKick) {
   });
   await log('post_futures', { season, week, prices: rows.length });
 }
-async function futuresUsed(userId, season) {
-  const [r] = await q(`SELECT COALESCE(SUM(b.stake),0)::float AS used FROM bets b WHERE b.user_id=$1 AND b.season=$2 AND b.status <> 'cancelled'
+async function futuresUsed(userId, season, c = pool) {
+  const { rows: [r] } = await c.query(`SELECT COALESCE(SUM(b.stake),0)::float AS used FROM bets b WHERE b.user_id=$1 AND b.season=$2 AND b.status <> 'cancelled'
                        AND EXISTS (SELECT 1 FROM bet_legs g WHERE g.bet_id=b.id AND g.market = ANY($3))`, [userId, season, FUTURE_MARKETS]);
   return r.used;
 }
@@ -273,7 +297,9 @@ const outcomeOf = (pick) => (pick.includes(':') ? pick.split(':') : [null, pick]
 // Grade open futures once Sleeper has the answers.
 export async function settleFutures() {
   const L = await sl.league();
-  const legs = await q(`SELECT g.*, l.season FROM bet_legs g JOIN lines l ON l.id=g.line_id WHERE l.matchup_id=-1 AND l.season=$1 AND g.result='open'`, [L.season]);
+  // Include already-graded legs of open bets so interrupted older settlements can resume.
+  const legs = await q(`SELECT g.*, l.season FROM bet_legs g JOIN lines l ON l.id=g.line_id JOIN bets b ON b.id=g.bet_id
+                       WHERE l.matchup_id=-1 AND l.season=$1 AND b.status='open' ORDER BY g.bet_id, g.id`, [L.season]);
   if (!legs.length) return { graded: 0 };
   const lg = await sleeper(`/league/${L.leagueId}`, { maxAgeMs: 10 * MIN });
   const median = !!lg.settings?.league_average_match, playoffN = Number(lg.settings?.playoff_teams) || 6;
@@ -299,7 +325,7 @@ export async function settleFutures() {
     const f = (wb || []).find((m) => m.p === 1 && m.w != null), t = (lb || []).find((m) => m.p === 1 && m.w != null);
     if (f) res.champ = L.owner[f.w]; if (t) res.sacko = L.owner[t.w];
   } catch { /* brackets not set yet */ }
-  const touched = new Set();
+  const results = new Map();
   for (const g of legs) {
     const [side, u] = outcomeOf(g.pick); let r = null;
     if (g.market === 'champ' && res.champ) r = res.champ === u ? 'won' : 'lost';
@@ -309,9 +335,19 @@ export async function settleFutures() {
     else if (g.market === 'pking' && res.kings) r = !res.kings.includes(u) ? 'lost' : res.kings.length > 1 ? 'push' : 'won';
     else if (g.market === 'wins' && res.W) { const x = (res.W[u] || 0) - Number(g.point); r = Math.abs(x) < 1e-9 ? 'push' : (side === 'over' ? x > 0 : x < 0) ? 'won' : 'lost'; }
     if (!r) continue;
-    await q('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, r]); touched.add(g.bet_id);
+    results.set(g.id, r);
   }
-  for (const b of touched) await gradeOne(b);
+  const touched = new Set();
+  for (const betId of new Set(legs.map((g) => g.bet_id))) {
+    await tx(async (c) => {
+      const { rows: [bet] } = await c.query('SELECT * FROM bets WHERE id=$1 FOR UPDATE', [betId]);
+      if (!bet || bet.status !== 'open') return;
+      for (const g of legs.filter((x) => x.bet_id === betId)) {
+        if (results.has(g.id)) await c.query("UPDATE bet_legs SET result=$2 WHERE id=$1 AND result='open'", [g.id, results.get(g.id)]);
+      }
+      if (await gradeOne(betId, c)) touched.add(betId);
+    });
+  }
   if (touched.size) await log('settle_futures', { graded: touched.size, champ: res.champ || null, sacko: res.sacko || null });
   return { graded: touched.size };
 }
@@ -428,12 +464,12 @@ export async function editLine(id, body, by) {
   if (body.void) {
     await tx(async (c) => {
       await c.query("UPDATE lines SET status='void', note=$2, updated_at=now() WHERE id=$1", [id, note || 'Voided by commish']);
+      const { rows: bets } = await c.query("SELECT b.id FROM bets b WHERE b.status='open' AND EXISTS (SELECT 1 FROM bet_legs g WHERE g.bet_id=b.id AND g.line_id=$1) ORDER BY b.id FOR UPDATE", [id]);
       await c.query("UPDATE bet_legs SET result='void' WHERE line_id=$1 AND result='open'", [id]);
+      // The void and every resulting refund commit together, or all roll back.
+      for (const b of bets) await gradeOne(b.id, c);
     });
     await log('void_line', { id, note }, by);
-    // Bets made only of void legs are refunded now; parlays keep their other legs.
-    const bets = await q("SELECT DISTINCT b.id FROM bets b JOIN bet_legs l ON l.bet_id=b.id WHERE l.line_id=$1 AND b.status='open'", [id]);
-    for (const b of bets) await gradeOne(b.id);
     return;
   }
   if (isStarted(line)) throw new BookError('That game has started, so live odds run on their own now. You can only void it.');
@@ -510,8 +546,6 @@ export async function placeBet(userId, legsIn, stakeIn) {
       if (!px) throw new BookError('That future is off the board');
       const [side, u] = outcomeOf(String(li.pick));
       if (u === userId && (li.market === 'sacko' || (li.market === 'playoffs' && side === 'no') || (li.market === 'wins' && side === 'under'))) throw new BookError("You can't bet against yourself");
-      const cap = (await settings()).futures_cap, used = await futuresUsed(userId, season);
-      if (used + stake > cap) throw new BookError(`Futures are capped at ${cap} Bucks a season (you have ${money(Math.max(0, cap - used))} left)`);
       const terms = { point: px.point != null ? Number(px.point) : null, odds: px.odds, live: false };
       if (worseThan(li.market === 'wins' ? 'total' : 'ml', side || 'over', { odds: li.odds, point: li.point }, terms)) throw new BookError('Odds moved. Check the new price and place it again.', 409);
       legs.push({ line: fresh, market: li.market, pick: String(li.pick), ...terms });
@@ -568,6 +602,10 @@ export async function placeBet(userId, legsIn, stakeIn) {
   const bet = await tx(async (c) => {
     await c.query('INSERT INTO app_users(user_id) VALUES ($1) ON CONFLICT DO NOTHING', [userId]);
     await c.query('SELECT 1 FROM app_users WHERE user_id=$1 FOR UPDATE', [userId]); // one bet at a time per person
+    if (legs.some((l) => FUTURE_MARKETS.includes(l.market))) {
+      const used = await futuresUsed(userId, season, c);
+      if (used + stake > s.futures_cap) throw new BookError(`Futures are capped at ${s.futures_cap} Bucks a season (you have ${money(Math.max(0, s.futures_cap - used))} left)`);
+    }
     await ensureGrant(userId, season, c);
     const bal = await balanceOf(userId, season, c);
     if (stake > bal) throw new BookError(`Not enough Bucks (you have ${bal})`);
@@ -630,6 +668,7 @@ export async function leaderboard() {
   const L = await sl.league();
   const s = await settings();
   const rows = await q(`SELECT u.user_id,
+      EXISTS (SELECT 1 FROM bankroll_ledger x WHERE x.user_id=u.user_id AND x.season=$1 AND x.kind='grant') AS joined,
       COALESCE((SELECT SUM(amount) FROM bankroll_ledger x WHERE x.user_id=u.user_id AND x.season=$1),0)::float AS cash,
       COALESCE((SELECT SUM(stake) FROM bets b WHERE b.user_id=u.user_id AND b.season=$1 AND b.status='open'),0)::float AS in_play,
       (SELECT COUNT(*) FROM bets b WHERE b.user_id=u.user_id AND b.season=$1 AND b.status='won')::int AS won,
@@ -639,7 +678,7 @@ export async function leaderboard() {
     FROM app_users u`, [L.season]);
   const R = Object.fromEntries(rows.map((r) => [r.user_id, r]));
   return L.active.map((u) => {
-    const r = R[u]; const joined = !!r && (r.cash !== 0 || r.in_play !== 0 || r.won + r.lost + r.push > 0);
+    const r = R[u]; const joined = !!r?.joined;
     const cash = joined ? money(r.cash) : s.grant, inPlay = joined ? money(r.in_play) : 0;
     return { user_id: u, team: L.teams[u]?.team || '?', joined, cash, in_play: inPlay, bankroll: money(cash + inPlay),
       profit: money(cash + inPlay - s.grant - (joined ? r.adjusted : 0)), record: joined ? `${r.won}-${r.lost}${r.push ? '-' + r.push : ''}` : '0-0' };
@@ -668,9 +707,10 @@ export async function feed(limit = 40) {
 // ---------- settlement ----------
 // Grade one bet from its legs (used after settlement and after voids).
 async function gradeOne(betId, c = null) {
-  const run = (sql, p) => (c ? c.query(sql, p) : pool.query(sql, p));
-  const s = await settings();
-  const { rows: [b] } = await run('SELECT * FROM bets WHERE id=$1', [betId]);
+  if (!c) return tx((client) => gradeOne(betId, client));
+  const run = (sql, p) => c.query(sql, p);
+  const s = await settings(c);
+  const { rows: [b] } = await run('SELECT * FROM bets WHERE id=$1 FOR UPDATE', [betId]);
   if (!b || b.status !== 'open') return;
   const { rows: legs } = await run('SELECT * FROM bet_legs WHERE bet_id=$1', [betId]);
   const lostLeg = legs.some((l) => l.result === 'lost');
@@ -679,6 +719,7 @@ async function gradeOne(betId, c = null) {
   await run('UPDATE bets SET status=$2, payout=$3, settled_at=now() WHERE id=$1', [betId, g.status, g.payout]);
   if (g.payout > 0) await run('INSERT INTO bankroll_ledger(user_id, season, amount, kind, bet_id, note) VALUES ($1,$2,$3,$4,$5,$6)',
     [b.user_id, b.season, g.payout, g.status === 'won' ? 'payout' : 'refund', betId, `${g.status === 'won' ? 'Won' : g.status === 'void' ? 'Void' : 'Push'} · bet #${betId}`]);
+  return true;
 }
 
 export async function settleWeek(season, week, { force = false, by = null } = {}) {
@@ -803,3 +844,4 @@ export async function health() {
   out.recent_errors = errs.map((e) => ({ at: e.at, errors: e.detail?.errors || [] }));
   return out;
 }
+

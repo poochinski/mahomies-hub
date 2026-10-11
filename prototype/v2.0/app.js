@@ -918,27 +918,29 @@ function placeBets(btn){btn.disabled=true;btn.textContent='Placing…';
     if(failed){bookLoad().then(function(){S.review=false;if(!S.picks.length){closeSheetQuiet();toast(failed.msg);return}openSheet(slipHtml());slipCheck();var er=$('#slipErr');if(er)er.innerHTML=(done.length?done.length+' placed. ':'')+(/Odds moved/.test(failed.msg)?'Odds moved on a pick. These are the new prices. Review again to take them.':esc(failed.msg))})}
     else{S.review=false;S.slipMode='single';openSheet(ticketSheet(done.map(function(b){return b.id}),done.length>1?'Bets placed':'Bet placed'));S.bseg='mine';bookLoad();render()}};
   step(0)}
-/* login: pick team, then PIN pad */
+/* login: unclaimed/reset accounts need a private setup code before choosing a PIN */
+S.pinInvite='';
 function loginSheet(){
   if(!BK.teams)return '<p class="muted">Loading teams…</p>'+CLOSE;
   if(!S.lt)return '<div class="ph" style="margin:0"><div><div class="kicker">Sportsbook login</div><h2>Which team is yours?</h2></div></div><div class="rows">'+
     BK.teams.map(function(t){return '<button type="button" class="row" data-lteam="'+t.id+'" style="grid-template-columns:minmax(0,1fr) auto 10px">'+whoS(t.id,t.name,30)+'<span class="tr '+(t.has_pin?'r':'p')+'" style="font-size:10px">'+(t.has_pin?'PIN set':'New')+'</span>'+CHEV+'</button>'}).join('')+'</div>'+CLOSE;
   var t=BK.teams.find(function(x){return x.id===S.lt})||{};var setting=!t.has_pin;
+  if(setting&&!S.pinInvite)return '<div class="pinbox">'+av(S.lt,52)+'<h2>'+esc(team(S.lt))+'</h2><p class="muted">Ask the commish for your private setup code, then choose a PIN.</p><label class="fld"><span>Setup code</span><input id="pinInvite" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></label><p class="err">'+esc(S.pinErr||'')+'</p><button type="button" class="cta" data-invitego="1">Choose PIN</button><button type="button" class="ghost" data-pinback="1">Teams</button></div>';
   var title=setting?(S.pin1?'Type it again':'Pick a 4-digit PIN'):'Enter your PIN';
   return '<div class="pinbox">'+av(S.lt,52)+'<h2>'+esc(team(S.lt))+'</h2><p class="muted" style="font-size:13px">'+title+(setting&&!S.pin1?'<br><span style="font-size:11.5px">You\'ll use it to log in on any phone. Don\'t share it.</span>':'')+'</p>'+
    '<div class="dots'+(S.pinErr?' shake':'')+'">'+[0,1,2,3].map(function(i){return '<i class="'+(i<S.pin.length?'on':'')+'"></i>'}).join('')+'</div><p class="err" style="min-height:18px;text-align:center">'+esc(S.pinErr||'')+'</p>'+
    '<div class="pad">'+['1','2','3','4','5','6','7','8','9','back','0','del'].map(function(k){return k==='back'?'<button type="button" class="pk2 dim" data-pinback="1">Teams</button>':k==='del'?'<button type="button" class="pk2 dim" data-key="del" aria-label="Delete">⌫</button>':'<button type="button" class="pk2" data-key="'+k+'">'+k+'</button>'}).join('')+'</div></div>';
 }
-function openLogin(){S.lt=null;S.pin='';S.pin1=null;S.pinErr='';openSheet(loginSheet());
+function openLogin(){S.lt=null;S.pin='';S.pin1=null;S.pinInvite='';S.pinErr='';openSheet(loginSheet());
   api('/teams').then(function(t){BK.teams=t;if($('#sheet').classList.contains('open'))openSheet(loginSheet())}).catch(function(e){openSheet('<p class="err">'+esc(e.message)+'</p>'+CLOSE)})}
 function pinKey(k){if(S.pinBusy)return;S.pinErr='';if(k==='del'){S.pin=S.pin.slice(0,-1);openSheet(loginSheet());return}if(S.pin.length>=4)return;S.pin+=k;openSheet(loginSheet());if(S.pin.length<4)return;
   var t=BK.teams.find(function(x){return x.id===S.lt})||{};
   if(!t.has_pin&&!S.pin1){S.pin1=S.pin;S.pin='';setTimeout(function(){openSheet(loginSheet())},150);return}
   if(!t.has_pin&&S.pin1!==S.pin){S.pin1=null;S.pin='';S.pinErr='PINs didn\'t match. Start over.';openSheet(loginSheet());return}
   S.pinBusy=true;
-  api('/login',{body:{user_id:S.lt,pin:S.pin}}).then(function(r){S.pinBusy=false;AUTH={token:r.token,user_id:r.user_id};store('auth',AUTH);S.me=r.user_id;store('me',S.me);S.h2a=S.me;
+  api('/login',{body:{user_id:S.lt,pin:S.pin,invite:S.pinInvite}}).then(function(r){S.pinBusy=false;S.pinInvite='';if(BK.teams)BK.teams.forEach(function(t){if(t.id===r.user_id)t.has_pin=true});AUTH={token:r.token,user_id:r.user_id};store('auth',AUTH);S.me=r.user_id;store('me',S.me);S.h2a=S.me;
     closeSheetQuiet();toast((r.created?'PIN set. ':'')+'Logged in as '+team(r.user_id));bookLoad();render();if(S.picks.length)setTimeout(function(){openSheet(slipHtml())},300)})
-   .catch(function(e){S.pinBusy=false;S.pin='';S.pinErr=e.message;openSheet(loginSheet())})}
+   .catch(function(e){S.pinBusy=false;S.pin='';S.pin1=null;S.pinInvite='';S.pinErr=e.message;openSheet(loginSheet())})}
 function logout(){api('/logout',{method:'POST'}).catch(function(){});AUTH=null;store('auth',null);BK.me=null;S.picks=[];render();toast('Logged out')}
 
 /* commish tools */
@@ -947,7 +949,7 @@ function admPanel(){
   return '<section class="panel"><div class="ph"><div><div class="kicker">Commish only</div><h2>Book controls</h2></div></div><div class="rows">'+
    [['bucks','💵 Add or take away Bucks','Any team, you included. Shows everyone\'s balance; every change goes in the ledger.'],['health','Book health','Is everything working? Lines, live data, settlement, errors.'],['post','Post lines now','Use if Tuesday\'s automatic post didn\'t happen.'],['line','Move or void a line','Change a number before the game locks, or take it off the board.'],
     ['settle','Settle a week','Grade bets now (normally automatic Wednesday 3 AM).'],
-    ['pin','Reset a PIN','For anyone locked out or who picked the wrong team.'],['log','Book log','What the clock job and the commish did.']]
+    ['pin','Set up or reset a PIN','Create a private setup code for a new team or someone locked out.'],['log','Book log','What the clock job and the commish did.']]
    .map(function(x){return '<button type="button" class="row" data-adm="'+x[0]+'" style="grid-template-columns:minmax(0,1fr) 10px"><div><b style="font-size:14px">'+x[1]+'</b><p class="muted" style="font-size:12px;margin-top:2px">'+x[2]+'</p></div>'+CHEV+'</button>'}).join('')+'</div></section>'}
 /* commish Bucks (v1.8.3): every team with its balance, quick amounts, live preview */
 var BKU={u:null,amt:'',note:''};
@@ -977,7 +979,7 @@ function admSheet(k,arg){var nw=(BK.status&&BK.status.next&&BK.status.next.week)
   if(k==='post')return hd('Post lines','Lines freeze for the whole week once posted.')+fld('aWeek','Week',nw,'number')+'<label class="chk"><input type="checkbox" id="aForce"> Replace lines already posted (only if nobody has bet yet)</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="post">Post lines</button>'+CLOSE;
   if(k==='settle')return hd('Settle a week','Uses Sleeper\'s current scores. Normally runs itself Wednesday 3 AM.')+fld('aWeek','Week',ow||'','number')+'<label class="chk"><input type="checkbox" id="aForce"> Settle now even if it\'s early</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="settle">Settle</button>'+CLOSE;
   if(k==='bucks')return hd('Add or take away Bucks','Pick a team (you\'re on the list too), pick an amount, give a reason. It shows up in the ledger.')+bucksBody()+CLOSE;
-  if(k==='pin')return hd('Reset a PIN','They\'ll pick a new PIN next time they log in, and get logged out everywhere.')+'<label class="fld"><span>Team</span>'+teamSelect('aUser')+'</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="pin">Reset PIN</button>'+CLOSE;
+  if(k==='pin')return hd('Set up or reset a PIN','Creates a private code valid for 24 hours. Any existing PIN and sessions are revoked. Share the code only with that team\'s owner.')+'<label class="fld"><span>Team</span>'+teamSelect('aUser')+'</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="pin">Create setup code</button>'+CLOSE;
   if(k==='line'){var L=(BK.wk&&BK.wk.lines)||[];
     if(!arg)return hd('Move or void a line',L.length?'Week '+ow+'. Tap a game.':'No lines posted right now.')+'<div class="rows">'+L.map(function(l){return '<button type="button" class="row" data-adm="line" data-arg="'+l.id+'" style="grid-template-columns:minmax(0,1fr) auto 10px"><div><b style="font-size:13.5px">'+esc(team(l.a))+' vs '+esc(team(l.b))+'</b><p class="muted" style="font-size:12px">'+spr(-l.spread)+' · O/U '+f1(l.total)+' · '+odds(l.ml_a)+'/'+odds(l.ml_b)+'</p></div><span class="tr r" style="font-size:10px">'+esc(isLk(l)?l.status==='open'?'locked':l.status:'open')+'</span>'+CHEV+'</button>'}).join('')+'</div>'+CLOSE;
     var l=bl(arg);if(!l)return '<p class="muted">Line not found.</p>'+CLOSE;
@@ -994,6 +996,11 @@ function admGo(k,arg,btn){var v=function(id){var e=$('#'+id);return e?(e.type===
    k==='line'?api('/admin/line/'+encodeURIComponent(arg),{body:{spread:v('aSpread'),total:v('aTotal'),ml_a:v('aMla'),ml_b:v('aMlb'),note:v('aNote')}}):
    k==='void'?api('/admin/line/'+encodeURIComponent(arg),{body:{void:true,note:v('aNote')||'Voided by commish'}}):null;
   if(!p)return;btn.disabled=true;
+  if(k==='pin'){p.then(function(r){
+    if(AUTH&&AUTH.user_id===r.user_id){AUTH=null;store('auth',null);BK.me=null;S.picks=[];render()}
+    if(BK.teams)BK.teams.forEach(function(t){if(t.id===r.user_id)t.has_pin=false});
+    openSheet('<h2>Setup code for '+esc(team(r.user_id))+'</h2><p class="muted">Send this privately to the team owner. It works once, expires in 24 hours, and is shown only here.</p><label class="fld"><span>Setup code</span><input type="text" readonly value="'+esc(r.invite)+'" aria-label="Private setup code"></label>'+CLOSE);
+  }).catch(function(e){btn.disabled=false;err(e.message)});return}
   if(k==='bucks'){p.then(function(r){var who=team(BKU.u),a=Number(BKU.amt);BKU.amt='';toast((a>0?'Added ':'Took away ')+m2(Math.abs(a))+' · '+who+' now has '+m2(r.balance));
      api('/leaderboard').then(function(x){BK.lb=x;bucksRefresh()}).catch(bucksRefresh);bookLoad()}).catch(function(e){btn.disabled=false;err(e.message)});return}
   p.then(function(r){closeSheetQuiet();toast(k==='post'?'Week '+r.week+' lines posted':k==='settle'?'Week '+r.week+' settled ('+r.bets+' bets)':k==='bucks'?'Saved. New balance '+money2(r.balance):k==='pin'?'PIN reset':k==='void'?'Game voided, stakes returned':'Line updated');bookLoad()})
@@ -1880,9 +1887,10 @@ document.addEventListener('click',function(e){
   if(t.id==='clearSlip'){S.picks=[];closeSheetQuiet();render();return}
   if(d.bcancel){t.disabled=true;api('/bets/'+d.bcancel+'/cancel',{method:'POST'}).then(function(){closeSheetQuiet();toast('Bet cancelled, Bucks returned');bookLoad()}).catch(function(e){t.disabled=false;toast(e.message)});return}
   if(d.login){openLogin();return}
-  if(d.lteam){S.lt=d.lteam;S.pin='';S.pin1=null;S.pinErr='';openSheet(loginSheet());return}
+  if(d.lteam){S.lt=d.lteam;S.pin='';S.pin1=null;S.pinInvite='';S.pinErr='';openSheet(loginSheet());return}
+  if(d.invitego){var inv=$('#pinInvite');S.pinInvite=inv?inv.value.trim():'';S.pinErr=S.pinInvite?'':'Enter the setup code from the commish.';openSheet(loginSheet());return}
   if(d.key){pinKey(d.key);return}
-  if(d.pinback){S.lt=null;S.pin='';S.pin1=null;S.pinErr='';openSheet(loginSheet());return}
+  if(d.pinback){S.lt=null;S.pin='';S.pin1=null;S.pinInvite='';S.pinErr='';openSheet(loginSheet());return}
   if(d.logout){logout();return}
   if(d.adm){openSheet(admSheet(d.adm,d.arg));if(d.adm==='log')loadLog();if(d.adm==='health')loadHealth();return}
   if(d.admgo){admGo(d.admgo,d.arg,t);return}
@@ -1914,3 +1922,4 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()
 var h=(location.hash||'').replace('#','');if(['home','league','records','book','me'].indexOf(h)>=0)S.tab=h;
 render();
 })();
+

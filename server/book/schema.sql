@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
 
+-- Account setup/recovery requires a private, expiring code. Only its hash is stored.
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS pin_invite_hash TEXT;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS pin_invite_expires TIMESTAMPTZ;
+
 -- One row per Book week: when lines posted, when it settled.
 CREATE TABLE IF NOT EXISTS book_weeks (
   season      TEXT NOT NULL,
@@ -183,3 +187,4 @@ CREATE TABLE IF NOT EXISTS book_specials (
   prob     NUMERIC(6,4),
   PRIMARY KEY (line_id, market, pick)
 );
+
