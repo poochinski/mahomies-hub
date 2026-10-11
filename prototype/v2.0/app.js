@@ -1971,9 +1971,8 @@ function shareAwards(s){var A=D.awards[s]||[],f=function(k){return A.find(functi
 function shareSeason(s){var x=D.seasons[s];showShare({eyebrow:s+' season',title:x.champ?'Champion':'Leader',big:'🏆',team:tnS(s,x.champ||x.standings[0].uid),sub:x.sacko?'Sacko: '+tnS(s,x.sacko):'Through Week '+D.league.last_scored})}
 
 /* ---------- sheets ---------- */
-function syncDock(){var b=document.getElementById('sheetBack');if(!b)return;var on=!!SH.length;b.classList.toggle('is-off',!on);b.setAttribute('aria-hidden',on?'false':'true')}
-function openSheet(html){$('#sheetBody').innerHTML=html;syncDock();$('#sheet').classList.add('open');$('#scrim').classList.add('open');$('#sheet').scrollTop=0}
-function closeSheet(){SH=[];syncDock();$('#sheet').classList.remove('open');$('#scrim').classList.remove('open')}
+function openSheet(html){$('#sheetBody').innerHTML=(SH.length?'<button type="button" class="sh-back" data-shback="1">‹ Back</button>':'')+html;$('#sheet').classList.add('open');$('#scrim').classList.add('open');$('#sheet').scrollTop=0}
+function closeSheet(){SH=[];$('#sheet').classList.remove('open');$('#scrim').classList.remove('open')}
 function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show')},2200)}
 
 /* ---------- render + events ---------- */
@@ -1983,7 +1982,7 @@ function render(){
   $('#bucks').textContent=BK.me?money(BK.me.balance):'Book';
 }
 function go(tab,sub){S.tab=tab;if(tab==='league'&&sub)S.lseg=sub;closeSheetQuiet();render();window.scrollTo(0,0);try{history.replaceState(null,'','#'+tab)}catch(e){}}
-function closeSheetQuiet(){SH=[];syncDock();$('#sheet').classList.remove('open');$('#scrim').classList.remove('open')}
+function closeSheetQuiet(){SH=[];$('#sheet').classList.remove('open');$('#scrim').classList.remove('open')}
 var CLOSE='<button type="button" class="ghost" id="closeP">Close</button>';
 function centerChip(sel){var t=document.querySelector(sel);if(t&&t.scrollIntoView)t.scrollIntoView({inline:'center',block:'nearest'})}
 document.addEventListener('click',function(e){
@@ -2050,7 +2049,7 @@ document.addEventListener('click',function(e){
   if(d.howto){nav(function(){openSheet(explainPanel()+CLOSE)});return}
   if(d.rival){var rp=d.rival.split('|');S.h2a=rp[0];S.h2b=rp[1];go('league','h2h');var rt=document.getElementById('rivalTop');if(rt)rt.scrollIntoView({block:'start'});return}
   if(d.search){nav(searchOpen);return}
-  if(t.id==='closeP'||t.id==='sheetX'){closeSheet();return}
+  if(t.id==='closeP'){closeSheet();return}
 });
 document.addEventListener('change',function(e){
   if(e.target.id==='meSel'){S.me=e.target.value;store('me',S.me);S.h2a=S.me;S.h2b=null;render();toast('Playing as '+team(S.me))}
