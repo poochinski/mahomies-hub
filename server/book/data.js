@@ -62,29 +62,43 @@ export async function scoresBefore(L, week) {
 // Fantasy-only snapshot of this week's matchups for the Home card.
 // Points so far, Sleeper projected final, and how many starters are playing or still waiting.
 // No spreads, odds, or win percentages.
-function packSide(R) {
+function slotShort(s) {
+  if (s === 'SUPER_FLEX') return 'SF';
+  if (s === 'REC_FLEX') return 'RFX';
+  if (s === 'WRRB_FLEX') return 'W/R';
+  if (s === 'FLEX') return 'FLX';
+  return s || 'FLX';
+}
+
+export function packSide(R) {
   const players = (R && R.players) || [];
+  const real = players.filter((p) => !p.empty);
   let now = 0, left = 0, done = 0;
-  for (const p of players) {
+  for (const p of real) {
     if (p.state === 'in') now++;
     else if (p.state === 'pre') left++;
     else if (p.state === 'post') done++;
   }
   const started = now + done > 0;
-  const finished = players.length > 0 && now === 0 && left === 0;
+  const finished = real.length > 0 && now === 0 && left === 0;
   const proj = started ? R && R.proj_live : R && R.proj_pre;
   // Lineup warnings for starters who haven't played yet: OUT-type injury tags, bye/no team, empty slots.
   const warn = [];
-  for (const p of players) {
+  for (const p of real) {
     if (p.state !== 'pre' && p.state !== 'bye') continue;
     if (p.state === 'bye') warn.push({ name: p.name, pos: p.pos, why: p.nfl ? 'bye' : 'no team' });
     else if (/^(out|ir|doubtful|sus|pup|na|dnr)/i.test(p.inj || '')) warn.push({ name: p.name, pos: p.pos, why: p.inj });
   }
   const empty = ((R && R.out) || []).filter((x) => x === 'empty').length;
+  const slots = players.map((p) => ({
+    s: slotShort(p.slot), n: p.empty ? '' : (p.name || ''), id: p.empty ? '' : (p.pid || ''),
+    p: Math.round((p.pts || 0) * 10) / 10, j: p.proj == null ? null : Math.round(Number(p.proj) * 10) / 10,
+    e: p.empty ? 1 : 0, st: p.state || ''
+  }));
   return {
     pts: Math.round(((R && R.pts) || 0) * 100) / 100,
     proj: proj == null ? null : proj,
-    now, left, started, finished, warn, empty
+    now, left, started, finished, warn, empty, slots
   };
 }
 
@@ -101,7 +115,8 @@ export async function homeCard(week) {
       pts_a: A.pts, pts_b: B.pts, proj_a: A.proj, proj_b: B.proj,
       now_a: A.now, now_b: B.now, left_a: A.left, left_b: B.left,
       on_a: A.started, on_b: B.started, fin_a: A.finished, fin_b: B.finished,
-      warn_a: A.warn, warn_b: B.warn, empty_a: A.empty, empty_b: B.empty
+      warn_a: A.warn, warn_b: B.warn, empty_a: A.empty, empty_b: B.empty,
+      slots_a: A.slots, slots_b: B.slots
     };
   });
   return { week: w, games };
@@ -156,15 +171,22 @@ export async function weekState(L, week, maxAgeMs = 60 * 1000) {
     // Live projected final, the way Sleeper shows it: points already scored, plus each
     // starter's Sleeper projection for the part of his game still to play.
     const pp = m.players_points || {}; let live = 0, pre = 0, have = 0, starters = 0;
+    let si = 0;
     for (const pid0 of m.starters || []) {
+      const slot = (L.slots && L.slots[si]) || 'FLEX';
+      si += 1;
       const pid = String(pid0 || '');
       const w = POS_W[posOf(pid)] || 12; all += w;
-      if (!pid || pid === '0') { out.push('empty'); continue; }
+      if (!pid || pid === '0') {
+        out.push('empty');
+        plist.push({ slot, empty: true, pid: '', pos: '', nfl: '', name: '', pts: 0, proj: null, progress: 1, kick: null, state: 'empty', inj: null });
+        continue;
+      }
       starters++;
       const got = Number(pp[pid] || 0), pj = proj[pid];
       if (pj != null) have++;
       const g = k.gameOf[teamOf(pid)];
-      plist.push({ pid, pos: posOf(pid), nfl: teamOf(pid) || '', name: players[pid]?.n || pid, pts: got, proj: pj ?? null,
+      plist.push({ pid, slot, empty: false, pos: posOf(pid), nfl: teamOf(pid) || '', name: players[pid]?.n || pid, pts: got, proj: pj ?? null,
         progress: g ? g.progress : 1, kick: g ? g.at : null, state: g ? g.state : 'bye', inj: players[pid]?.i || null });
       if (!g) { out.push(`${pid}:${teamOf(pid) || '?'}`); live += got; continue; }
       pre += pj || 0;

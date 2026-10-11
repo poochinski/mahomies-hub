@@ -1,14 +1,21 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-10 23:45 (Pacific) · **AI:** Grok
-**Current phase:** Look trial was rejected. Live app is the pre-trial look again (v2.5 features, header scrolls away, League chips in one scrolling row). The trial commit is `48c00a7` if anyone wants to see it; do not put it back unless Jayson asks.
-**Last commit:** "Back to the previous look"
+**Last updated:** 2026-10-11 00:15 (Pacific) · **AI:** Grok
+**Current phase:** Home matchup desk is live under Your game. Jayson is looking at it. Do not restyle the page. If he says take it off, remove the blocks added in `home()` (`needLine`, `stakeBlock`, `slotBlock`, `formBlock`, `seriesBlock`) and the `slots_a` / `slots_b` fields.
+**Last commit:** "Your game: the weekly desk"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
-Front Office records are shipped. Next two record-book pushes are proposed but not started (see "Next steps"). Then from the fantasyhoff sweep: a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
+Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **Your game desk** (Grok; Jayson: build the five things we listed, from numbers we already have, and deploy). All of it sits under the score on Home, only after this phone has picked a team. No spreads, win %, or playoff odds.
+  - **Needs line** (`needLine`): from the pulse. "You need 18.4 more · you have 3 left, Opponent has 1 left." If you're down but projected to catch them, it says that instead. If you're done and short, it says so. Hidden until someone has actually played. Tap opens the live game.
+  - **Slot vs slot** (`slotBlock` / `slotSheet`): `/api/pulse` games now include `slots_a` and `slots_b`, built in `packSide` from the starters `weekState` already had. Empty slots stay in order and do not become lineup warnings. Before a player starts, the bar is his projection. Tap the chart for every name.
+  - **Series and last meeting** (`seriesBlock` / `seriesSheet`): from `D.h2h`. Tap for every meeting, newest first, and a meeting opens that game.
+  - **Last four scored weeks** (`formBlock`): bars for you and the opponent. Tap a bar for that game.
+  - **Seed if you win / if you lose** (`seedOutlook`, next to the median line): adds one win or one loss to the current standings and re-sorts by wins, then points. This week's points are included in the tiebreaker only when both lineups are final. Not shown in the playoffs, or once `last_scored` already includes this week. Tap for both tables.
+  - Checked against the snapshot: an 8-0 team stays 1st either way, the last four weeks and the series render, and slots stay hidden until the pulse arrives. `test/home-desk.test.js` covers empty-slot packing.
 - 2026-10-10 — **Look trial rolled back** (Grok; Jayson: "go back"). `prototype/v2.0/{app.html,app.css,app.js}` restored from the freeze in `prototype/v2.5/`, with asset paths put back to `/v2/`. BIBLE header line restored: the header scrolls away, it is not sticky. `/test/v2.5` still serves that same freeze, so it now matches live.
 - 2026-10-10 — **Look trial** (Grok; Jayson: complete UI overhaul, same neon, more professional, better navigation, easy to undo). Shipped, then rolled back the same night. Commit `48c00a7` has the whole trial (pinned header, 2×4 League grid, gold pills, sheet Close/Back bar). CSS was appended at the bottom of `app.css` under "v2.6 look trial".
 - 2026-10-10 — **Front Office records, v2.5** (Claude; Jayson: "build front office first", then "change some of the names of the record so we're not copying them completely unless it's a generic record").

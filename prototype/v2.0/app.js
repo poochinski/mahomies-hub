@@ -80,7 +80,7 @@ function loadPulse(){
 }
 setInterval(function(){if(LIVE&&document.visibilityState==='visible')loadPulse()},60*1000);
 function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
-function gsig(j){return (j&&j.games||[]).map(function(g){return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b,(g.warn_a||[]).length,(g.warn_b||[]).length,g.empty_a,g.empty_b].join(':')}).join('|')}
+function gsig(j){return (j&&j.games||[]).map(function(g){var ss=function(k){return (g['slots_'+k]||[]).map(function(p){return p.p}).join(',')};return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b,(g.warn_a||[]).length,(g.warn_b||[]).length,g.empty_a,g.empty_b,ss('a'),ss('b')].join(':')}).join('|')}
 function savedTeam(){return (store('auth')||{}).user_id||store('me')||''}
 function slateGame(uid){var gs=PULSE&&PULSE.games;if(!gs)return null;for(var i=0;i<gs.length;i++)if(gs[i].a===uid||gs[i].b===uid)return gs[i];return null}
 function slateSide(g,uid){var k=g.a===uid?'a':'b';return {pts:g['pts_'+k],proj:g['proj_'+k],now:g['now_'+k],left:g['left_'+k],on:g['on_'+k],fin:g['fin_'+k],warn:g['warn_'+k]||[],empty:g['empty_'+k]||0}}
@@ -275,6 +275,125 @@ function plHtml(pid,d){
 function line(id){return D.lines.find(function(l){return l.id===id})}
 /* ---------- HOME ---------- */
 function weekGames(s,w){return D.games.map(function(g,i){return {g:g,i:i}}).filter(function(x){return x.g.s===s&&x.g.w===w})}
+function myDesk(){
+  var me=savedTeam();if(!me)return null;
+  var l=(D.lines||[]).filter(function(x){return x.a===me||x.b===me})[0];if(!l)return null;
+  var opp=l.a===me?l.b:l.a,sg=slateGame(me);
+  return {me:me,opp:opp,id:l.id,sMe:sg?slateSide(sg,me):null,sOpp:sg?slateSide(sg,opp):null,
+    mine:sg?((l.a===me?sg.slots_a:sg.slots_b)||[]):[],his:sg?((l.a===me?sg.slots_b:sg.slots_a)||[]):[]};
+}
+function slotPts(p){if(!p||p.e)return 0;if(p.st==='pre')return p.j!=null?p.j:0;return p.p||0}
+function leftPhrase(opp,sMe,sOpp){return 'you have '+((sMe.now||0)+(sMe.left||0))+' left, '+esc(team(opp))+' has '+((sOpp.now||0)+(sOpp.left||0))+' left'}
+function needLine(id,opp,sMe,sOpp){
+  if(!sMe||!sOpp||(sMe.fin&&sOpp.fin)||(!sMe.on&&!sOpp.on))return '';
+  var tail=leftPhrase(opp,sMe,sOpp),btn=function(html){return '<button type="button" class="yg-need" data-prev="'+id+'">'+html+'</button>'};
+  if(Math.abs(sMe.pts-sOpp.pts)<0.05)return ((sMe.now||sMe.left||sOpp.now||sOpp.left)?btn('Tied · '+tail):'');
+  var youBehind=sMe.pts<sOpp.pts,b=youBehind?sMe:sOpp,a=youBehind?sOpp:sMe;
+  var bLeft=(b.now||0)+(b.left||0),aLeft=(a.now||0)+(a.left||0),est=(aLeft&&a.proj!=null)?a.proj:a.pts,gap=a.pts-b.pts,need=est-b.pts;
+  if(!bLeft&&gap>0.05)return btn((youBehind?'Short by <b class="num">'+f1(gap)+'</b>, and you have nobody left':esc(team(opp))+' is short by <b class="num">'+f1(gap)+'</b> with nobody left')+' · '+tail);
+  if(bLeft&&need>0.05&&b.proj!=null&&b.proj+0.05>=est)return btn((youBehind?'Down <b class="num">'+f1(gap)+'</b> · projected to finish ahead':esc(team(opp))+' is down <b class="num">'+f1(gap)+'</b> · projected to catch you')+' · '+tail);
+  if(bLeft&&need>0.05)return btn((youBehind?'You need':esc(team(opp))+' needs')+' <b class="num">'+f1(need)+'</b>'+(aLeft?' more':' more to win')+' · '+tail);
+  return '';
+}
+function seedOutlook(me,opp,sMe,sOpp){
+  var L=D.league;if(!L||L.week>=L.playoff_start||L.last_scored>=L.week)return null;
+  var st=(D.seasons[CUR()]||{}).standings||[];if(st.length<4)return null;
+  var mine=st.filter(function(t){return t.uid===me})[0];if(!mine||!st.some(function(t){return t.uid===opp}))return null;
+  var counted=!!(sMe&&sOpp&&sMe.fin&&sOpp.fin);
+  function place(meWins){
+    var rows=st.map(function(t){return {uid:t.uid,w:t.w,l:t.l,pf:t.pf}});
+    var a=rows.filter(function(t){return t.uid===me})[0],b=rows.filter(function(t){return t.uid===opp})[0];
+    if(meWins){a.w++;b.l++}else{b.w++;a.l++}
+    if(counted){a.pf+=Number(sMe.pts)||0;b.pf+=Number(sOpp.pts)||0}
+    rows.sort(function(x,y){return (y.w-x.w)||(y.pf-x.pf)||(x.uid<y.uid?-1:1)});
+    var seed=1;rows.forEach(function(t,i){if(t.uid===me)seed=i+1});
+    return {seed:seed,rows:rows};
+  }
+  return {cur:mine.seed,win:place(true),lose:place(false),counted:counted};
+}
+function seedMove(n,from,win){var word=win?'A win':'A loss';if(n<from)return word+' moves you up to <b>'+ord(n)+'</b>';if(n>from)return word+' drops you to <b>'+ord(n)+'</b>';return word+' keeps you at <b>'+ord(n)+'</b>'}
+function seedBtn(me,opp,sMe,sOpp){
+  var o=seedOutlook(me,opp,sMe,sOpp);if(!o)return '';
+  var t=o.win.seed===o.cur&&o.lose.seed===o.cur?'Win or lose, you stay <b>'+ord(o.cur)+'</b>':seedMove(o.win.seed,o.cur,true)+'. '+seedMove(o.lose.seed,o.cur,false)+'.';
+  return '<button type="button" class="yg-seed" data-mh="seed">'+t+'</button>';
+}
+function stakeBlock(me,opp,sMe,sOpp){var med=medianLine(me),seed=seedBtn(me,opp,sMe,sOpp);return (med||seed)?'<div class="yg-stake">'+med+seed+'</div>':''}
+function slotSummary(desk){
+  var mine=desk.mine,his=desk.his,n=Math.max(mine.length,his.length),you=0,him=0,seen=0,live=false;
+  for(var i=0;i<n;i++){var a=mine[i],b=his[i];
+    if(a&&!a.e&&a.st!=='pre'&&a.st!=='bye')live=true;if(b&&!b.e&&b.st!=='pre'&&b.st!=='bye')live=true;
+    if((!a||a.e)&&(!b||b.e))continue;var av=slotPts(a),bv=slotPts(b);seen++;if(Math.abs(av-bv)<0.05)continue;if(av>bv)you++;else him++}
+  if(!seen)return 'Slot vs slot';
+  var pre=live?'':'Projected: ';
+  if(you===him)return pre+(you?'Slots are split '+you+'–'+him:'Slots are even');
+  if(you>him)return pre+'You lead '+you+' of '+seen+' slots';
+  return pre+esc(team(desk.opp))+' leads '+him+' of '+seen+' slots';
+}
+function slotBlock(desk){
+  if(!desk.mine.length)return '';
+  var n=Math.max(desk.mine.length,desk.his.length),vals=[];
+  for(var i=0;i<n;i++)vals.push(slotPts(desk.mine[i]),slotPts(desk.his[i]));
+  var mx=Math.max.apply(null,vals.concat([1])),cols='';
+  for(var i=0;i<n;i++){var a=desk.mine[i],b=desk.his[i],lab=(a&&a.s)||(b&&b.s)||'';
+    cols+='<span class="mh-col"><span class="mh-bars"><i class="you" style="height:'+Math.max(3,Math.round(slotPts(a)/mx*100))+'%"></i><i class="him" style="height:'+Math.max(3,Math.round(slotPts(b)/mx*100))+'%"></i></span><small>'+esc(lab)+'</small></span>'}
+  return '<button type="button" class="mh-slots" data-mh="slots"><div class="mh-sum">'+slotSummary(desk)+'</div><span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
+}
+function formBlock(me,opp){
+  var end=D.league.last_scored||0;if(end<1)return '';
+  var start=Math.max(1,end-3),weeks=[],max=1,w;
+  for(w=start;w<=end;w++)weeks.push(w);
+  weeks.forEach(function(w){var a=P26(w,me),b=P26(w,opp);if(a!=null)max=Math.max(max,a);if(b!=null)max=Math.max(max,b)});
+  function row(u,mine){
+    var bars=weeks.map(function(w){var p=P26(w,u),h=p==null?0:Math.max(8,Math.round(p/max*100)),g=p==null?-1:gi(CUR(),w,u);
+      var inner='<i style="height:'+h+'%"></i><span>'+(p==null?'–':Math.round(p))+'</span><small>W'+w+'</small>';
+      return g<0?'<span class="mh-fb">'+inner+'</span>':'<button type="button" class="mh-fb" data-game="'+g+'">'+inner+'</button>'}).join('');
+    return '<div class="mh-frow '+(mine?'you':'him')+'"><span class="mh-who">'+(mine?'You':esc(team(u)))+'</span><span class="mh-fbars">'+bars+'</span></div>';
+  }
+  return '<div class="mh-form"><div class="yg-k">Last '+(weeks.length>1?weeks.length+' weeks':'week')+'</div>'+row(me,true)+row(opp,false)+'</div>';
+}
+function seriesBlock(me,opp){
+  var r=D.h2h&&D.h2h[me+'|'+opp],t;
+  if(!r||!r.games||!r.games.length)t='First time these two have played.';
+  else {var lead=r.w===r.l?'Series tied '+r.w+'–'+r.l:(r.w>r.l?'You lead the series '+r.w+'–'+r.l:esc(team(opp))+' leads the series '+r.l+'–'+r.w);
+    var last=r.games[r.games.length-1];t=lead+'. Last meeting '+last.s+' Wk '+last.w+': '+(last.m>last.o?'you won ':'you lost ')+f1(last.m)+'–'+f1(last.o)}
+  return '<button type="button" class="yg-series" data-mh="series">'+t+'</button>';
+}
+function seriesSheet(me,opp){
+  var r=(D.h2h&&D.h2h[me+'|'+opp])||{w:0,l:0,games:[]};
+  var h='<div class="ph" style="margin:0 0 8px"><div><div class="kicker">All-time</div><h2>'+esc(team(me))+' vs '+esc(team(opp))+'</h2></div></div>';
+  if(!r.games.length)return h+'<p class="muted">First time these two have played.</p>';
+  var rec=r.w===r.l?'Series tied ':(r.w>r.l?'You lead ':esc(team(opp))+' leads ');
+  h+='<p class="mh-rec">'+rec+Math.max(r.w,r.l)+'–'+Math.min(r.w,r.l)+'</p><div class="rows">';
+  h+=r.games.slice().reverse().map(function(g){var ix=gi(g.s,g.w,me),won=g.m>g.o;
+    var body='<span class="yr">'+esc(String(g.s))+'</span><span class="mh-m"><b>Week '+g.w+'</b><small>'+esc(g.k||'')+'</small></span><span class="mh-sc '+(won?'w':'l')+'">'+(won?'W':'L')+' '+f1(g.m)+'–'+f1(g.o)+'</span>';
+    return ix<0?'<div class="row" style="grid-template-columns:52px minmax(0,1fr) auto">'+body+'</div>':'<button type="button" class="row" data-game="'+ix+'" style="grid-template-columns:52px minmax(0,1fr) auto 10px">'+body+CHEV+'</button>'}).join('');
+  return h+'</div>';
+}
+function slotSide(p,mx,side){
+  if(!p||p.e)return '<div class="mh-line '+side+' empty"><span>Empty</span><b></b><i style="width:0"></i></div>';
+  var pre=p.st==='pre',v=slotPts(p),name=p.id?'<span class="plk" data-pl="'+esc(p.id)+'">'+esc(p.n)+'</span>':'<span>'+esc(p.n||'—')+'</span>';
+  return '<div class="mh-line '+side+'">'+name+'<b class="num">'+f1(v)+(pre?'<small> proj</small>':'')+'</b><i style="width:'+Math.max(4,Math.round(v/mx*100))+'%"></i></div>';
+}
+function slotSheet(){
+  var d=myDesk(),h='<div class="ph" style="margin:0 0 8px"><div><div class="kicker">This week\'s starters</div><h2>Slot vs slot</h2></div></div>';
+  if(!d||!d.mine.length)return h+'<p class="muted">Lineups show up with the live scores. Give it a minute and open this again.</p>';
+  var n=Math.max(d.mine.length,d.his.length),vals=[],i;
+  for(i=0;i<n;i++)vals.push(slotPts(d.mine[i]),slotPts(d.his[i]));
+  var mx=Math.max.apply(null,vals.concat([1]));
+  h+='<p class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(d.opp))+'</p>';
+  for(i=0;i<n;i++){var a=d.mine[i],b=d.his[i];
+    h+='<div class="mh-pair"><div class="mh-slab">'+esc((a&&a.s)||(b&&b.s)||'')+'</div>'+slotSide(a,mx,'you')+slotSide(b,mx,'him')+'</div>'}
+  return h+'<p class="gc-key">Before a player starts, the number is his projection. After that, it\'s the points he has now.</p>';
+}
+function seedSheet(){
+  var d=myDesk();if(!d)return '<p class="muted">Pick your team first.</p>';
+  var o=seedOutlook(d.me,d.opp,d.sMe,d.sOpp);
+  if(!o)return '<p class="muted">This is for the regular season, and only before the week is already in the standings.</p>';
+  function table(title,pack){return '<div class="kicker" style="margin:14px 0 4px">'+title+'</div><div class="rows">'+pack.rows.map(function(t,i){
+    return '<button type="button" class="row'+(t.uid===d.me?' me':'')+'" data-mgr="'+t.uid+'" style="grid-template-columns:28px minmax(0,1fr) auto"><span class="rk">'+(i+1)+'</span><b>'+esc(team(t.uid))+'</b><span class="num">'+t.w+'-'+t.l+'</span></button>'}).join('')+'</div>'}
+  var note=o.counted?'The week is over, so these points count in the tiebreaker.':'This week\'s points are not in the tiebreaker yet. If two teams have the same wins, the one with more points scored stays ahead.';
+  return '<div class="ph" style="margin:0"><div><div class="kicker">Regular season</div><h2>Where this game leaves you</h2></div></div><p class="mh-note">'+note+'</p>'+table('If you win · '+ord(o.win.seed),o.win)+table('If you lose · '+ord(o.lose.seed),o.lose);
+}
 function home(){
   var L=D.league,hw=S.hw,me=S.me;
   var my=D.lines.filter(function(l){return l.a===me||l.b===me})[0];
@@ -294,7 +413,7 @@ function home(){
      '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your game · tap for the live game</div>'+
      '<div class="yg-row">'+av(me,40)+'<div class="yg-n"><b>'+esc(team(me))+'</b><span>'+esc(recOf(me))+'</span>'+ygMeta(sMe)+'</div>'+ygScore(sMe)+'</div>'+
      '<div class="yg-row">'+av(opp,40)+'<div class="yg-n"><b>'+esc(team(opp))+'</b><span>'+esc(recOf(opp))+'</span>'+ygMeta(sOpp)+'</div>'+ygScore(sOpp)+'</div>'+
-     '</button>'+(savedTeam()?warnLine(sg?sMe:null)+medianLine(me):'')+'</div>';
+     '</button>'+(savedTeam()?warnLine(sg?sMe:null)+needLine(my.id,opp,sg?sMe:null,sg?sOpp:null)+stakeBlock(me,opp,sg?sMe:null,sg?sOpp:null)+(function(){var d=myDesk();return d?slotBlock(d):''})()+formBlock(me,opp)+seriesBlock(me,opp):'')+'</div>';
   } else if(!savedTeam()){
     h+='<button type="button" class="yourgame" data-tab="me"><div class="yg-k">Your game</div><div class="yg-n"><b>Pick your team</b><span>Then this card shows your matchup.</span></div></button>';
   } else {
@@ -2011,6 +2130,7 @@ document.addEventListener('click',function(e){
   if(d.twih){nav(function(){openSheet(twihSheet()+CLOSE)});return}
   if(d.rec){closeSheetQuiet();S.rec=d.rec;S.recMore=false;render();centerChip('[data-rec="'+S.rec+'"]');return}
   if(d.pair){var pp=d.pair.split('|');S.h2a=pp[0];S.h2b=pp[1];render();var el=document.getElementById('rivalTop');if(el)el.scrollIntoView({block:'start'});return}
+  if(d.mh){var kind=d.mh;nav(function(){var desk=myDesk();if(!desk){openSheet('<p class="muted">Pick your team first.</p>'+CLOSE);return}if(kind==='series')openSheet(seriesSheet(desk.me,desk.opp)+CLOSE);else if(kind==='slots')openSheet(slotSheet()+CLOSE);else if(kind==='seed')openSheet(seedSheet()+CLOSE)});return}
   if(d.prev){nav(function(){if(S.tab!=='book'&&LIVE&&/^w\d+m\d+$/.test(d.prev)){gcOpen(d.prev);return}openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE)});return}
   if(d.gcprev){nav(function(){openSheet(previewSheet(d.gcprev,false)+CLOSE)});return}
   if(d.season){S.ss=d.season;S.sw=null;nav(function(){openSheet(seasonSheet(d.season)+CLOSE)});return}

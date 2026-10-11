@@ -944,3 +944,51 @@ td.tm .who .tx>span{font-size:10.5px}
 .rec-list .fo-pair .tx>b{font-size:13px;white-space:normal;line-height:1.3}
 .fo-val{white-space:nowrap}
 .fo-val.fo-neg{color:var(--loss)}
+
+/* ---------- Home matchup desk: the story under Your game. Fantasy only. ---------- */
+.yg-need,.yg-series{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:var(--muted);font:12.5px/1.45 var(--body)}
+.yg-need b,.yg-series b,.yg-seed b{color:var(--ink);font-weight:650}
+.yg-stake{display:grid;gap:3px;border-top:1px solid var(--line);padding-top:8px}
+.yg-stake .yg-med{border-top:0;padding-top:0}
+.yg-seed{display:block;width:100%;border:0;background:none;padding:0;text-align:left;color:var(--muted);font:12.5px/1.45 var(--body)}
+.mh-slots{display:grid;gap:8px;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 0;text-align:left;color:inherit}
+.mh-sum{font:600 12.5px/1.35 var(--body);color:var(--ink)}
+.mh-cols{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;height:74px;align-items:end}
+.mh-col{display:grid;grid-template-rows:1fr auto;gap:3px;height:100%;min-width:0}
+.mh-bars{display:flex;align-items:flex-end;gap:2px;height:100%}
+.mh-bars i{flex:1;border-radius:3px 3px 0 0;min-height:3px;display:block}
+.mh-bars i.you,.mh-legend i.you,.mh-line.you i{background:var(--gold)}
+.mh-bars i.him,.mh-legend i.him,.mh-line.him i{background:var(--pink)}
+.mh-col small{font:9px var(--mono);color:var(--faint);text-align:center;letter-spacing:.02em}
+.mh-legend{display:flex;align-items:center;gap:6px;font:11px var(--body);color:var(--muted)}
+.mh-legend i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.mh-form{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:8px}
+.mh-frow{display:grid;gap:2px}
+.mh-who{font:11px var(--body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-fbars{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;height:52px}
+.mh-fb{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:1px;height:100%;border:0;border-radius:6px;background:rgba(255,255,255,.03);padding:3px 0 2px;color:inherit;min-width:0}
+.mh-fb i{width:55%;border-radius:3px 3px 0 0;display:block;min-height:0}
+.mh-frow.you .mh-fb i{background:var(--gold)}
+.mh-frow.him .mh-fb i{background:var(--pink)}
+.mh-fb span{font:600 10px var(--mono);line-height:1}
+.mh-fb small{font:9px var(--mono);color:var(--faint)}
+.mh-rec{margin:0 0 6px;font:600 14px var(--display);color:var(--gold)}
+.mh-m{display:grid;min-width:0}
+.mh-m b{font-size:13.5px}
+.mh-m small{font:11px var(--mono);color:var(--muted)}
+.mh-sc{font:700 13px var(--mono);white-space:nowrap}
+.mh-sc.w{color:var(--win)}
+.mh-sc.l{color:var(--loss)}
+.mh-pair{display:grid;gap:4px;padding:8px 0;border-top:1px solid var(--line)}
+.mh-slab{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.mh-line{position:relative;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px;padding:0 8px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.03)}
+.mh-line i{position:absolute;left:0;top:0;bottom:0;opacity:.35}
+.mh-line span,.mh-line b{position:relative;z-index:1}
+.mh-line span{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-line b{font:700 14px var(--display);flex:none}
+.mh-line b small{font:9px var(--mono);color:var(--faint);letter-spacing:.06em;margin-left:3px}
+.mh-line.empty span{color:var(--faint)}
+.mh-note{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.row.me{background:rgba(246,207,76,.08);border-radius:8px}
+.row.me b{color:var(--gold)}
+
