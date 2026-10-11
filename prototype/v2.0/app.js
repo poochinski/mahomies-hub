@@ -291,6 +291,9 @@ function needLine(id,opp,sMe,sOpp){
   var youBehind=sMe.pts<sOpp.pts,b=youBehind?sMe:sOpp,a=youBehind?sOpp:sMe;
   var bLeft=(b.now||0)+(b.left||0),aLeft=(a.now||0)+(a.left||0),est=(aLeft&&a.proj!=null)?a.proj:a.pts,gap=a.pts-b.pts,need=est-b.pts;
   if(!bLeft&&gap>0.05)return btn((youBehind?'Short by <b class="num">'+f1(gap)+'</b>, and you have nobody left':esc(team(opp))+' is short by <b class="num">'+f1(gap)+'</b> with nobody left')+' · '+tail);
+  // Chasing a full projection while eight guys haven't played reads as "down by 130".
+  // Save "needs X" for when the trailing team is actually down to a few players.
+  if(bLeft>4&&gap>0.05)return btn((youBehind?'Down <b class="num">'+f1(gap)+'</b>':esc(team(opp))+' is down <b class="num">'+f1(gap)+'</b>')+' · '+tail);
   if(bLeft&&need>0.05&&b.proj!=null&&b.proj+0.05>=est)return btn((youBehind?'Down <b class="num">'+f1(gap)+'</b> · projected to finish ahead':esc(team(opp))+' is down <b class="num">'+f1(gap)+'</b> · projected to catch you')+' · '+tail);
   if(bLeft&&need>0.05)return btn((youBehind?'You need':esc(team(opp))+' needs')+' <b class="num">'+f1(need)+'</b>'+(aLeft?' more':' more to win')+' · '+tail);
   return '';

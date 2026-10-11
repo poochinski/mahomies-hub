@@ -10,7 +10,7 @@ Jayson asked for the home card to carry the weekly match, using numbers the app 
 
 ## Done (newest first)
 - 2026-10-11 — **Your game desk** (Grok; Jayson: build the five things we listed, from numbers we already have, and deploy). All of it sits under the score on Home, only after this phone has picked a team. No spreads, win %, or playoff odds.
-  - **Needs line** (`needLine`): from the pulse. "You need 18.4 more · you have 3 left, Opponent has 1 left." If you're down but projected to catch them, it says that instead. If you're done and short, it says so. Hidden until someone has actually played. Tap opens the live game.
+  - **Needs line** (`needLine`): from the pulse. Once the trailing team is down to 4 players or fewer, it says "You need 18.4 more" (to catch the other side's projection, or to win if that side is done). Earlier than that, while most of the lineup is still waiting, it just says the current margin and how many each side has left, so a Thursday score doesn't turn into "needs 130 more." If you're down late but projected to catch them, it says that instead. Hidden until someone has actually played. Tap opens the live game.
   - **Slot vs slot** (`slotBlock` / `slotSheet`): `/api/pulse` games now include `slots_a` and `slots_b`, built in `packSide` from the starters `weekState` already had. Empty slots stay in order and do not become lineup warnings. Before a player starts, the bar is his projection. Tap the chart for every name.
   - **Series and last meeting** (`seriesBlock` / `seriesSheet`): from `D.h2h`. Tap for every meeting, newest first, and a meeting opens that game.
   - **Last four scored weeks** (`formBlock`): bars for you and the opponent. Tap a bar for that game.
