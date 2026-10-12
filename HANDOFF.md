@@ -1,14 +1,25 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 15:40 (Pacific) · **AI:** Claude
+**Last updated:** 2026-10-11 17:25 (Pacific) · **AI:** Claude
 **Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
-**Last commit:** "Play by play: find ESPN ids from the plays when Sleeper has none"
+**Last commit:** "This week: a brief for every game, every upset tagged"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
 
 ## What we're working toward right now
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-11 — **This week briefs** (Claude; Jayson compared with Sleeper's league page: only one "Upset brewing" when three games were upsets, and wanted a brief on each game).
+  - `twBrief(a,b,sa,sb)` in app.js replaces `upsetOn` (deleted) and the "single biggest upset" rule. All from pulse numbers + standings wins, no odds. `est` = final if done, else live projection.
+    - Before kickoff: "X projected to win by N" / "coin flip on paper" (<5); tag Upset pick if the team with fewer wins is projected ahead.
+    - Both done: "X won by N" (+ "Photo finish." under 5); tag Upset if fewer-wins team won.
+    - Trailer out of players: "X has it. Y is out of players, N short."
+    - Trailer projected ahead of leader's est → "Comeback on: …" + tag Comeback watch.
+    - Within 8 → "Y needs N from K players, projected for P. Down to the wire." + tag Nail-biter.
+    - Trailer ≤2 left and ≥15 behind on projection → "… All but over."
+    - Otherwise "X in control, projected to win by N. Y has K players left."
+    - Upset brewing on **every** game where the fewer-wins team leads now or is projected to win.
+  - Brief renders as `<p class="tw-brief">` under the teams; new tag classes `tw-tag-close` (green), `tw-tag-cb` (blue). Checked at 390px with today's real scores.
 - 2026-10-11 — **Play by play: ESPN id fix** (Claude; Jayson: JSN live and Warren final both showed "No plays for him yet").
   - Diagnosed with the new `GET /api/live/pbpdebug/:pid` (shows the player's slim record, the ESPN game id, the plays URL, status, play count, participant `type` values seen, and the last plays mentioning him). Result: ESPN feed fine (115 plays, `rusher`/`receiver`/`passer`/`kicker`/… types as expected) but Sleeper's `espn_id` was **null** for JSN, so matching by id found nothing.
   - `resolveEspnId(plays, me)` in `server/stats/plays.js`: if Sleeper's id appears in the plays, use it; otherwise tally, for each athlete id, how many of his plays name the player's abbreviation ("J.Smith-Njigba") vs all his plays — the id with ratio ≥ 0.8 and the most named plays wins (QBs and tacklers score low). `playerGameLog` calls it. Test added.

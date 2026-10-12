@@ -1092,3 +1092,8 @@ button.mh-line{width:100%;border:0;font:inherit;color:inherit;text-align:left;cu
 .brk td:nth-child(2),.brk td:nth-child(3){color:var(--faint)}
 .brk tfoot td{border-top:1px solid rgba(255,255,255,.1);font-weight:800;font-size:15px}
 .pw-card{width:100%;margin-top:12px}
+
+/* This week briefs, 2026-10-11 */
+.tw-brief{margin:0;font-size:12.5px;line-height:1.4;color:var(--muted);border-top:1px solid var(--line);padding-top:7px}
+.tw-tag-close{color:#5fe3a0;border-color:rgba(95,227,160,.45)}
+.tw-tag-cb{color:#7cc4ff;border-color:rgba(124,196,255,.45)}
