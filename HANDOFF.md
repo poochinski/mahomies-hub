@@ -9,6 +9,10 @@
 Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
 
 ## Done (newest first)
+- 2026-10-12 — **Record book: the #1 card rebuilt** (Claude; Jayson: the list rows open the game but the big box doesn't, "display it better and more info and have it be clickable and obviously have everything inside be clickable too").
+  - **What was actually wrong:** the hero *did* have a tap target — `data-game` on the small `.holder` avatar row — but the big number and the card around it were dead, and there was no chevron to say the row was a button. So it read as untappable.
+  - `recHero(k,x)` replaces the inline hero in `records()`. It branches on record type and every element is its own button (no nesting): the player (→ player card, for `player` records), the holder (→ his career), both teams in the game box (→ each manager), and the footer (→ the full box score). `recGameBox()` draws season/week/playoff round, both teams with `tnS()` season-era names and scores, a W badge, and the margin. `recStreakRows()` parses the streak's `start`/`end` strings into `gi()` lookups so both ends open their game; season records open the season sheet; a playoff bye still opens the bye lineup.
+  - New CSS prefix `rh-`. The separate "Player card" button is gone — it's the player row now.
 - 2026-10-11 — **This week briefs** (Claude; Jayson compared with Sleeper's league page: only one "Upset brewing" when three games were upsets, and wanted a brief on each game).
   - `twBrief(a,b,sa,sb)` in app.js replaces `upsetOn` (deleted) and the "single biggest upset" rule. All from pulse numbers + standings wins, no odds. `est` = final if done, else live projection.
     - Before kickoff: "X projected to win by N" / "coin flip on paper" (<5); tag Upset pick if the team with fewer wins is projected ahead.

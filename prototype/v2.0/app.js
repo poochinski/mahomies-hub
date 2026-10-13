@@ -993,16 +993,46 @@ function records(){
   var h='<button type="button" class="picker" data-recpick="1"><span><small>Record</small><b>'+name+'</b></span><i>Change ▾</i></button>';
   if(t!=='season'&&t!=='streak')h+='<div class="seg">'+[['all','All games'],['reg','Regular'],['post','Playoffs']].map(function(x){return '<button type="button" class="'+(S.rf===x[0]?'on':'')+'" data-rf="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
   if(!list.length)return h+'<p class="muted">No games yet.</p>'+foot();
-  var top=recVal(k,list[0]),g0=recGame(k,list[0]),b0=g0<0?byeKey(k,list[0]):null;
-  h+='<section class="hero rec-hero"><div class="eyebrow">All-time #1</div><div class="big">'+esc(recNum(k,top))+'</div><div class="rec-unit">'+esc(recUnit(k,top,list[0]))+'</div>'+
-   '<button class="holder who" type="button" '+(g0>=0?'data-game="'+g0+'"':b0?'data-bye="'+b0+'"':'data-mgr="'+top.u+'"')+'>'+av(top.u,36)+'<span class="tx"><b>'+esc(team(top.u))+(list[0].s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><span>'+esc(top.sub)+'</span></span></button>'+
-   '<button type="button" class="share-btn" data-share-rec="1">Share</button>'+(k==='player'&&list[0].pid?'<button type="button" class="share-btn" data-pl="'+esc(list[0].pid)+'">Player card</button>':'')+info('records')+'</section>';
+  h+=recHero(k,list[0]);
   h+='<section class="panel tight rec-list"><div class="rows">'+
    list.slice(1,S.recMore?10:5).map(function(x,j){var i=j+1,r=recVal(k,x),gx=recGame(k,x),by=gx<0?byeKey(k,x):null,tap=gx>=0||by,inner='<span class="rk">'+(i+1)+'</span>'+(tap?whoS(r.u,r.sub+(by?' · playoff bye':''),28):who(r.u,r.sub,28))+'<span class="aw-vb"><span class="val">'+esc(recNum(k,r))+'</span><small>'+esc(recUnit(k,r,x))+'</small></span>';
      if(k==='player'&&x.pid)return '<button type="button" class="row" data-pl="'+esc(x.pid)+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>';
      return tap?'<button type="button" class="row" '+(gx>=0?'data-game="'+gx+'"':'data-bye="'+by+'"')+' style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>':'<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div>'+(list.length>5?'<button type="button" class="more" data-more="rec">'+(S.recMore?'Show top 5':'Show top '+list.length)+'</button>':'')+'</section>'+foot();
   return h;
+}
+/* The #1 card. Used to be a number and a one-line caption with a hidden tap target on the
+   avatar. Now it shows the whole story — who, when, what stage, against whom, by how much —
+   and every piece of it opens something: the manager, the player, the game, the season. */
+function recHero(k,x){
+  var t=recType(k),r=recVal(k,x),gx=recGame(k,x),g=gx>=0?D.games[gx]:null,by=gx<0?byeKey(k,x):null;
+  var h='<section class="hero rec-hero"><div class="eyebrow">All-time #1'+(x.s===CUR()?' · set this season':'')+'</div>'+
+   '<div class="big">'+esc(recNum(k,r))+'</div><div class="rec-unit">'+esc(recUnit(k,r,x))+'</div>';
+  if(t==='player'&&x.pid)h+='<button type="button" class="rh-row" data-pl="'+esc(x.pid)+'">'+plPic(x.pid,x.name||'?',34,x.pos)+
+   '<span class="rh-t"><b>'+esc(x.name||'Top scorer')+'</b><small>'+esc([x.pos,'the player card'].filter(Boolean).join(' · '))+'</small></span>'+CHEV+'</button>';
+  h+='<button type="button" class="rh-row" data-mgr="'+r.u+'">'+av(r.u,34)+
+   '<span class="rh-t"><b>'+esc(team(r.u))+(x.s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><small>'+esc(M(r.u).name)+' · career</small></span>'+CHEV+'</button>';
+  if(g)h+=recGameBox(gx,g,r.u,t==='hiloss'||k==='hiloss');
+  else if(by)h+='<button type="button" class="rh-row" data-bye="'+by+'">'+'<span class="rh-ic">🪑</span><span class="rh-t"><b>'+esc(x.s)+' · Week '+x.w+'</b><small>Playoff bye — tap for the lineup</small></span>'+CHEV+'</button>';
+  if(t==='season')h+='<button type="button" class="rh-row" data-season="'+esc(x.s)+'">'+'<span class="rh-ic">📅</span><span class="rh-t"><b>'+esc(x.s)+' season · '+esc(x.rec||'')+'</b><small>Standings, bracket &amp; every week</small></span>'+CHEV+'</button>';
+  if(t==='streak')h+=recStreakRows(x);
+  h+='<div class="rh-acts"><button type="button" class="share-btn" data-share-rec="1">Share</button>'+info('records')+'</div></section>';
+  return h;
+}
+/* Both teams and the final, each its own tap target — no nested buttons. */
+function recGameBox(gx,g,hi,loseIsHero){
+  var line=function(u,pts,won){return '<button type="button" class="rh-ln'+(u===hi?' hi':'')+'" data-mgr="'+u+'">'+av(u,22)+
+    '<b>'+esc(tnS(g.s,u))+'</b><i>'+f2(pts)+'</i>'+(won?'<em>W</em>':'')+'</button>'};
+  return '<div class="rh-g"><div class="rh-gh">'+esc(g.s)+' · Week '+g.w+(g.k&&g.k!=='Regular season'?' · '+esc(g.k):'')+'</div>'+
+   line(g.win,g.wp,true)+line(g.lose,g.lp,false)+
+   '<button type="button" class="rh-gf" data-game="'+gx+'"><span>Won by '+f2(g.m)+'</span><em>Full box score '+CHEV+'</em></button></div>';
+}
+function recStreakRows(x){
+  var one=function(label,when){var m=/(\d{4})\D+(\d+)/.exec(String(when||''));if(!m)return '';
+    var gx=gi(m[1],+m[2],x.uid);
+    var body='<span class="rh-ic">'+(label==='Started'?'▶':'■')+'</span><span class="rh-t"><b>'+esc(when)+'</b><small>'+label+' the run</small></span>';
+    return gx>=0?'<button type="button" class="rh-row" data-game="'+gx+'">'+body+CHEV+'</button>':'<div class="rh-row flat">'+body+'</div>'};
+  return one('Started',x.start)+one('Ended',x.end)+(x.live?'<div class="rh-row flat"><span class="rh-ic">🔥</span><span class="rh-t"><b>Still running</b><small>This streak is live right now</small></span></div>':'');
 }
 function recPickSheet(){
   var groups=[['Team scores',['high','low','seasonhi','seasonlo']],['Games',['blowout','close','hiloss','lowin']],['Players & streaks',['player','wstreak','lstreak']]];
