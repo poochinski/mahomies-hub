@@ -332,6 +332,24 @@ Status tags: **MVP** (Phase 2), **v1** (Phases 3–5), **v2** (Phase 6–7), **C
 - Each record shows holder, value, season/week, and the runner-up list (top 10)
 - "NEW RECORD" badge when a record falls this week
 
+### Career records (built 2026-10-13, client-side in `app.js`)
+25 boards covering a manager's whole time in the league, in six sections: Winning (7),
+Scoring (4), Margins (2), Playoffs (3), Hardware (6), Luck & schedule (3). Built on the
+phone from the hub snapshot — `D.alltime`, the per-season standings and `D.games` — so
+there is no extra call and no loading state.
+
+- **Wins include the median game.** Standings `w` is head-to-head plus median; `h2h` is
+  head-to-head only. Median-only record = `w - h2hW`, which is the "Best record vs the
+  median" board. Filtered to managers who actually have median games.
+- **All-play** is summed from each season's `ap` string; all-play win % is the steadiest
+  measure of who scores, since it has no schedule in it.
+- **Season titles** (regular-season, points, all-play) count finished seasons only.
+- **Playoff boards** use build.js's rule: `k.startsWith('Playoffs') || k === 'Championship'`.
+  Toilet Bowl, third-place and other consolation games are not playoff games.
+- Two of fantasyhoff's were deliberately dropped (top-half consistency restates all-play;
+  easiest schedule is the bottom of toughest schedule) and two of ours added (points a
+  week, ice-cold weeks).
+
 ### Front Office records (built 2026-10-10, `server/records/frontoffice.js`)
 The second half of the record book. The rest of the book is about points scored; this half is
 about the moves — trades, waivers, free agents, draft picks. Twenty boards, every one with a

@@ -1018,6 +1018,7 @@ function recGame(k,x){var t=recType(k);
   if(t==='game')return gi(x.s,x.w,x.win);return -1}
 function records(){
   if(isFO(S.rec))return foRecords();
+  if(isCA(S.rec))return caRecords();
   var k=S.rec,list=recList(k),t=recType(k),name=RECS.find(function(r){return r[0]===k})[1];
   var h='<button type="button" class="picker" data-recpick="1"><span><small>Record</small><b>'+name+'</b></span><i>Change ▾</i></button>';
   if(t!=='season'&&t!=='streak')h+='<div class="seg">'+[['all','All games'],['reg','Regular'],['post','Playoffs']].map(function(x){return '<button type="button" class="'+(S.rf===x[0]?'on':'')+'" data-rf="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
@@ -1069,11 +1070,122 @@ function recStreakRows(x){
     return gx>=0?'<button type="button" class="rh-row" data-game="'+gx+'">'+body+CHEV+'</button>':'<div class="rh-row flat">'+body+'</div>'};
   return one('Started',x.start)+one('Ended',x.end)+(x.live?'<div class="rh-row flat"><span class="rh-ic">🔥</span><span class="rh-t"><b>Still running</b><small>This streak is live right now</small></span></div>':'');
 }
+/* ---------- CAREER records (v2.6) ---------- */
+/* Every number here is already in the hub snapshot, so these build on the phone with no
+   extra call and no loading state. Careers run across every Sleeper season we have. */
+var CARECS=[
+ ['Winning',[['ca:wins','Most wins'],['ca:losses','Most losses'],['ca:pct','Best win percentage'],['ca:median','Best record vs the median'],['ca:apw','Most all-play wins'],['ca:apl','Most all-play losses'],['ca:aprec','Best all-play record']]],
+ ['Scoring',[['ca:points','Most career points'],['ca:ppg','Best points per week'],['ca:top','Most high-score weeks'],['ca:cold','Most ice-cold weeks']]],
+ ['Margins',[['ca:blow','Most blowout wins'],['ca:narrow','Most nail-biter wins']]],
+ ['Playoffs',[['ca:pw','Most playoff wins'],['ca:pl','Most playoff losses'],['ca:ppf','Most playoff points']]],
+ ['Hardware',[['ca:titles','Championships'],['ca:finals','Title-game appearances'],['ca:apps','Playoff appearances'],['ca:rs','Regular-season titles'],['ca:ptt','Points titles'],['ca:apt','All-play titles']]],
+ ['Luck &amp; schedule',[['ca:lucky','Luckiest career'],['ca:unlucky','Unluckiest career'],['ca:sched','Toughest schedule faced']]]];
+function isCA(k){return String(k).indexOf('ca:')===0}
+function caTitle(k){var t=null;CARECS.forEach(function(g){g[1].forEach(function(x){if(x[0]===k)t=x[1]})});return t||'Career'}
+var CAR={d:null,b:null};
+function caData(){
+  if(CAR.d)return CAR.d;
+  var M={},get=function(u){return M[u]||(M[u]={uid:u,w:0,l:0,pf:0,pa:0,g:0,seasons:0,apw:0,apl:0,mw:0,ml:0,
+    luck:0,blow:0,narrow:0,pw:0,pl:0,ppf:0,titles:0,runner:0,apps:0,rs:0,ptt:0,apt:0,top:0,cold:0,pct:0,avg:0})};
+  D.alltime.forEach(function(a){var m=get(a.uid);
+    m.w=a.w;m.l=a.l;m.pf=a.pf;m.pa=a.pa;m.g=a.g;m.pw=a.pw;m.pl=a.pl;m.pct=a.pct;m.avg=a.avg;
+    m.titles=a.titles.length;m.runner=a.runner.length;m.apps=a.playoffs.length;m.top=a.tb;m.cold=a.rb;m.seasons=a.seasons.length});
+  var done=PAST();
+  ALLS().forEach(function(sn){
+    var st=D.seasons[sn]&&D.seasons[sn].standings;if(!st||!st.length)return;
+    st.forEach(function(t){var m=get(t.uid),ap=String(t.ap||'0-0').split('-'),hh=String(t.h2h||'0-0').split('-');
+      m.apw+=+ap[0]||0;m.apl+=+ap[1]||0;
+      m.mw+=t.w-(+hh[0]||0);m.ml+=t.l-(+hh[1]||0);   // W-L includes the median game; h2h doesn't
+      m.luck+=t.luck||0});
+    if(done.indexOf(sn)<0)return;                     // a season still being played has no titles yet
+    var by=function(f){return st.slice().sort(f)[0]};
+    var a=by(function(x,y){return y.pf-x.pf});if(a)get(a.uid).ptt++;
+    var b=by(function(x,y){return y.appct-x.appct});if(b)get(b.uid).apt++;
+    var c=by(function(x,y){var p=function(z){return z.w/Math.max(1,z.w+z.l)};return p(y)-p(x)||y.pf-x.pf});if(c)get(c.uid).rs++;
+  });
+  D.games.forEach(function(g){
+    if(g.k==='Regular season'){var m=get(g.win);if(g.m>=30)m.blow++;if(g.m<=5)m.narrow++;return}
+    if(g.k.indexOf('Playoffs')===0||g.k==='Championship'){get(g.win).ppf+=g.wp;get(g.lose).ppf+=g.lp}
+  });
+  CAR.d=Object.keys(M).map(function(u){return M[u]});
+  return CAR.d;
+}
+function caBoards(){
+  if(CAR.b)return CAR.b;
+  var P=caData(),B={},pc=function(n){return (n*100).toFixed(1)};
+  var mk=function(key,kicker,unit,note,score,fmt,sub,keep){
+    var rows=P.filter(keep||function(){return true}).slice().sort(function(a,b){return score(b)-score(a)})
+      .filter(function(m){return score(m)!==null&&score(m)!==undefined})
+      .slice(0,10).map(function(m){return {uid:m.uid,v:score(m),vfmt:fmt(m),sub:sub(m)}});
+    B[key]={key:key,title:caTitle(key),kicker:kicker,unit:unit,note:note,rows:rows}};
+  var yrs=function(m){return m.seasons+' season'+(m.seasons===1?'':'s')};
+  var two=function(m){return m.seasons>=2};
+  mk('ca:wins','Every season on Sleeper','wins','Your record as the app counts it, which includes the weekly median game — each week you get a second win for scoring above half the league.',
+    function(m){return m.w},function(m){return String(m.w)},function(m){return m.w+'-'+m.l+' · '+yrs(m)});
+  mk('ca:losses','Every season on Sleeper','losses','Same counting as wins, median game and all. Somebody has to be here.',
+    function(m){return m.l},function(m){return String(m.l)},function(m){return m.w+'-'+m.l+' · '+yrs(m)});
+  mk('ca:pct','Two seasons minimum','win %','Wins divided by games, median game included. Two seasons minimum so one hot year can\'t own it.',
+    function(m){return m.pct},function(m){return pc(m.pct)},function(m){return m.w+'-'+m.l+' · '+yrs(m)},two);
+  mk('ca:median','The schedule taken out of it','median wins','Each week you also play the league median. This is only those games — your real scoring record, with the luck of who you drew removed.',
+    function(m){return m.mw},function(m){return String(m.mw)},function(m){return m.mw+'-'+m.ml+' against the median'},
+    function(m){return m.mw+m.ml>0});   // a league without a median game has none of these
+  mk('ca:apw','Your score against every other score','all-play wins','Every week, your score is compared with all eleven other teams. Add up every one of those you win.',
+    function(m){return m.apw},function(m){return String(m.apw)},function(m){return m.apw+'-'+m.apl+' · '+yrs(m)});
+  mk('ca:apl','Your score against every other score','all-play losses','The other side of all-play: every weekly comparison you lost to the field.',
+    function(m){return m.apl},function(m){return String(m.apl)},function(m){return m.apw+'-'+m.apl+' · '+yrs(m)});
+  mk('ca:aprec','Two seasons minimum','all-play %','All-play wins divided by all-play games. The fairest measure we have of who actually scores: no schedule, no luck.',
+    function(m){return m.apw+m.apl?m.apw/(m.apw+m.apl):0},function(m){return pc(m.apw+m.apl?m.apw/(m.apw+m.apl):0)},
+    function(m){return m.apw+'-'+m.apl+' · '+yrs(m)},two);
+  mk('ca:points','Regular season and playoffs','points','Every point scored in this league, in our scoring, across every season on Sleeper.',
+    function(m){return m.pf},function(m){return money(m.pf)},function(m){return f1(m.avg)+' a week · '+yrs(m)});
+  mk('ca:ppg','Points per week played','points a week','Career points divided by weeks played, so somebody who joined late isn\'t punished for it.',
+    function(m){return m.avg},function(m){return f1(m.avg)},function(m){return money(m.pf)+' over '+m.g+' weeks'});
+  mk('ca:top','Weeks as the league\'s top scorer','🔥 weeks','Weeks you posted the highest score in the league. Tied leaders both count.',
+    function(m){return m.top},function(m){return String(m.top)},function(m){return m.top+' of '+m.g+' weeks on top'});
+  mk('ca:cold','Weeks as the league\'s lowest scorer','🧊 weeks','Weeks you posted the lowest score in the league. Nobody wants this one.',
+    function(m){return m.cold},function(m){return String(m.cold)},function(m){return m.cold+' of '+m.g+' weeks at the bottom'});
+  mk('ca:blow','Regular-season wins by 30 or more','blowouts','A win by 30 points or more. Head-to-head games only — the median game has no margin.',
+    function(m){return m.blow},function(m){return String(m.blow)},function(m){return m.blow+' of '+m.w+' wins were routs'});
+  mk('ca:narrow','Regular-season wins by 5 or less','nail-biters','A win by five points or fewer. The ones that came down to Monday night.',
+    function(m){return m.narrow},function(m){return String(m.narrow)},function(m){return m.narrow+' wins by a whisker'});
+  mk('ca:pw','Winners bracket only','playoff wins','Playoff rounds and the championship game. The Toilet Bowl and the consolation games don\'t count.',
+    function(m){return m.pw},function(m){return String(m.pw)},function(m){return m.pw+'-'+m.pl+' in the playoffs'});
+  mk('ca:pl','Winners bracket only','playoff losses','Same bracket as playoff wins. You have to get there to lose there.',
+    function(m){return m.pl},function(m){return String(m.pl)},function(m){return m.pw+'-'+m.pl+' in the playoffs'});
+  mk('ca:ppf','Winners bracket only','playoff points','Every point scored in a playoff round or a championship game.',
+    function(m){return m.ppf},function(m){return money(m.ppf)},function(m){return (m.pw+m.pl)+' playoff game'+(m.pw+m.pl===1?'':'s')});
+  mk('ca:titles','The only one that really counts','🏆 titles','Championship-game wins.',
+    function(m){return m.titles},function(m){return String(m.titles)},function(m){return m.titles?'Champion in '+caYears(m.uid,'titles'):'Still waiting'});
+  mk('ca:finals','Titles plus runners-up','finals','Every season you reached the championship game, won or lost.',
+    function(m){return m.titles+m.runner},function(m){return String(m.titles+m.runner)},function(m){return m.titles+' won, '+m.runner+' lost'});
+  mk('ca:apps','Seasons in the winners bracket','playoff trips','Seasons you made the playoffs at all.',
+    function(m){return m.apps},function(m){return String(m.apps)},function(m){return m.apps+' of '+m.seasons+' seasons · '+caYears(m.uid,'playoffs')});
+  mk('ca:rs','Best record in a finished season','🥇 titles','Seasons you finished with the league\'s best win percentage, points breaking ties. The season being played doesn\'t count yet.',
+    function(m){return m.rs},function(m){return String(m.rs)},function(m){return m.rs+' of '+done().length+' finished seasons'});
+  mk('ca:ptt','Most points in a finished season','points titles','Seasons you scored more than anyone else.',
+    function(m){return m.ptt},function(m){return String(m.ptt)},function(m){return m.ptt+' of '+done().length+' finished seasons'});
+  mk('ca:apt','Best all-play in a finished season','all-play titles','Seasons you had the best all-play record — the best scorer, whatever the schedule did.',
+    function(m){return m.apt},function(m){return String(m.apt)},function(m){return m.apt+' of '+done().length+' finished seasons'});
+  mk('ca:lucky','Wins the schedule handed you','wins gained','Head-to-head wins minus what your scores deserved against the whole field. Positive means the schedule was kind.',
+    function(m){return m.luck},function(m){return (m.luck>0?'+':'')+f1(m.luck)},function(m){return m.w+'-'+m.l+' with an all-play of '+m.apw+'-'+m.apl});
+  mk('ca:unlucky','Wins the schedule took off you','wins lost','The same number the other way up: how many wins your scores earned and the draw didn\'t give you.',
+    function(m){return -m.luck},function(m){return f1(m.luck)},function(m){return m.w+'-'+m.l+' with an all-play of '+m.apw+'-'+m.apl});
+  mk('ca:sched','Points your opponents put up on you','points against','Everything your head-to-head opponents scored against you. Top of this list had the hardest run; the bottom had the easiest.',
+    function(m){return m.pa},function(m){return money(m.pa)},function(m){return f1(m.pa/Math.max(1,m.g))+' a week against you'});
+  CAR.b=B;return B;
+}
+function done(){return PAST()}
+function caYears(uid,k){var a=D.alltime.filter(function(x){return x.uid===uid})[0];return a&&a[k]&&a[k].length?a[k].join(', '):'—'}
+function caRecords(){var b=caBoards()[S.rec];
+  if(!b)return '<p class="muted">That board doesn\'t exist.</p>'+foot();
+  return boardView('Career',b,'career')}
 function recPickSheet(){
   var groups=[['Team scores',['high','low','seasonhi','seasonlo']],['Games',['blowout','close','hiloss','lowin']],['Players & streaks',['player','wstreak','lstreak']]];
   var pk=function(k,label){return '<button type="button" class="pk'+(k===S.rec?' on':'')+'" data-rec="'+k+'">'+esc(label)+'</button>'};
   var h='<div class="ph" style="margin:0"><div><div class="kicker">Record book</div><h2>Pick a record</h2></div></div>'+
    groups.map(function(g){return '<div class="kicker" style="margin-top:4px">'+g[0]+'</div><div class="pick-grid">'+g[1].map(function(k){return pk(k,RECS.find(function(x){return x[0]===k})[1])}).join('')+'</div>'}).join('');
+  h+='<div class="fo-div"><b>Career</b><span>Everything a manager has done since 2023</span></div>'+
+   CARECS.map(function(g){return '<div class="kicker" style="margin-top:4px">'+g[0]+'</div><div class="pick-grid">'+g[1].map(function(x){return pk(x[0],x[1])}).join('')+'</div>'}).join('');
   h+='<div class="fo-div"><b>Front office</b><span>How you built the team, not how it scored</span></div>'+
    FORECS.map(function(g){return '<div class="kicker" style="margin-top:4px">'+esc(g[0])+'</div><div class="pick-grid">'+g[1].map(function(x){return pk(x[0],x[1])}).join('')+'</div>'}).join('');
   return h;
@@ -1101,27 +1213,37 @@ function foSub(s){return String(s==null?'':s).replace(/\{\{([^}]+)\}\}/g,functio
 function foWho(x,sz,tap){var sub=foSub(x.sub);
   if(x.uid2)return '<span class="who fo-pair">'+av(x.uid,sz)+av(x.uid2,sz)+'<span class="tx"><b>'+esc(team(x.uid))+' &amp; '+esc(team(x.uid2))+'</b><span>'+esc(sub)+'</span></span></span>';
   return tap?who(x.uid,sub,sz):whoS(x.uid,sub,sz)}
-function foRecords(){
-  var k=S.rec;
-  var h='<button type="button" class="picker" data-recpick="1"><span><small>Front office</small><b>'+esc(foTitle(k))+'</b></span><i>Change ▾</i></button>';
-  if(!LIVE)return h+'<section class="panel"><p class="lab-off">Turns on when the app is live on Railway</p></section>'+foot();
-  if(!FO.d){foLoad();return h+'<section class="panel"><p class="muted" id="foErr">Reading every trade, waiver claim and draft pick we have on Sleeper…</p></section>'+foot()}
-  var b=FO.d.boards[k];
-  if(!b)return h+'<section class="panel"><p class="muted">That board isn\'t in this season\'s data.</p></section>'+foot();
+/* One renderer for every category board (Front office, Career). The main record book
+   still has its own, because those rows open games. */
+function boardView(cat,b,topic){
+  var h='<button type="button" class="picker" data-recpick="1"><span><small>'+esc(cat)+'</small><b>'+esc(b.title)+'</b></span><i>Change ▾</i></button>';
   if(!b.rows.length)return h+'<section class="panel"><div class="ph" style="margin:0"><div><div class="kicker">'+esc(b.kicker)+'</div><h2>'+esc(b.title)+'</h2></div></div><p class="muted">Nothing qualifies yet — this one needs more league history.</p><p class="muted" style="font-size:11.5px;line-height:1.5;margin-top:8px">'+esc(b.note)+'</p></section>'+foot();
+  var neg=function(v){return String(v).charAt(0)==='-'?' fo-neg':''};
   var r0=b.rows[0];
-  h+='<section class="hero rec-hero"><div class="eyebrow">'+esc(b.kicker)+'</div><div class="big'+(String(r0.vfmt).charAt(0)==='-'?' fo-neg':'')+'">'+esc(r0.vfmt)+'</div><div class="rec-unit">'+esc(b.unit)+'</div>'+
-   (r0.uid2?'<div class="fo-hold">'+foWho(r0,34)+'</div>':'<button class="holder who" type="button" data-mgr="'+r0.uid+'">'+av(r0.uid,36)+'<span class="tx"><b>'+esc(team(r0.uid))+'</b><span>'+esc(foSub(r0.sub))+'</span></span></button>')+
-   '<button type="button" class="share-btn" data-share-rec="1">Share</button>'+
-   (r0.pid?'<button type="button" class="share-btn" data-pl="'+esc(r0.pid)+'">Player card</button>':'')+info('frontoffice')+'</section>';
+  h+='<section class="hero rec-hero"><div class="rh-top"><b>#1 all-time</b><span>'+esc(b.kicker)+'</span></div>'+
+   '<div class="big'+neg(r0.vfmt)+'">'+esc(r0.vfmt)+'</div><div class="rec-unit">'+esc(b.unit)+'</div>'+
+   (r0.uid2?'<div class="fo-hold">'+foWho(r0,34)+'</div>'
+    :'<button type="button" class="rh-row" '+(r0.pid?'data-pl="'+esc(r0.pid)+'"':'data-mgr="'+r0.uid+'"')+'>'+
+      (r0.pid?plPic(r0.pid,r0.name||'?',34,r0.pos):av(r0.uid,34))+
+      '<span class="rh-t"><b>'+esc(team(r0.uid))+'</b><small>'+esc(foSub(r0.sub))+'</small></span>'+CHEV+'</button>')+
+   '<div class="rh-acts"><button type="button" class="rh-a" data-share-rec="1">Share</button><button type="button" class="rh-a" data-info="'+topic+'">How it works</button></div></section>';
   h+='<section class="panel tight rec-list"><div class="rows">'+
    b.rows.slice(1,S.recMore?10:5).map(function(x,j){
-     var inner='<span class="rk">'+(j+2)+'</span>'+foWho(x,28,!x.pid)+'<span class="aw-vb"><span class="val fo-val'+(String(x.vfmt).charAt(0)==='-'?' fo-neg':'')+'">'+esc(x.vfmt)+'</span><small>'+esc(b.unit)+'</small></span>';
+     var inner='<span class="rk">'+(j+2)+'</span>'+foWho(x,28,!x.pid)+'<span class="aw-vb"><span class="val fo-val'+neg(x.vfmt)+'">'+esc(x.vfmt)+'</span><small>'+esc(b.unit)+'</small></span>';
      if(x.pid)return '<button type="button" class="row" data-pl="'+esc(x.pid)+'" style="grid-template-columns:24px minmax(0,1fr) auto 10px">'+inner+CHEV+'</button>';
      return '<div class="row" style="grid-template-columns:24px minmax(0,1fr) auto">'+inner+'</div>'}).join('')+
    '</div>'+(b.rows.length>5?'<button type="button" class="more" data-more="rec">'+(S.recMore?'Show top 5':'Show top '+b.rows.length)+'</button>':'')+'</section>';
   h+='<section class="panel tight"><div class="kicker">How this one is worked out</div><p class="muted" style="font-size:12px;line-height:1.55;margin:6px 0 0">'+esc(b.note)+'</p></section>';
   return h+foot();
+}
+function foRecords(){
+  var k=S.rec;
+  var pick='<button type="button" class="picker" data-recpick="1"><span><small>Front office</small><b>'+esc(foTitle(k))+'</b></span><i>Change ▾</i></button>';
+  if(!LIVE)return pick+'<section class="panel"><p class="lab-off">Turns on when the app is live on Railway</p></section>'+foot();
+  if(!FO.d){foLoad();return pick+'<section class="panel"><p class="muted" id="foErr">Reading every trade, waiver claim and draft pick we have on Sleeper…</p></section>'+foot()}
+  var b=FO.d.boards[k];
+  if(!b)return pick+'<section class="panel"><p class="muted">That board isn\'t in this season\'s data.</p></section>'+foot();
+  return boardView('Front office',b,'frontoffice');
 }
 
 /* ---------- SPORTSBOOK (live, v1.8): talks to /api/book ---------- */
@@ -1593,6 +1715,15 @@ var EXPLAIN={
   ['Still on the board','For a pick that fell short, this is the best player taken later in the same draft, how many picks later he went, and who took him.'],
   ['Grades','Managers are ranked on total value for that draft and given a letter from A down to F. Only live picks count, so somebody with a lot of keepers is graded on the few picks he actually made.'],
   ['The small print','Points are what a player scored while on a roster in this league, using our scoring. A player dropped in October stops adding points, which is part of why the pick didn\'t work out.']]},
+ career:{t:'Career records',b:[
+  ['What a career is','Every season this league has on Sleeper, added together. Managers who joined late are judged on the seasons they played, not punished for the ones they missed \u2014 anything that would reward longevity on its own says so in its own note.'],
+  ['Wins include the median game','Our W-L is not head-to-head only. Every week you also play the league median: score above half the league and you get a second win, below it a second loss. Career wins, losses and win percentage all count those.'],
+  ['Record vs the median','That median half on its own. No opponent, no draw, no luck \u2014 just whether you outscored the league most weeks. It is the honest version of a record.'],
+  ['All-play','Every week your score is compared with all eleven other teams, and you collect a win for each one you beat. Over a career that is thousands of comparisons, which makes all-play win percentage the steadiest measure of who actually scores.'],
+  ['Luck','Head-to-head wins minus the wins your all-play record says you earned. Positive means the schedule handed you games; negative means your scores deserved better.'],
+  ['Playoffs','Playoff rounds and the championship game only. The Toilet Bowl, the third-place game and the other consolation games are not counted as playoff games.'],
+  ['Titles','Regular-season, points and all-play titles are counted per finished season. The season being played right now does not award any of them until it is over.'],
+  ['How far back','Every Sleeper season (2023 onwards). The Yahoo years are not in here yet.']]},
  frontoffice:{t:'Front office records',b:[
   ['What this half of the record book is for','The rest of the record book is about points — who scored the most, who got blown out. Front office is about the moves: trades, waiver claims, free agent grabs and draft picks. It grades how you built the team, not how it happened to score.'],
   ['The one rule behind all of it','A move is worth the points it put in your STARTING lineup. Points a guy piles up on your bench never won you a game, so they don\'t count here. Once you drop or trade a player away, he stops counting for you.'],
@@ -1612,7 +1743,7 @@ var EXPLAIN={
   ['Odds moved','Live prices refresh every 30–60 seconds. If the price gets worse between when you see it and when you tap Place bet, the app shows you the new price first.'],
   ['Settling','Wednesday 3 AM, after Sleeper\'s stat corrections. Exact ties on a spread or total push (stake back).']]}
 };
-var EXPLAIN_ORDER=['data','standings','median','power','odds','awards','records','frontoffice','alltime','h2h','preview','book','bench','trades','draft'];
+var EXPLAIN_ORDER=['data','standings','median','power','odds','awards','records','career','frontoffice','alltime','h2h','preview','book','bench','trades','draft'];
 function info(k){return '<button type="button" class="info" data-info="'+k+'" aria-label="How '+esc(EXPLAIN[k].t)+' works">ⓘ How it works</button>'}
 function explainSheet(k){var x=EXPLAIN[k];if(!x)return '';
   return '<div class="ph" style="margin:0"><div><div class="kicker">How it works</div><h2>'+esc(x.t)+'</h2></div></div><div class="rows">'+
@@ -2343,8 +2474,8 @@ function showShare(o){
   try{(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go)}catch(e){go()}
 }
 function shareRecord(){var k=S.rec;
-  if(isFO(k)){var b=FO.d&&FO.d.boards[k];if(!b||!b.rows.length)return;var r=b.rows[0];
-    showShare({eyebrow:'Front office record · '+b.unit,title:b.title,big:r.vfmt,team:team(r.uid)+(r.uid2?' & '+team(r.uid2):''),sub:foSub(r.sub)});return}
+  if(isFO(k)||isCA(k)){var b=isCA(k)?caBoards()[k]:(FO.d&&FO.d.boards[k]);if(!b||!b.rows.length)return;var r=b.rows[0];
+    showShare({eyebrow:(isCA(k)?'Career record':'Front office record')+' · '+b.unit,title:b.title,big:r.vfmt,team:team(r.uid)+(r.uid2?' & '+team(r.uid2):''),sub:foSub(r.sub)});return}
   var list=recList(k),top=recVal(k,list[0]),name=RECS.find(function(r){return r[0]===k})[1];
   var t=recType(k);showShare({eyebrow:'All-time record · '+(t==='season'||t==='streak'?'regular season':{all:'all games',reg:'regular season',post:'playoffs'}[S.rf]),title:name,big:top.v,team:team(top.u),sub:top.sub})}
 function shareGame(i){var g=D.games[i];showShare({eyebrow:g.s+' · Week '+g.w+' · '+g.k,title:tnS(g.s,g.win)+' def. '+tnS(g.s,g.lose),big:f2(g.wp),team:'to '+f2(g.lp),sub:'Won by '+f2(g.m)})}
