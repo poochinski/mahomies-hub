@@ -62,6 +62,7 @@ router.post('/book/admin/reset-pin', wrap(async (req, res) => {
 }));
 router.post('/book/admin/setting', wrap(async (req) => book.setSetting(String(req.body?.key), req.body?.value, await commish(req))));
 router.post('/book/admin/tick', wrap(async (req) => { await commish(req); return book.tick(); }));
+router.get('/book/admin/bets', wrap(async (req) => { await commish(req); return book.betBook({ week: req.query.week, user: req.query.user, status: req.query.status }); }));
 router.get('/book/admin/health', wrap(async (req) => { await commish(req); return book.health(); }));
 router.get('/book/admin/log', wrap(async (req) => { await commish(req); return book.recentLog(Number(req.query.limit) || 50); }));
 

@@ -1393,7 +1393,7 @@ function admPanel(){
   if(!(BK.me&&BK.me.commish))return '';
   return '<section class="panel"><div class="ph"><div><div class="kicker">Commish only</div><h2>Book controls</h2></div></div><div class="rows">'+
    [['bucks','💵 Add or take away Bucks','Any team, you included. Shows everyone\'s balance; every change goes in the ledger.'],['health','Book health','Is everything working? Lines, live data, settlement, errors.'],['post','Post lines now','Use if Tuesday\'s automatic post didn\'t happen.'],['line','Move or void a line','Change a number before the game locks, or take it off the board.'],
-    ['settle','Settle a week','Grade bets now (normally automatic Wednesday 3 AM).'],
+    ['bets','\ud83d\udcd2 Everyone\'s bets','Every bet in the league: who backed what, who won, who lost, and where each manager stands.'],['settle','Settle a week','Grade bets now. Most bets already settle themselves once their games finish.'],
     ['pin','Set up or reset a PIN','Create a private setup code for a new team or someone locked out.'],['log','Book log','What the clock job and the commish did.']]
    .map(function(x){return '<button type="button" class="row" data-adm="'+x[0]+'" style="grid-template-columns:minmax(0,1fr) 10px"><div><b style="font-size:14px">'+x[1]+'</b><p class="muted" style="font-size:12px;margin-top:2px">'+x[2]+'</p></div>'+CHEV+'</button>'}).join('')+'</div></section>'}
 /* commish Bucks (v1.8.3): every team with its balance, quick amounts, live preview */
@@ -1423,6 +1423,12 @@ function admSheet(k,arg){var nw=(BK.status&&BK.status.next&&BK.status.next.week)
   var hd=function(t,s){return '<div class="ph" style="margin:0"><div><div class="kicker">Commish · Book controls</div><h2>'+t+'</h2>'+(s?'<p class="muted" style="font-size:12.5px;margin-top:2px">'+s+'</p>':'')+'</div></div>'};
   if(k==='post')return hd('Post lines','Lines freeze for the whole week once posted.')+fld('aWeek','Week',nw,'number')+'<label class="chk"><input type="checkbox" id="aForce"> Replace lines already posted (only if nobody has bet yet)</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="post">Post lines</button>'+CLOSE;
   if(k==='settle')return hd('Settle a week','Uses Sleeper\'s current scores. Normally runs itself Wednesday 3 AM.')+fld('aWeek','Week',ow||'','number')+'<label class="chk"><input type="checkbox" id="aForce"> Settle now even if it\'s early</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="settle">Settle</button>'+CLOSE;
+  if(k==='bets'){var f=BKB.f;
+    var chips=function(name,opts,cur){return '<div class="chips wrap" style="margin-bottom:6px">'+opts.map(function(o){return '<button type="button" class="chip'+(String(cur||'')===String(o[0])?' on':'')+'" data-bkf="'+name+':'+o[0]+'">'+esc(o[1])+'</button>'}).join('')+'</div>'};
+    var h=hd('Everyone\'s bets','Read-only. Nothing here changes a bet.');
+    h+=chips('status',[['','All'],['open','Open'],['won','Won'],['lost','Lost']],f.status);
+    h+=chips('week',[['','Every week']].concat((BKB.weeks||[]).map(function(w){return [w,'Wk '+w]})),f.week);
+    h+='<div id="aBets">'+bkBetsBody()+'</div>'+CLOSE;return h}
   if(k==='bucks')return hd('Add or take away Bucks','Pick a team (you\'re on the list too), pick an amount, give a reason. It shows up in the ledger.')+bucksBody()+CLOSE;
   if(k==='pin')return hd('Set up or reset a PIN','Creates a private code valid for 24 hours. Any existing PIN and sessions are revoked. Share the code only with that team\'s owner.')+'<label class="fld"><span>Team</span>'+teamSelect('aUser')+'</label><p class="err" id="aErr"></p><button type="button" class="cta" data-admgo="pin">Create setup code</button>'+CLOSE;
   if(k==='line'){var L=(BK.wk&&BK.wk.lines)||[];
@@ -1454,6 +1460,30 @@ function loadHealth(){api('/admin/health').then(function(r){var el=$('#aHealth')
   el.innerHTML='<div class="rows">'+r.checks.map(function(c){return '<div class="row" style="grid-template-columns:22px minmax(0,1fr)"><span style="font-size:16px">'+(c.ok?'✅':'⚠️')+'</span><div><b style="font-size:13.5px">'+esc(c.name)+'</b><p class="muted" style="font-size:12px;margin-top:1px">'+esc(c.detail)+'</p></div></div>'}).join('')+'</div>'+
    (r.last_tick?'<p class="muted" style="font-size:11.5px;margin-top:8px">Clock job last ran '+esc(new Date(r.last_tick.at).toLocaleString('en-US',{weekday:'short',hour:'numeric',minute:'2-digit'}))+(r.last_tick.errors&&r.last_tick.errors.length?' with errors: '+esc(r.last_tick.errors.join('; ')):' with no errors')+'.</p>':'')+
    (r.recent_errors&&r.recent_errors.length?'<p class="err" style="font-size:11.5px">Recent problems: '+r.recent_errors.map(function(e){return esc(e.errors.join('; '))}).join(' · ')+'</p>':'')}).catch(function(e){var el=$('#aHealth');if(el)el.innerHTML='<p class="err">'+esc(e.message)+'</p>'})}
+/* Commish bet book: every bet in the league, who's up and who's down. Read-only. */
+var BKB={d:null,weeks:[],f:{status:'',week:''},busy:false};
+function bkLoad(){if(BKB.busy)return;BKB.busy=true;
+  var q=[];if(BKB.f.status)q.push('status='+BKB.f.status);if(BKB.f.week)q.push('week='+BKB.f.week);
+  api('/admin/bets'+(q.length?'?'+q.join('&'):'')).then(function(d){BKB.busy=false;BKB.d=d;
+    // The week chips come from the answer, so the first load has to redraw the whole sheet.
+    var had=BKB.weeks&&BKB.weeks.length;BKB.weeks=d.weeks||[];
+    if(!had&&BKB.weeks.length&&$('#aBets')){var sc=$('#sheet').scrollTop;openSheet(admSheet('bets'));$('#sheet').scrollTop=sc;return}
+    var el=$('#aBets');if(el)el.innerHTML=bkBetsBody()})
+   .catch(function(e){BKB.busy=false;var el=$('#aBets');if(el)el.innerHTML='<p class="err">'+esc(e.message)+'</p>'})}
+function bkRes(b){var s=b.status;
+  return '<span class="bk-res '+s+'">'+(s==='won'?'Won +'+money(b.payout):s==='lost'?'Lost '+money(b.stake):s==='open'?'Open':s==='void'?'Void':'Push')+'</span>'}
+function bkBetsBody(){var d=BKB.d;
+  if(!d)return '<p class="muted">Reading the book…</p>';
+  if(!d.bets.length)return '<p class="muted">No bets match that.</p>';
+  var h='<div class="bk-tot"><span><small>Staked</small><b>'+money(d.totals.staked)+'</b></span><span><small>Paid out</small><b>'+money(d.totals.returned)+'</b></span><span><small>House</small><b class="'+(d.totals.house>=0?'pos':'negv')+'">'+(d.totals.house>0?'+':'')+money(d.totals.house)+'</b></span></div>';
+  h+='<div class="kicker" style="margin:12px 0 4px">Where everyone stands</div><div class="rows">'+
+   d.managers.map(function(m){return '<div class="row" style="grid-template-columns:minmax(0,1fr) auto">'+whoS(m.user_id,m.won+'-'+m.lost+(m.open?' · '+m.open+' open':'')+' · '+money(m.staked)+' staked',26)+
+     '<span class="aw-vb"><span class="val '+(m.net>0?'pos':m.net<0?'negv':'')+'">'+(m.net>0?'+':'')+money(m.net)+'</span><small>net</small></span></div>'}).join('')+'</div>';
+  h+='<div class="kicker" style="margin:12px 0 4px">'+d.count+' bet'+(d.count===1?'':'s')+', newest first</div><div class="rows">'+
+   d.bets.map(function(b){return '<div class="row bk-b" style="grid-template-columns:minmax(0,1fr) auto">'+
+     '<div style="min-width:0"><b style="font-size:13px">'+esc(team(b.user_id))+'</b> <span class="muted" style="font-size:11.5px">Wk '+b.week+' · '+money(b.stake)+(b.kind==='parlay'?' parlay':'')+'</span>'+
+     b.legs.map(function(g){return '<div class="bk-l'+(g.result&&g.result!=='open'?' '+g.result:'')+'">'+esc(g.label)+'</div>'}).join('')+'</div>'+bkRes(b)+'</div>'}).join('')+'</div>';
+  return h}
 function loadLog(){api('/admin/log?limit=40').then(function(rows){var el=$('#aLog');if(!el)return;el.innerHTML=rows.length?'<div class="rows">'+rows.map(function(r){return '<div class="row" style="grid-template-columns:1fr"><div><b style="font-size:13px">'+esc(r.kind.replace(/_/g,' '))+'</b> <span class="muted" style="font-size:11.5px">'+esc(new Date(r.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+'</span><p class="muted" style="font-size:11.5px;word-break:break-word">'+esc(JSON.stringify(r.detail))+'</p></div></div>'}).join('')+'</div>':'<p class="muted">Nothing yet.</p>'}).catch(function(e){var el=$('#aLog');if(el)el.innerHTML='<p class="err">'+esc(e.message)+'</p>'})}
 
 /* ---------- HOW IT WORKS (plain-English explanations, v1.8) ---------- */
@@ -2356,7 +2386,8 @@ document.addEventListener('click',function(e){
   if(d.key){pinKey(d.key);return}
   if(d.pinback){S.lt=null;S.pin='';S.pin1=null;S.pinInvite='';S.pinErr='';openSheet(loginSheet());return}
   if(d.logout){logout();return}
-  if(d.adm){openSheet(admSheet(d.adm,d.arg));if(d.adm==='log')loadLog();if(d.adm==='health')loadHealth();return}
+  if(d.adm){openSheet(admSheet(d.adm,d.arg));if(d.adm==='log')loadLog();if(d.adm==='bets'){BKB.d=null;bkLoad()}if(d.adm==='health')loadHealth();return}
+  if(d.bkf){var p=d.bkf.split(':');BKB.f[p[0]]=p.slice(1).join(':');BKB.d=null;openSheet(admSheet('bets'));bkLoad();return}
   if(d.admgo){admGo(d.admgo,d.arg,t);return}
   if(d.bkreload){BK.on=null;render();bookLoad();return}
   if(t.id==='bucksBtn'){go('book');bookLoad();return}

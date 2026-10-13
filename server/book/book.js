@@ -704,6 +704,35 @@ export async function feed(limit = 40) {
   return betsWhere("b.season=$1 AND b.status <> 'cancelled'", [L.season], Math.min(100, Number(limit) || 40));
 }
 
+// The commish's book: every bet in the league, filterable, with each manager's running
+// total. Read-only — this shows what happened, it never changes anything.
+export async function betBook({ week = null, user = null, status = null, limit = 300 } = {}) {
+  const L = await sl.league();
+  const where = ['b.season=$1'], params = [L.season];
+  const add = (sql, v) => { params.push(v); where.push(sql.replace('$?', `$${params.length}`)); };
+  if (week) add('b.week=$?', Number(week));
+  if (user) add('b.user_id=$?', String(user));
+  if (status) add('b.status=$?', String(status));
+  const bets = await betsWhere(where.join(' AND '), params, Math.min(400, Number(limit) || 300));
+  const by = {};
+  for (const b of bets) {
+    const t = (by[b.user_id] ||= { user_id: b.user_id, team: b.team, bets: 0, staked: 0, returned: 0, won: 0, lost: 0, open: 0, other: 0, at_risk: 0 });
+    t.bets++; t.staked += b.stake; t.returned += Number(b.payout || 0);
+    if (b.status === 'won') t.won++;
+    else if (b.status === 'lost') t.lost++;
+    else if (b.status === 'open') { t.open++; t.at_risk += b.stake; }
+    else t.other++;
+  }
+  const managers = Object.values(by).map((t) => ({
+    ...t, staked: money(t.staked), returned: money(t.returned), at_risk: money(t.at_risk),
+    net: money(t.returned - t.staked + t.at_risk) // open stakes aren't losses yet
+  })).sort((a, b) => b.net - a.net);
+  const weeks = await q('SELECT DISTINCT week FROM bets WHERE season=$1 ORDER BY week DESC', [L.season]);
+  const tot = bets.reduce((a, b) => ({ staked: a.staked + b.stake, returned: a.returned + Number(b.payout || 0) }), { staked: 0, returned: 0 });
+  return { season: L.season, bets, managers, weeks: weeks.map((w) => w.week), count: bets.length,
+    totals: { staked: money(tot.staked), returned: money(tot.returned), house: money(tot.staked - tot.returned) } };
+}
+
 // ---------- settlement ----------
 // Grade one bet from its legs (used after settlement and after voids).
 async function gradeOne(betId, c = null) {
@@ -722,6 +751,89 @@ async function gradeOne(betId, c = null) {
   return true;
 }
 
+// ---------- early settlement ----------
+// Nobody should wait until Wednesday to find out they won a bet whose games finished on
+// Sunday afternoon. Every ten minutes this grades whatever is genuinely over: a player
+// prop the moment that player's own NFL game ends, a matchup bet once every starter on
+// both sides has finished, the weekly specials once the last game in the league is done.
+//
+// Wednesday's pass still runs. Sleeper keeps applying stat corrections into Tuesday, and
+// those move fantasy points, so settleWeek re-reads the final numbers and fixes anything
+// that changed — including taking a payout back and re-grading a bet that flipped.
+// "Over" has to mean over. weekState calls a starter 'bye' when it can't match him to an
+// NFL game at all, so an ESPN outage would otherwise look like a lineup that had finished.
+// At least one man has to have actually played a game that ended before we believe it.
+const gamesOver = (r) => {
+  const live = ((r && r.players) || []).filter((p) => !p.empty);
+  if (!live.length || !live.some((p) => p.state === 'post')) return false;
+  return live.every((p) => p.state === 'post' || p.state === 'bye');
+};
+
+export async function settleReady(season, week) {
+  const L = await sl.league();
+  if (L.season !== season) return { legs: 0, bets: 0, lines: 0 };
+  const open = await q("SELECT * FROM lines WHERE season=$1 AND week=$2 AND status='open' AND matchup_id >= 0", [season, week]);
+  if (!open.length) return { legs: 0, bets: 0, lines: 0 };
+  const st = await sl.weekState(L, week, 60 * 1000);
+  if (!st || !st.rosters) return { legs: 0, bets: 0, lines: 0 };
+  const [pts, ppts] = await Promise.all([
+    sl.pointsFor(L, week, 60 * 1000).catch(() => ({})),
+    sl.playerPoints(L, week, 60 * 1000).catch(() => ({}))
+  ]);
+  // Which NFL team each starter plays for, so a prop can settle on that one game alone.
+  const nflOf = {};
+  for (const r of Object.values(st.rosters)) for (const p of r.players || []) if (p.pid) nflOf[p.pid] = p.nfl;
+  const gameOf = st.k?.gameOf || {};
+  if (Object.keys(gameOf).length < 2) return { legs: 0, bets: 0, lines: 0 }; // no schedule, no grading
+  const weekOver = Object.values(st.rosters).every(gamesOver);
+  // Specials are graded against the whole league, so they need every team's final.
+  const all = await q('SELECT team_a, team_b, roster_a, roster_b FROM lines WHERE season=$1 AND week=$2 AND matchup_id > 0', [season, week]);
+  const scores = {};
+  for (const g of all) { if (pts[g.roster_a] > 0) scores[g.team_a] = pts[g.roster_a]; if (pts[g.roster_b] > 0) scores[g.team_b] = pts[g.roster_b]; }
+
+  const touched = new Set();
+  let legs = 0, lines = 0;
+  await tx(async (c) => {
+    for (const l of open) {
+      const ready = l.matchup_id > 0 && isStarted(l) && gamesOver(st.rosters[l.roster_a]) && gamesOver(st.rosters[l.roster_b])
+        && pts[l.roster_a] > 0 && pts[l.roster_b] > 0;
+      const special = l.matchup_id === 0 && weekOver && Object.keys(scores).length === all.length * 2;
+      const { rows: olegs } = await c.query("SELECT * FROM bet_legs WHERE line_id=$1 AND result='open'", [l.id]);
+      for (const g of olegs) {
+        let res = null;
+        if (g.market === 'prop') {
+          const gm = gameOf[nflOf[g.player_id] || ''];
+          if ((!gm || gm.state === 'post') && ppts[g.player_id] != null) res = gradeProp(g.pick, g.point, ppts[g.player_id]);
+        } else if (special) res = gradeSpecial(g, scores);
+        else if (ready) res = gradeLeg(g, pts[l.roster_a], pts[l.roster_b]);
+        if (res) { await c.query('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, res]); legs++; touched.add(String(g.bet_id)); }
+      }
+      if (ready || special) {
+        const vals = Object.values(scores);
+        const fa = special ? (vals.length ? Math.max(...vals) : null) : pts[l.roster_a];
+        const fb = special ? (vals.length ? Math.min(...vals) : null) : pts[l.roster_b];
+        await c.query("UPDATE lines SET status='final', final_a=$2, final_b=$3, locked=true, updated_at=now() WHERE id=$1", [l.id, fa, fb]);
+        lines++;
+      }
+    }
+    for (const id of touched) await gradeOne(Number(id), c);
+  });
+  if (legs || lines) await log('settle_early', { season, week, lines, legs, bets: touched.size });
+  return { legs, bets: touched.size, lines };
+}
+
+// A bet that was already paid out but whose legs have since been corrected: take the
+// payout back on the ledger, then let gradeOne settle it again from the right numbers.
+async function reopenBet(betId, c) {
+  const { rows: [b] } = await c.query('SELECT * FROM bets WHERE id=$1 FOR UPDATE', [betId]);
+  if (!b || b.status === 'open' || b.status === 'cancelled') return false;
+  const paid = Number(b.payout || 0);
+  if (paid > 0) await c.query('INSERT INTO bankroll_ledger(user_id, season, amount, kind, bet_id, note) VALUES ($1,$2,$3,$4,$5,$6)',
+    [b.user_id, b.season, -paid, 'correction', betId, `Stat correction · bet #${betId} re-graded`]);
+  await c.query("UPDATE bets SET status='open', payout=NULL, settled_at=NULL WHERE id=$1", [betId]);
+  return true;
+}
+
 export async function settleWeek(season, week, { force = false, by = null } = {}) {
   const [bw] = await q('SELECT * FROM book_weeks WHERE season=$1 AND week=$2', [season, week]);
   if (!bw) throw new BookError(`No Book for ${season} Week ${week}`);
@@ -730,7 +842,9 @@ export async function settleWeek(season, week, { force = false, by = null } = {}
   const L = await sl.league({ fresh: true });
   if (!force && L.lastScored < week && now() - new Date(bw.settle_at) < 24 * 60 * MIN) throw new BookError(`Sleeper hasn't finalized Week ${week} yet`);
   const pts = await sl.pointsFor(L, week, 0);
-  const lines = await q("SELECT * FROM lines WHERE season=$1 AND week=$2 AND status='open'", [season, week]);
+  // Everything, not just what's still open: anything settled early gets re-checked here
+  // against the corrected numbers.
+  const lines = await q("SELECT * FROM lines WHERE season=$1 AND week=$2 AND status <> 'void'", [season, week]);
   for (const l of lines) if (l.matchup_id > 0 && (!(pts[l.roster_a] > 0) || !(pts[l.roster_b] > 0))) throw new BookError(`Missing final score for ${l.id}; not settling`);
   // Every team's score this week, for the specials board (teams playing this week only).
   const scores = {};
@@ -738,27 +852,32 @@ export async function settleWeek(season, week, { force = false, by = null } = {}
   for (const g of games) { if (pts[g.roster_a] > 0) scores[g.team_a] = pts[g.roster_a]; if (pts[g.roster_b] > 0) scores[g.team_b] = pts[g.roster_b]; }
   const ppts = await sl.playerPoints(L, week, 0).catch(() => ({}));
   let graded = 0;
+  const corrected = [];
   await tx(async (c) => {
     for (const l of lines) {
       if (l.matchup_id < 0) continue; // season futures settle on their own (settleFutures)
-      if (l.matchup_id === 0) {
-        const vals = Object.values(scores);
-        await c.query("UPDATE lines SET status='final', final_a=$2, final_b=$3, locked=true, updated_at=now() WHERE id=$1", [l.id, vals.length ? Math.max(...vals) : null, vals.length ? Math.min(...vals) : null]);
-        const { rows: legs } = await c.query("SELECT * FROM bet_legs WHERE line_id=$1 AND result='open'", [l.id]);
-        for (const g of legs) await c.query('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, gradeSpecial(g, scores)]);
-        continue;
-      }
-      const fa = pts[l.roster_a], fb = pts[l.roster_b];
+      const vals = Object.values(scores);
+      const special = l.matchup_id === 0;
+      const fa = special ? (vals.length ? Math.max(...vals) : null) : pts[l.roster_a];
+      const fb = special ? (vals.length ? Math.min(...vals) : null) : pts[l.roster_b];
       await c.query("UPDATE lines SET status='final', final_a=$2, final_b=$3, locked=true, updated_at=now() WHERE id=$1", [l.id, fa, fb]);
-      const { rows: legs } = await c.query("SELECT * FROM bet_legs WHERE line_id=$1 AND result='open'", [l.id]);
-      for (const g of legs) await c.query('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, g.market === 'prop' ? gradeProp(g.pick, g.point, ppts[g.player_id]) : gradeLeg(g, fa, fb)]);
+      // Every leg, including ones already graded early — a stat correction can move them.
+      const { rows: legs } = await c.query('SELECT * FROM bet_legs WHERE line_id=$1', [l.id]);
+      for (const g of legs) {
+        const want = special ? gradeSpecial(g, scores)
+          : g.market === 'prop' ? gradeProp(g.pick, g.point, ppts[g.player_id]) : gradeLeg(g, fa, fb);
+        if (want === g.result) continue;
+        await c.query('UPDATE bet_legs SET result=$2 WHERE id=$1', [g.id, want]);
+        if (g.result !== 'open') corrected.push({ bet: String(g.bet_id), leg: g.id, from: g.result, to: want });
+      }
     }
+    for (const id of new Set(corrected.map((x) => x.bet))) await reopenBet(Number(id), c);
     const { rows: bets } = await c.query("SELECT id FROM bets WHERE season=$1 AND week=$2 AND status='open'", [season, week]);
     for (const b of bets) { await gradeOne(b.id, c); graded++; }
     await c.query('UPDATE book_weeks SET settled_at=now() WHERE season=$1 AND week=$2', [season, week]);
   });
-  await log('settle', { season, week, lines: lines.length, bets: graded, force }, by);
-  return { season, week, lines: lines.length, bets: graded };
+  await log('settle', { season, week, lines: lines.length, bets: graded, corrected: corrected.length, force }, by);
+  return { season, week, lines: lines.length, bets: graded, corrected: corrected.length };
 }
 
 // ---------- the clock job (every 10 minutes) ----------
@@ -780,6 +899,12 @@ export async function tick() {
         if (now() >= postTime(k) && now() < k.last) { await postLines(w); out.posted.push(w); }
       } catch (e) { out.errors.push(`post wk ${w}: ${e.message}`); }
     }
+  }
+  // 1b) Pay out anything whose games are already over, without waiting for Wednesday.
+  const live = await q('SELECT season, week FROM book_weeks WHERE settled_at IS NULL ORDER BY week');
+  for (const d of live) {
+    try { const r = await settleReady(d.season, d.week); if (r.legs) (out.early ||= []).push({ week: d.week, ...r }); }
+    catch (e) { out.errors.push(`early wk ${d.week}: ${e.message}`); }
   }
   // 2) Settle any week past its Wednesday 3 AM.
   const due = await q('SELECT season, week FROM book_weeks WHERE settled_at IS NULL AND settle_at <= $1 ORDER BY week', [now()]);

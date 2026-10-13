@@ -1120,3 +1120,17 @@ button.mh-line{width:100%;border:0;font:inherit;color:inherit;text-align:left;cu
 .rh-gf em{font:500 10px var(--mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
 .rh-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .rh-acts .share-btn,.rh-acts .info{margin-top:0}
+
+/* ---------- Commish bet book (v2.6) ---------- */
+.bk-tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.bk-tot>span{display:grid;gap:2px;justify-items:center;padding:8px 6px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03)}
+.bk-tot small{font:500 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.bk-tot b{font:700 17px var(--display);color:var(--ink)}
+.bk-tot b.pos{color:var(--win)}.bk-tot b.negv{color:var(--loss)}
+.bk-b{align-items:start}
+.bk-l{font:11px var(--mono);color:var(--muted);line-height:1.35;margin-top:2px;overflow-wrap:anywhere}
+.bk-l.won{color:var(--win)}.bk-l.lost{color:var(--loss)}
+.bk-res{align-self:center;font:600 11px var(--mono);white-space:nowrap;padding:3px 7px;border-radius:6px;border:1px solid var(--line-2);color:var(--muted)}
+.bk-res.won{color:var(--win);border-color:rgba(93,255,143,.4)}
+.bk-res.lost{color:var(--loss);border-color:rgba(255,84,112,.35)}
+.bk-res.open{color:var(--cyan);border-color:rgba(76,236,255,.35)}

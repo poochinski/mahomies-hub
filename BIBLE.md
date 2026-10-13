@@ -235,7 +235,8 @@ recaps(league_id, week, body_md, created_at, PRIMARY KEY(league_id, week))
 - **Tuesday ~6 AM:** settle anything still open; post new lines (lines are frozen into the `lines` table so everyone bets the same numbers); reprice futures.
 - **Live betting, nothing locks (Jayson, 2026-10-09):** before a matchup's first starter kicks off you bet the frozen Tuesday line. After that the odds go **live**: expected final = points so far + projection × share of the lineup still to play (from ESPN game clocks; each starter weighted by position: QB 19, RB/WR 13, TE 9, K 8, DEF 7; empty or bye slots count as nothing left), swing shrinks with √(share left), spread/total keep -110 and move freely, moneyline keeps the 4.5% hold and a side comes off the board when it would be shorter than -1000. Betting stops only when every starter in the matchup is done. Live prices refresh about every 30–60 s; if the price got worse between seeing it and tapping Place bet, the bet is refused and the new price shown. Cancel only before the game's first kickoff (live bets can't be cancelled). Weekly specials + futures still close at the first kickoff of the week; a parlay can mix pregame and live legs.
 - **Sun–Mon:** live bet tracking (winning/losing) from live scores.
-- **Wednesday 3 AM:** final settlement after Sleeper stat corrections; payouts written to the ledger; bet feed + leaderboard update.
+- **As each game finishes (every 10 min):** anything whose games are genuinely over is graded and paid right away — a player prop when that player's NFL game ends, a matchup bet when every starter on both sides is done, the weekly specials when the last game in the league is final. Most bets settle Sunday night. The week itself stays open.
+- **Wednesday 3 AM:** the correction pass. Sleeper applies stat corrections into Tuesday, so every line and every leg is re-graded from the final numbers. A result that moved re-opens its bet, takes the payout back on the ledger as a `correction` row, and re-settles it. Then the week closes, and the bet feed + leaderboard are final.
 - Launch: **Week 6 of 2026** (lines post Tue Oct 13).
 
 ### Odds engine (`server/book/engine.js`; jobs + rules in `server/book/book.js`)
@@ -458,6 +459,7 @@ GET  /api/trades?season=             Trade grader v2: got/gave, picks, FAAB, wee
 GET  /api/draft                      every draft: seasons, loyalty, position habits, market, all-time drafters (built)
 GET  /api/draft/:season              one draft: full board with keepers marked, grades, superlatives (built)
 GET  /api/records/frontoffice        the 20 Front Office boards: trades, waivers/FAAB, draft (built, cached 15 min)
+GET  /api/book/admin/bets            every bet in the league, filterable, with per-manager totals (commish, built)
 GET  /api/live/:week/:mid            Game Center: both lineups with live points, projections and each player's real stat line (built, polled ~1 min)
 GET  /api/season/:season            standings, power, luck, playoff odds
 GET  /api/h2h                       matrix
