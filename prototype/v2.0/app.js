@@ -198,16 +198,45 @@ function thisWeek(){
   return '<section class="panel tight"><div class="ph"><div><div class="kicker">'+(me?'The other games':'Every game')+' · tap for the live game</div><h2>This week</h2></div></div><div class="tw-list">'+built.map(function(r){return r.html}).join('')+'</div></section>';
 }
 // One line the High/Low tiles don't already say: the blowout, the nail-biter, an upset, a record.
+/* The week brief: what actually happened, in sentences, from numbers already on the page.
+   Fantasy only \u2014 no lines, no odds, nothing from the Book. */
+function weekNums(s,w){
+  var sc=weekScores(s,w); if(!sc.length)return null;
+  var ps=sc.map(function(x){return x.p}),n=ps.length;
+  var srt=ps.slice().sort(function(a,b){return a-b});
+  var med=(srt[Math.floor((n-1)/2)]+srt[Math.ceil((n-1)/2)])/2;
+  return {sc:sc,n:n,avg:ps.reduce(function(a,b){return a+b},0)/n,med:med,
+    hi:sc[0],lo:sc[n-1],over:ps.filter(function(p){return p>med}).length,gap:sc[0].p-sc[n-1].p};
+}
 function recapOne(s,w){
   var gs=weekGames(s,w).map(function(x){return x.g}).filter(function(g){return g.lose});if(!gs.length)return '';
+  var N=weekNums(s,w);
   var blow=gs.slice().sort(function(a,b){return b.m-a.m})[0],close=gs.slice().sort(function(a,b){return a.m-b.m})[0];
   var ups=gs.filter(function(g){return w>1&&enteringPct(s,w,g.lose)-enteringPct(s,w,g.win)>=.3})[0];
   var rec=null;gs.forEach(function(g){gameRecs(g).forEach(function(r){if(r.n<=3&&(!rec||r.n<rec.r.n))rec={g:g,r:r}})});
-  var t='<b>'+esc(tnS(s,blow.win))+'</b> ran away from '+esc(tnS(s,blow.lose))+' by '+f2(blow.m)+'. ';
-  if(close!==blow)t+='Nail-biter: <b>'+esc(tnS(s,close.win))+'</b> edged '+esc(tnS(s,close.lose))+' by '+f2(close.m)+'.';
-  if(ups)t+=' Upset: <b>'+esc(tnS(s,ups.win))+'</b> knocked off '+esc(tnS(s,ups.lose))+'.';
-  if(rec)t+=' Record book: #'+rec.r.n+' all-time '+RN[rec.r.k].toLowerCase()+'.';
-  return '<p class="tw-recap">'+t+'</p>';
+  var potw=null;(N?N.sc:[]).forEach(function(x){var t=topP(s,w,x.u);if(t&&t.name&&(!potw||t.pts>potw.pts))potw={u:x.u,name:t.name,pts:t.pts}});
+  var p1='<b>'+esc(tnS(s,blow.win))+'</b> ran away from '+esc(tnS(s,blow.lose))+' by '+f2(blow.m)+'. ';
+  if(close!==blow)p1+='<b>'+esc(tnS(s,close.win))+'</b> needed every point of it against '+esc(tnS(s,close.lose))+', winning by '+f2(close.m)+'. ';
+  if(ups)p1+='<b>'+esc(tnS(s,ups.win))+'</b> had no business beating '+esc(tnS(s,ups.lose))+', and did. ';
+  var p2='';
+  if(N){p2+='The league averaged <b>'+f1(N.avg)+'</b>, '+N.over+' of '+N.n+' teams cleared the median of '+f1(N.med)+
+    ', and '+f1(N.gap)+' points separated <b>'+esc(tnS(s,N.hi.u))+'</b> at the top from '+esc(tnS(s,N.lo.u))+' at the bottom. ';}
+  if(potw)p2+='<b>'+esc(potw.name)+'</b> was the best single player of the week with '+f1(potw.pts)+' for '+esc(tnS(s,potw.u))+'. ';
+  if(rec)p2+='For the record book: that was the #'+rec.r.n+' '+RN[rec.r.k].toLowerCase()+' of all time.';
+  return '<p class="tw-recap">'+p1+'</p>'+(p2?'<p class="tw-recap">'+p2+'</p>':'');
+}
+/* Your own game last week, so the app doesn't just flip to the new one without you seeing it. */
+function myLastWeek(s,w){
+  if(!S.me)return '';
+  var ix=gi(s,w,S.me); if(ix<0)return '';
+  var g=D.games[ix],won=g.win===S.me;
+  var mine=won?g.wp:g.lp,theirs=won?g.lp:g.wp,opp=won?g.lose:g.win,tp=topP(s,w,S.me);
+  return '<button type="button" class="mw'+(won?' w':' l')+'" data-game="'+ix+'">'+
+   '<span class="mw-k">Your Week '+w+'</span>'+
+   '<span class="mw-s"><b>'+f2(mine)+'</b><i>'+(won?'def.':'lost to')+'</i><b>'+f2(theirs)+'</b></span>'+
+   '<span class="mw-o">'+av(opp,20)+esc(team(opp))+(g.k&&g.k!=='Regular season'?' \u00b7 '+esc(g.k):'')+'</span>'+
+   (tp&&tp.name?'<span class="mw-n">Best for you: '+esc(tp.name)+' '+f1(tp.pts)+'</span>':'')+
+   CHEV+'</button>';
 }
 /* ---------- LIVE GAME CENTER (v2.1): one matchup, player by player. Fantasy only, no odds. ---------- */
 var GC={id:null,data:null,timer:null};
@@ -593,7 +622,7 @@ function home(){
   var wk=weekScores(CUR(),hw),top=wk[0],rot=wk[wk.length-1],potw=null;
   wk.forEach(function(x){var t=topP(CUR(),hw,x.u);if(t&&t.name&&(!potw||t.pts>potw.pts))potw={u:x.u,name:t.name,pts:t.pts}});
   if(top){
-    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Week '+hw+' final</div><h2>Last week</h2></div><button class="link" data-wk="'+hw+'">Recap &amp; scores →</button></div>'+recapOne(CUR(),hw)+'<div class="lw">'+
+    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Week '+hw+' final</div><h2>Last week</h2></div><button class="link" data-wk="'+hw+'">Recap &amp; scores →</button></div>'+myLastWeek(CUR(),hw)+recapOne(CUR(),hw)+'<div class="lw">'+
      '<button type="button" class="lw-c t-y" data-game="'+gi(CUR(),hw,top.u)+'"><small>🔥 High score</small><strong class="num">'+f2(top.p)+'</strong><span>'+esc(team(top.u))+'</span></button>'+
      '<button type="button" class="lw-c t-r" data-game="'+gi(CUR(),hw,rot.u)+'"><small>🧊 Low score</small><strong class="num">'+f2(rot.p)+'</strong><span>'+esc(team(rot.u))+'</span></button>'+
      (potw?'<button type="button" class="lw-c t-b" data-game="'+gi(CUR(),hw,potw.u)+'"><small>⭐ Top player</small><strong class="num">'+f2(potw.pts)+'</strong><span>'+esc(potw.name)+'</span></button>':'')+
@@ -1006,17 +1035,23 @@ function records(){
    and every piece of it opens something: the manager, the player, the game, the season. */
 function recHero(k,x){
   var t=recType(k),r=recVal(k,x),gx=recGame(k,x),g=gx>=0?D.games[gx]:null,by=gx<0?byeKey(k,x):null;
-  var h='<section class="hero rec-hero"><div class="eyebrow">All-time #1'+(x.s===CUR()?' · set this season':'')+'</div>'+
-   '<div class="big">'+esc(recNum(k,r))+'</div><div class="rec-unit">'+esc(recUnit(k,r,x))+'</div>';
+  var name=RECS.find(function(a){return a[0]===k})[1];
+  var scope=(t==='season'||t==='streak')?'regular season':{all:'all games',reg:'regular season',post:'playoffs'}[S.rf];
+  var h='<section class="hero rec-hero"><div class="rh-top"><b>#1 all-time</b><span>'+esc(name)+' \u00b7 '+esc(scope)+'</span></div>'+
+   '<div class="big">'+esc(recNum(k,r))+'</div><div class="rec-unit">'+esc(recUnit(k,r,x))+(x.s===CUR()?'<em class="rh-new">set this season</em>':'')+'</div>';
   if(t==='player'&&x.pid)h+='<button type="button" class="rh-row" data-pl="'+esc(x.pid)+'">'+plPic(x.pid,x.name||'?',34,x.pos)+
-   '<span class="rh-t"><b>'+esc(x.name||'Top scorer')+'</b><small>'+esc([x.pos,'the player card'].filter(Boolean).join(' · '))+'</small></span>'+CHEV+'</button>';
-  h+='<button type="button" class="rh-row" data-mgr="'+r.u+'">'+av(r.u,34)+
-   '<span class="rh-t"><b>'+esc(team(r.u))+(x.s===CUR()?'<span class="new">THIS SEASON</span>':'')+'</b><small>'+esc(M(r.u).name)+' · career</small></span>'+CHEV+'</button>';
-  if(g)h+=recGameBox(gx,g,r.u,t==='hiloss'||k==='hiloss');
-  else if(by)h+='<button type="button" class="rh-row" data-bye="'+by+'">'+'<span class="rh-ic">🪑</span><span class="rh-t"><b>'+esc(x.s)+' · Week '+x.w+'</b><small>Playoff bye — tap for the lineup</small></span>'+CHEV+'</button>';
-  if(t==='season')h+='<button type="button" class="rh-row" data-season="'+esc(x.s)+'">'+'<span class="rh-ic">📅</span><span class="rh-t"><b>'+esc(x.s)+' season · '+esc(x.rec||'')+'</b><small>Standings, bracket &amp; every week</small></span>'+CHEV+'</button>';
+   '<span class="rh-t"><b>'+esc(x.name||'Top scorer')+'</b><small>'+esc([x.pos,'the player card'].filter(Boolean).join(' \u00b7 '))+'</small></span>'+CHEV+'</button>';
+  // The game box already names the manager and opens his career, so the separate holder
+  // row would just be his name twice over. It's only here when there is no game to show.
+  if(g)h+=recGameBox(gx,g,r.u);
+  else{
+    h+='<button type="button" class="rh-row" data-mgr="'+r.u+'">'+av(r.u,34)+
+     '<span class="rh-t"><b>'+esc(team(r.u))+'</b><small>'+esc(M(r.u).name)+' \u00b7 career</small></span>'+CHEV+'</button>';
+    if(by)h+='<button type="button" class="rh-row" data-bye="'+by+'"><span class="rh-ic">\ud83e\ude91</span><span class="rh-t"><b>'+esc(x.s)+' \u00b7 Week '+x.w+'</b><small>Playoff bye \u2014 tap for the lineup</small></span>'+CHEV+'</button>';
+  }
+  if(t==='season')h+='<button type="button" class="rh-row" data-season="'+esc(x.s)+'"><span class="rh-ic">\ud83d\udcc5</span><span class="rh-t"><b>'+esc(x.s)+' season \u00b7 '+esc(x.rec||'')+'</b><small>Standings, bracket &amp; every week</small></span>'+CHEV+'</button>';
   if(t==='streak')h+=recStreakRows(x);
-  h+='<div class="rh-acts"><button type="button" class="share-btn" data-share-rec="1">Share</button>'+info('records')+'</div></section>';
+  h+='<div class="rh-acts"><button type="button" class="rh-a" data-share-rec="1">Share</button><button type="button" class="rh-a" data-info="records">How it works</button></div></section>';
   return h;
 }
 /* Both teams and the final, each its own tap target — no nested buttons. */
