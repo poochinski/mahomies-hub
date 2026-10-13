@@ -1212,6 +1212,8 @@ function foLoad(){
 function foSub(s){return String(s==null?'':s).replace(/\{\{([^}]+)\}\}/g,function(_,u){return team(u)})}
 function foWho(x,sz,tap){var sub=foSub(x.sub);
   if(x.uid2)return '<span class="who fo-pair">'+av(x.uid,sz)+av(x.uid2,sz)+'<span class="tx"><b>'+esc(team(x.uid))+' &amp; '+esc(team(x.uid2))+'</b><span>'+esc(sub)+'</span></span></span>';
+  // A player board lists players: his photo, his name, then whose team he did it for.
+  if(x.pid)return '<span class="who">'+plPic(x.pid,x.name||'?',sz,x.pos)+'<span class="tx"><b>'+esc(x.name||'Player')+'</b><span>'+esc(team(x.uid)+(sub?' \u00b7 '+sub:''))+'</span></span></span>';
   return tap?who(x.uid,sub,sz):whoS(x.uid,sub,sz)}
 /* One renderer for every category board (Front office, Career). The main record book
    still has its own, because those rows open games. */
@@ -1223,8 +1225,11 @@ function boardView(cat,b,topic){
   h+='<section class="hero rec-hero"><div class="rh-top"><b>#1 all-time</b><span>'+esc(b.kicker)+'</span></div>'+
    '<div class="big'+neg(r0.vfmt)+'">'+esc(r0.vfmt)+'</div><div class="rec-unit">'+esc(b.unit)+'</div>'+
    (r0.uid2?'<div class="fo-hold">'+foWho(r0,34)+'</div>'
-    :'<button type="button" class="rh-row" '+(r0.pid?'data-pl="'+esc(r0.pid)+'"':'data-mgr="'+r0.uid+'"')+'>'+
-      (r0.pid?plPic(r0.pid,r0.name||'?',34,r0.pos):av(r0.uid,34))+
+    // A record about a player gets the player his own row first, then the manager, the
+    // same way "Best player game" reads in the main record book.
+    :(r0.pid?'<button type="button" class="rh-row" data-pl="'+esc(r0.pid)+'">'+plPic(r0.pid,r0.name||'?',34,r0.pos)+
+       '<span class="rh-t"><b>'+esc(r0.name||'Player')+'</b><small>'+esc([r0.pos,'the player card'].filter(Boolean).join(' · '))+'</small></span>'+CHEV+'</button>':'')+
+     '<button type="button" class="rh-row" data-mgr="'+r0.uid+'">'+av(r0.uid,34)+
       '<span class="rh-t"><b>'+esc(team(r0.uid))+'</b><small>'+esc(foSub(r0.sub))+'</small></span>'+CHEV+'</button>')+
    '<div class="rh-acts"><button type="button" class="rh-a" data-share-rec="1">Share</button><button type="button" class="rh-a" data-info="'+topic+'">How it works</button></div></section>';
   h+='<section class="panel tight rec-list"><div class="rows">'+

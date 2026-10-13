@@ -248,29 +248,29 @@ export async function frontOffice({ fresh = false } = {}) {
 
   put(board('fo:grab', 'Best free agent grab', 'One pickup, off the scrap heap', 'points started', 'player',
     'The most points any single waiver or free-agent add went on to start for the manager who claimed him.',
-    top(allAdds, (a) => a.pts).filter((a) => a.pts > 0).map((a) => ({ uid: a.uid, pid: a.pid, v: r1(a.pts), vfmt: r1(a.pts).toFixed(1),
-      sub: `${a.name}${a.pos ? ' (' + a.pos + ')' : ''} · ${a.bid > 0 ? '$' + a.bid : 'free agent'} · added ${sw(a)}` }))));
+    top(allAdds, (a) => a.pts).filter((a) => a.pts > 0).map((a) => ({ uid: a.uid, pid: a.pid, name: a.name, pos: a.pos, v: r1(a.pts), vfmt: r1(a.pts).toFixed(1),
+      sub: `${a.bid > 0 ? '$' + a.bid : 'free agent'} · added ${sw(a)}` }))));
 
   put(board('fo:gotaway', 'Dropped too soon', 'What letting him go cost', 'points elsewhere', 'player',
     'Points the player went on to start for a different team in the same season after being dropped.',
-    top(allLets, (l) => l.pts).map((l) => ({ uid: l.uid, pid: l.pid, v: r1(l.pts), vfmt: '-' + r1(l.pts).toFixed(1),
-      sub: `${l.name}${l.pos ? ' (' + l.pos + ')' : ''} · dropped ${sw(l)} · started ${pl(l.starts, 'week')} for ${l.for_uid ? '{{' + l.for_uid + '}}' : 'somebody else'}` }))));
+    top(allLets, (l) => l.pts).map((l) => ({ uid: l.uid, pid: l.pid, name: l.name, pos: l.pos, v: r1(l.pts), vfmt: '-' + r1(l.pts).toFixed(1),
+      sub: `dropped ${sw(l)} · started ${pl(l.starts, 'week')} for ${l.for_uid ? '{{' + l.for_uid + '}}' : 'somebody else'}` }))));
 
   put(board('fo:bid', 'Biggest FAAB bid', 'Most Mahomie-free dollars ever spent on one guy', 'dollars', 'player',
     'Waiver budget is separate from Mahomie Bucks — this is the in-league FAAB bid Sleeper recorded.',
-    top(allAdds.filter((a) => a.bid > 0), (a) => a.bid).map((a) => ({ uid: a.uid, pid: a.pid, v: a.bid, vfmt: '$' + a.bid,
-      sub: `${a.name}${a.pos ? ' (' + a.pos + ')' : ''} · ${r1(a.pts).toFixed(1)} points started · ${sw(a)}` }))));
+    top(allAdds.filter((a) => a.bid > 0), (a) => a.bid).map((a) => ({ uid: a.uid, pid: a.pid, name: a.name, pos: a.pos, v: a.bid, vfmt: '$' + a.bid,
+      sub: `${r1(a.pts).toFixed(1)} points started · ${sw(a)}` }))));
 
   const paid = allAdds.filter((a) => a.bid > 0);
   put(board('fo:spent', 'Best money spent', 'The bid that paid for itself', 'points started', 'player',
     'Among players somebody actually bid on, the most points one of them started for the buyer.',
-    top(paid, (a) => a.pts).filter((a) => a.pts > 0).map((a) => ({ uid: a.uid, pid: a.pid, v: r1(a.pts), vfmt: r1(a.pts).toFixed(1),
-      sub: `${a.name}${a.pos ? ' (' + a.pos + ')' : ''} · $${a.bid} · ${r2(a.pts / a.bid)} points a dollar · ${sw(a)}` }))));
+    top(paid, (a) => a.pts).filter((a) => a.pts > 0).map((a) => ({ uid: a.uid, pid: a.pid, name: a.name, pos: a.pos, v: r1(a.pts), vfmt: r1(a.pts).toFixed(1),
+      sub: `$${a.bid} · ${r2(a.pts / a.bid)} points a dollar · ${sw(a)}` }))));
 
   put(board('fo:wasted', 'Worst money spent', 'Paid up, got nothing', 'dollars', 'player',
     'Bids of $10 or more that gave the buyer the fewest starting-lineup points. Big money, empty lineup.',
-    paid.filter((a) => a.bid >= 10).sort((a, b) => a.pts - b.pts || b.bid - a.bid).slice(0, 10).map((a) => ({ uid: a.uid, pid: a.pid, v: a.bid, vfmt: '$' + a.bid,
-      sub: `${a.name}${a.pos ? ' (' + a.pos + ')' : ''} · ${r1(a.pts).toFixed(1)} points started · ${sw(a)}` }))));
+    paid.filter((a) => a.bid >= 10).sort((a, b) => a.pts - b.pts || b.bid - a.bid).slice(0, 10).map((a) => ({ uid: a.uid, pid: a.pid, name: a.name, pos: a.pos, v: a.bid, vfmt: '$' + a.bid,
+      sub: `${r1(a.pts).toFixed(1)} points started · ${sw(a)}` }))));
 
   put(board('fo:perdollar', 'Points per dollar', 'Who shops smart', 'points per $', 'manager',
     'Starting-lineup points from his FAAB claims divided by every dollar he bid. Needs at least $50 spent.',
@@ -278,8 +278,8 @@ export async function frontOffice({ fresh = false } = {}) {
       `$${m.faab} on ${pl(m.faab_adds, 'claim')} · ${plus(m.faab_pts)} points`))));
 
   // Draft
-  const pickRow = (p) => ({ uid: p.uid, pid: p.pid, v: r1(p.value), vfmt: plus(p.value),
-    sub: `${p.name}${p.pos ? ' (' + p.pos + ')' : ''} · ${p.season} rd ${p.round} · ${r1(p.points).toFixed(1)} pts` });
+  const pickRow = (p) => ({ uid: p.uid, pid: p.pid, name: p.name, pos: p.pos, v: r1(p.value), vfmt: plus(p.value),
+    sub: `${p.season} round ${p.round}, pick ${p.pick_no} · ${r1(p.points).toFixed(1)} pts` });
   put(board('fo:steal', 'Steal of the draft', 'All-time best value pick', 'points above the slot', 'player',
     'How far a pick beat what that slot was worth — the player who finished that high among the picks people actually made. Keepers are left out.',
     top(picks, (p) => p.value).map(pickRow)));
@@ -289,8 +289,8 @@ export async function frontOffice({ fresh = false } = {}) {
 
   put(board('fo:keeper', 'Best keeper call', 'The guy he was right to hang on to', 'points kept', 'player',
     'A keeper costs you a pick instead of being graded against one, so this is simply the points he scored the year he was kept.',
-    top(keepers, (k) => k.points).map((k) => ({ uid: k.uid, pid: k.pid, v: r1(k.points), vfmt: r1(k.points).toFixed(1),
-      sub: `${k.name}${k.pos ? ' (' + k.pos + ')' : ''} · kept in ${k.season}` }))));
+    top(keepers, (k) => k.points).map((k) => ({ uid: k.uid, pid: k.pid, name: k.name, pos: k.pos, v: r1(k.points), vfmt: r1(k.points).toFixed(1),
+      sub: `kept in ${k.season}` }))));
 
   put(board('fo:drafter', 'Best drafter', 'Every draft we have, per pick', 'points per pick', 'manager',
     'Total value of his live picks divided by how many he made. Needs at least 15 picks.',
