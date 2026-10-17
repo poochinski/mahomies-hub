@@ -3,7 +3,7 @@
 var D=JSON.parse(document.getElementById('data').textContent);
 var $=function(s){return document.querySelector(s)};
 var view=$('#view');
-var PAL=['#f6cf4c','#4cecff','#ff5fd6','#5dff8f','#ffb347','#b18cff','#7ef0d4','#ff8a65','#8fb3ff','#ffd6f2','#c6ff6b','#ff9fb2','#9aa3c7','#f2a7ff'];
+var PAL=['#9b8cff','#7dd3fc','#ffc94a','#ff8a65','#5eead4','#f9a8d4','#fdba74','#c4b5fd','#86efac','#fca5a5','#93c5fd','#fde68a','#d8b4fe','#a5f3fc'];
 var ids=Object.keys(D.managers);
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function M(u){return D.managers[u]||{name:'?',team:'?'}}
@@ -28,6 +28,12 @@ function spr(x){return x===0?'PK':(x>0?'+'+f1(x):f1(x))}
 function money(n){return Math.round(n).toLocaleString('en-US')}
 function sw(s,w){return s+' · Wk '+w}
 function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('mh-'+k));localStorage.setItem('mh-'+k,JSON.stringify(v))}catch(e){return null}}
+/* v3 look: Dark (default) / Light / Match phone, saved per phone as mh-theme. app.html applies it before first paint. */
+function themePref(){var t=store('theme');return t==='light'||t==='auto'?t:'dark'}
+function applyTheme(){var t=themePref();if(t==='auto')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='light'?'#f2f3ee':'#07090d')}
+try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',function(){if(themePref()==='auto')applyTheme()})}catch(e){}
+applyTheme();
+try{if(document.fonts&&document.fonts.load)['800 40px "Big Shoulders Display"','900 40px "Big Shoulders Display"','600 20px "Geist"','600 20px "Geist Mono"'].forEach(function(f){document.fonts.load(f).catch(function(){})})}catch(e){}
 
 var S={tab:'home',lseg:'season',rec:'high',rf:'all',resMore:false,recMore:false,hw:D.league.last_scored,aws:D.league.season,lab:'bench',labs:D.league.season,sw:null,ss:null,h2a:null,h2b:null,me:(store('auth')||{}).user_id||store('me')||D.me,bseg:'lines',picks:[],stake:25,slipMode:'single',review:false,propLine:null,lt:null,pin:'',pin1:null,pinErr:'',pinBusy:false};
 S.h2a=S.me;
@@ -1337,7 +1343,7 @@ function propsView(){var W=BK.wk;if(!W||!W.lines||!W.lines.length)return '<secti
   return h}
 function bookHero(){
   if(AUTH&&BK.me){var open=BK.me.bets.filter(function(b){return b.status==='open'});
-    return '<section class="hero bk-hero"><div class="eyebrow">Mahomie\'s Sportsbook · '+esc(team(BK.me.user_id))+'</div><div class="bank">💵 '+money2(BK.me.balance)+'</div><p class="sub" style="margin-top:6px">Mahomie Bucks to bet · '+open.length+' open bet'+(open.length===1?'':'s')+(open.length?' ('+money2(BK.me.in_play)+' in play)':'')+'</p></section>'}
+    return '<section class="hero bk-hero"><div class="eyebrow">Mahomie\'s Sportsbook · '+esc(team(BK.me.user_id))+'</div><div class="bank">'+money2(BK.me.balance)+'<small>Bucks</small></div><p class="sub" style="margin-top:6px">Mahomie Bucks to bet · '+open.length+' open bet'+(open.length===1?'':'s')+(open.length?' ('+money2(BK.me.in_play)+' in play)':'')+'</p></section>'}
   return '<section class="hero bk-hero"><div class="eyebrow">Mahomie\'s Sportsbook</div><h1 style="margin-top:6px">Bet with Mahomie Bucks</h1><p class="sub">Every manager gets '+money(BS().grant)+' Bucks for the season. No refills. Play money only.</p>'+
    (BK.on?'<button type="button" class="cta" data-login="1" style="margin-top:12px">Log in to bet</button>':'')+'</section>'}
 function bookOff(){return '<section class="panel"><div class="ph"><div><div class="kicker">Sportsbook</div><h2>'+(LIVE?'The Book is offline':'Open the live app')+'</h2></div></div><p class="muted" style="font-size:13px;line-height:1.5">'+
@@ -1366,12 +1372,12 @@ function ticketSheet(ids,title){var bs=ids.map(function(i){return TK[i]}).filter
    bs.map(function(b){return (AUTH&&b.user_id===AUTH.user_id&&b.status==='open'&&!b.legs.some(function(g){return g.started||g.locked})?'<button type="button" class="ghost" data-bcancel="'+b.id+'" style="color:var(--loss);border-color:var(--loss)">Cancel ticket #'+tktNo(b.id)+'</button>':'')}).join('')+
    '<button type="button" class="share-btn wide" data-tshare="'+bs.map(function(b){return b.id}).join(',')+'">Share '+(bs.length>1?'tickets':'ticket')+'</button>'+CLOSE}
 function ticketPng(b){var W=720,legH=96,H=640+b.legs.length*legH,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
-  var mono='"IBM Plex Mono",monospace',disp='"Archivo",sans-serif';
-  x.fillStyle='#130f1d';x.fillRect(0,0,W,H);
+  var mono='"Geist Mono",ui-monospace,monospace',disp='"Big Shoulders Display","Arial Narrow",sans-serif';
+  x.fillStyle='#07090d';x.fillRect(0,0,W,H);
   var px=40,pw=W-80;x.fillStyle='#f6f1e4';x.beginPath();x.moveTo(px,30);for(var i=0;i<=pw;i+=20)x.lineTo(px+i,30+(i/20%2?10:0));x.lineTo(px+pw,H-30);for(i=pw;i>=0;i-=20)x.lineTo(px+i,H-30-(i/20%2?10:0));x.closePath();x.fill();
   var y=80,ink='#1a1405',mut='#6b6250';var fit=function(t,w){t=String(t);if(x.measureText(t).width<=w)return t;while(t.length>1&&x.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'};
   return new Promise(function(res){var img=new Image();img.onload=img.onerror=function(){try{x.drawImage(img,px+30,y-14,76,76)}catch(e){}
-    x.fillStyle=ink;x.font='700 34px '+disp;x.fillText("MAHOMIE'S SPORTSBOOK",px+124,y+18);x.fillStyle=mut;x.font='500 19px '+mono;x.fillText("ROLLIN' WITH MAHOMIES · WEEK "+b.week,px+124,y+50);
+    x.fillStyle=ink;x.font='800 38px '+disp;x.fillText("MAHOMIE'S SPORTSBOOK",px+124,y+18);x.fillStyle=mut;x.font='500 19px '+mono;x.fillText("ROLLIN' WITH MAHOMIES · WEEK "+b.week,px+124,y+50);
     y+=100;var dash=function(){x.strokeStyle='#b9ae95';x.setLineDash([8,6]);x.beginPath();x.moveTo(px+24,y);x.lineTo(px+pw-24,y);x.stroke();x.setLineDash([]);y+=34};dash();
     x.fillStyle=ink;x.font='600 20px '+mono;x.fillText('TICKET #'+tktNo(b.id),px+30,y);x.textAlign='right';x.fillText(new Date(b.placed_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),px+pw-30,y);x.textAlign='left';y+=38;
     x.font='600 22px '+mono;x.fillText(fit('BETTOR: '+team(b.user_id)+(M(b.user_id).name?' ('+M(b.user_id).name+')':''),pw-60),px+30,y);y+=36;x.fillStyle=mut;x.font='500 20px '+mono;x.fillText((b.kind==='parlay'?b.legs.length+'-LEG PARLAY':'STRAIGHT BET')+' · '+odds(b.odds),px+30,y);y+=26;dash();
@@ -2302,6 +2308,7 @@ function me(){
     h+='<section class="panel"><div class="ph"><div><div class="kicker">Mahomie Bucks · play money</div><h2>My Book</h2></div><button class="link" data-go="book">Open the Book ›</button></div><div class="tm-stats"><div><b class="num">'+money(BK.me.balance)+'</b><small>balance</small></div><div><b class="num">'+open.length+'</b><small>open bets</small></div><div><b class="num">'+money(toWin)+'</b><small>could win</small></div><div><b class="num">'+won+'-'+lost+'</b><small>won-lost</small></div></div>'+
       (open.length?'<div class="me-open">'+open.slice(0,3).map(function(b){return stub(b,true)}).join('')+'</div>':'')+'</section>'}
   h+=profile(u,true);
+  h+='<section class="panel"><div class="ph"><div><div class="kicker">On this phone</div><h2>Appearance</h2></div></div><div class="seg theme-seg">'+[['dark','Dark'],['light','Light'],['auto','Match phone']].map(function(x){return '<button type="button" data-theme-set="'+x[0]+'" class="'+(themePref()===x[0]?'on':'')+'">'+x[1]+'</button>'}).join('')+'</div></section>';
   h+='<button type="button" class="twih-go" data-howto="1"><span>📖</span><b>How the app works</b><em>Every stat explained in plain English</em>'+CHEV+'</button>';
   h+=admPanel();
   return h+foot();
@@ -2455,22 +2462,26 @@ function seasonSheet(s){
 /* ---------- SHARE CARDS ---------- */
 function shareCard(o){
   var W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
-  var g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#2a2140');g.addColorStop(.55,'#1c1729');g.addColorStop(1,'#130f1d');x.fillStyle=g;x.fillRect(0,0,W,H);
-  var rg=x.createRadialGradient(W*.9,0,10,W*.9,0,700);rg.addColorStop(0,'rgba(76,236,255,.22)');rg.addColorStop(1,'rgba(76,236,255,0)');x.fillStyle=rg;x.fillRect(0,0,W,H);
-  var pg=x.createRadialGradient(0,H,10,0,H,800);pg.addColorStop(0,'rgba(255,95,214,.22)');pg.addColorStop(1,'rgba(255,95,214,0)');x.fillStyle=pg;x.fillRect(0,0,W,H);
-  x.strokeStyle='rgba(76,236,255,.06)';x.lineWidth=2;for(var i=0;i<W;i+=60){x.beginPath();x.moveTo(i,0);x.lineTo(i,H);x.stroke()}for(i=0;i<H;i+=60){x.beginPath();x.moveTo(0,i);x.lineTo(W,i);x.stroke()}
-  var rule=x.createLinearGradient(0,0,W,0);rule.addColorStop(0,'#f6cf4c');rule.addColorStop(.55,'#ff5fd6');rule.addColorStop(1,'#4cecff');x.fillStyle=rule;x.fillRect(0,0,W,14);
-  var disp='"Archivo","Bahnschrift",sans-serif',mono='"IBM Plex Mono",monospace',body='"Inter",sans-serif';
+  x.fillStyle='#07090d';x.fillRect(0,0,W,H);
+  var rg=x.createRadialGradient(W*.88,0,10,W*.88,0,760);rg.addColorStop(0,'rgba(210,255,60,.20)');rg.addColorStop(1,'rgba(210,255,60,0)');x.fillStyle=rg;x.fillRect(0,0,W,H);
+  var pg=x.createRadialGradient(0,H,10,0,H,820);pg.addColorStop(0,'rgba(155,140,255,.16)');pg.addColorStop(1,'rgba(155,140,255,0)');x.fillStyle=pg;x.fillRect(0,0,W,H);
+  /* yard lines */
+  for(var i=60;i<W;i+=96){x.fillStyle=i%480===60?'rgba(255,255,255,.07)':'rgba(255,255,255,.035)';x.fillRect(i,0,2,H);for(var j=40;j<H;j+=48){x.fillRect(i-8,j,18,2)}}
+  x.fillStyle='#d2ff3c';x.fillRect(0,0,W,12);
+  var disp='"Big Shoulders Display","Arial Narrow",sans-serif',body='"Geist","Inter",sans-serif';
   x.textBaseline='alphabetic';
-  x.fillStyle='#efe9fb';x.font='700 54px '+disp;x.fillText("MAHOMIE'S",80,130);var bw=x.measureText("MAHOMIE'S ").width;x.fillStyle='#f6cf4c';x.fillText('HUB',80+bw,130);
-  x.fillStyle='#a59cc0';x.font='500 26px '+mono;x.fillText("ROLLIN' WITH MAHOMIES",80,178);
-  x.fillStyle='#4cecff';x.font='500 32px '+mono;x.fillText(o.eyebrow.toUpperCase(),80,380);
-  x.fillStyle='#efe9fb';x.font='700 76px '+disp;wrap(x,o.title,80,470,W-160,84);
-  x.fillStyle='#f6cf4c';x.font='700 '+(o.big.length>7?190:240)+'px '+disp;x.shadowColor='rgba(246,207,76,.35)';x.shadowBlur=40;x.fillText(o.big,72,800);x.shadowBlur=0;
-  x.fillStyle='#efe9fb';x.font='600 54px '+body;wrap(x,o.team,80,920,W-160,62);
-  x.fillStyle='#a59cc0';x.font='400 36px '+mono;wrap(x,o.sub,80,1010,W-160,48);
-  x.fillStyle=rule;x.fillRect(80,H-150,W-160,4);
-  x.fillStyle='#7d7499';x.font='500 26px '+mono;x.fillText('RECORD BOOK · '+(new Date().getFullYear()),80,H-90);
+  x.fillStyle='#d2ff3c';x.beginPath();if(x.roundRect)x.roundRect(80,72,76,76,22);else x.rect(80,72,76,76);x.fill();
+  x.fillStyle='#0b0e05';x.font='900 40px '+disp;x.textAlign='center';x.fillText('MH',118,125);x.textAlign='left';
+  x.fillStyle='#f3f5f7';x.font='800 50px '+disp;x.fillText("MAHOMIE'S",182,116);var bw=x.measureText("MAHOMIE'S ").width;x.fillStyle='#d2ff3c';x.fillText('HUB',182+bw,116);
+  x.fillStyle='#9aa4b0';x.font='600 22px '+body;x.fillText("ROLLIN' WITH MAHOMIES",184,148);
+  x.fillStyle='#d2ff3c';x.fillRect(80,352,40,7);
+  x.fillStyle='#9aa4b0';x.font='650 30px '+body;x.fillText(o.eyebrow.toUpperCase(),136,364);
+  x.fillStyle='#f3f5f7';x.font='800 92px '+disp;wrap(x,o.title,80,470,W-160,90);
+  x.fillStyle='#d2ff3c';x.font='900 '+(o.big.length>7?220:280)+'px '+disp;x.shadowColor='rgba(210,255,60,.35)';x.shadowBlur=50;x.fillText(o.big,70,810);x.shadowBlur=0;
+  x.fillStyle='#f3f5f7';x.font='650 54px '+body;wrap(x,o.team,80,920,W-160,62);
+  x.fillStyle='#9aa4b0';x.font='500 36px '+body;wrap(x,o.sub,80,1010,W-160,48);
+  x.fillStyle='rgba(255,255,255,.12)';x.fillRect(80,H-150,W-160,2);
+  x.fillStyle='#69737f';x.font='650 26px '+body;x.fillText('RECORD BOOK · '+(new Date().getFullYear()),80,H-90);
   return c.toDataURL('image/png');
 }
 function wrap(x,t,X,Y,maxW,lh){var words=String(t).split(' '),line='',y=Y;words.forEach(function(w){var test=line?line+' '+w:w;if(x.measureText(test).width>maxW&&line){x.fillText(line,X,y);line=w;y+=lh}else line=test});x.fillText(line,X,y)}
@@ -2568,6 +2579,7 @@ document.addEventListener('click',function(e){
   if(d.team){nav(function(){teamOpen(d.team)});return}
   if(d.wire){nav(function(){openSheet(wireSheet()+CLOSE)});return}
   if(d.howto){nav(function(){openSheet(explainPanel()+CLOSE)});return}
+  if(d.themeSet){store('theme',d.themeSet);applyTheme();render();return}
   if(d.rival){var rp=d.rival.split('|');S.h2a=rp[0];S.h2b=rp[1];go('league','h2h');var rt=document.getElementById('rivalTop');if(rt)rt.scrollIntoView({block:'start'});return}
   if(d.search){nav(searchOpen);return}
   if(t.id==='closeP'){closeSheet();return}

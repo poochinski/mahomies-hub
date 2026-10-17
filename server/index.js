@@ -91,6 +91,11 @@ app.use('/test/v2.3', express.static(V23, { index: false, redirect: false, setHe
 const V25 = path.join(proto, 'v2.5');
 app.get('/test/v2.5', (_req, res) => res.set('Cache-Control', 'no-store').type('html').send(pageFrom(V25)));
 app.use('/test/v2.5', express.static(V25, { index: false, redirect: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
+// The look as it was on Oct 17, right before the v3 redesign. Jayson says "revert" → restore
+// prototype/v2.0/{app.html,app.css,app.js} from branch release-v2.6-classic (see HANDOFF).
+const CLASSIC = path.join(proto, 'classic');
+app.get('/test/classic', (_req, res) => res.set('Cache-Control', 'no-store').type('html').send(pageFrom(CLASSIC)));
+app.use('/test/classic', express.static(CLASSIC, { index: false, redirect: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
 app.get('/test/v1.8', (_req, res) => res.sendFile(path.join(proto, 'v1.8', 'night.html')));
 app.get('/test/v1.7', (_req, res) => res.sendFile(path.join(proto, 'v1.7', 'night.html')));
 app.get('/test/v1.6', (_req, res) => res.sendFile(path.join(proto, 'v1.6', 'night.html')));
