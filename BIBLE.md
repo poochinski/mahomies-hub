@@ -104,33 +104,48 @@ mahomies-hub/
 
 ---
 
-## 4. Design system ("Night")
+## 4. Design system ("Night Game", v3 — on trial since 2026-10-17)
 
-Deep violet ground, gold as the lead color, neon pink + cyan support, green for wins, red for losses.
-Display type **Chakra Petch**, body **IBM Plex Sans**, labels and numbers **IBM Plex Mono**. One committed dark look.
+**On trial.** Jayson asked for a complete new look he can back out of. If he says **"revert"**, follow HANDOFF › "Revert the v3 look" — it puts `prototype/v2.0/{app.html,app.css,app.js}` back exactly as they were (branch `release-v2.6-classic`; the old look is also live at `/test/classic`). If he keeps it, drop the "on trial" line.
 
-### Color tokens (as used in the live page, prototype/v1.8)
+Ink-black ground, **volt** (electric yellow-green) as the one accent, **iris** for the other side of a matchup, green/red for up/down, a broadcast-red **LIVE** bug. Dark is the default; **Light** and **Match phone** are a per-phone choice in Me › Appearance (`mh-theme` in localStorage, applied in `app.html` before first paint).
+Type: **Big Shoulders Display** for titles and big scores (18px and up only — its "1" gets lost when small), **Geist** for everything else with tabular numbers on, **Geist Mono** for paper tickets and the slot's LED text. All three are self-hosted in `/public/fonts` (no Google Fonts call).
+
+### Color tokens (`:root` in app.css; `html[data-theme="light"]` overrides them)
 ```css
---ground #130f1d (page)    --panel / --panel-3 (cards)    --line / --line-2 (borders)
---gold #f6cf4c (lead)      --gold-2 #e7b92f   --gold-ink #1a1405 (text on gold)
---pink #ff5fd6   --cyan #4cecff   --win (green)   --loss (red)   --muted / --faint (gray text)
+--ground #07090d (page)   --ground-2 (sunken wells)   --panel / --panel-2 / --panel-3 (cards, raised, chips)
+--line / --line-2 (hairlines)   --ink / --muted / --faint (text)
+--volt #d2ff3c + --volt-ink  → FILLS: active tab, chips, primary buttons, selected odds, your bars
+--gold  → accent TEXT (= volt in dark, deep olive in light so it stays readable)
+--pink #9b8cff (iris: the opponent / secondary)   --cyan #7dd3fc (info: projections, who's playing)
+--win #2fe08a  --loss #ff5a64  --live #ff3b4e  --warn #ffb547  --trophy #ffc94a
 ```
+Old names are kept on purpose so every older rule follows the palette. **Rule:** a background is `--volt` (with `--volt-ink` text), never `--gold`, or it turns olive in light mode.
 
 ### What each color means
 | Color | Meaning |
 |---|---|
-| Gold | Brand, champions, active tab, primary buttons, your Bucks |
-| Cyan | Probabilities, projections, favorites, open bets |
-| Green | Wins, bet won, money up, live |
-| Red / pink | Losses, Sacko, bet lost |
-| Gray | Neutral, pending, history |
+| Volt | You, the leader, the thing to tap next (active tab, chips, CTA, selected price) |
+| Iris | The other side: opponent bars, secondary tags |
+| Sky (cyan) | Projections, "3 playing", favorites |
+| Green / Red | Up / down, won / lost |
+| Broadcast red | LIVE only (badge in headers, pulsing dot in rows) |
+| Trophy gold | Championships and medals |
+
+### Shapes and pieces
+- Cards: 22px radius, hairline border, soft lift shadow. Wells inside cards use `--ground-2`. Pills for chips, tags and trophies.
+- Page headers (`.hero`) are a big title on the "field" (faint yard lines + a volt glow), not a box.
+- Bottom bar is a floating glass dock; the active tab's icon sits in a volt pill. The header still scrolls away (not sticky).
+- Home › Your game is a face-off scorebug (you left, him right, VS between).
+- Bottom sheets: 28px top radius, blurred scrim. Cards rise in once on a tab switch only (never on the background refreshes).
+- Share cards and bet-ticket images are drawn in `app.js` (`shareCard`, `ticketPng`) with the same fonts and colors — keep them in step. The header/ticket mark is an inline SVG "MH" on volt; Jayson's gold crest is still the app icon and the slot's WILD.
 
 ### Mobile-first rules (this app lives on phones)
 - Design at **390px wide first**. Bottom tab bar (fixed): Home · League · Records · Book · Me. The top header scrolls away with the page (not sticky).
 - Tap targets at least 44px. Respect safe areas. **No sideways scrolling** (Jayson's call in v1.7): no carousels or chip rows that run off-screen.
 - Every stat screen has an "ⓘ How it works" sheet (text in prototype/v1.8/v18_explain.js). If a formula changes, change its explanation in the same push.
 - Every game/score is tappable for details. Former managers stay in every list, tagged "Former".
-- Standalone PWA, `theme_color #130f1d`. **Logo: Jayson's gold "MH" with football** (source prototype/v1.8/logo-mh.png → public/icon-*.png, apple-touch-icon.png, brand-96.png for the header, favicon.svg).
+- Standalone PWA, `theme_color #130f1d` (manifest; the page's own theme-color meta follows the chosen theme). **Logo: Jayson's gold "MH" with football** (source prototype/v1.8/logo-mh.png → public/icon-*.png, apple-touch-icon.png, favicon.svg; brand-96.png is still used by the slot). In the v3 trial the header shows a new volt "MH" mark instead.
 
 ### App first, betting second (Jayson, 2026-10-09)
 This is a fantasy companion / history / stats / hall of fame app. Sportsbook numbers (win %, spreads, odds, Bucks) live only in the Book tab; Home and stat screens stick to scores, form and history.
@@ -654,6 +669,8 @@ The repo must be **public** for the links to work. GitHub can take up to ~5 minu
   - Across seasons: **loyalty** (same manager drafting the same player more than once), a **position heat map** (most-drafted position per manager per round), and when each position typically comes off the board.
 
 **Typefaces (2026-10-10):** Archivo for headings and numbers (`--display`), Inter for body text (`--body`), IBM Plex Mono for labels (`--mono`). Canvas-drawn share cards and bet tickets name their fonts in `app.js` — keep them in step. The slot machine keeps Bungee on purpose. A wider UI overhaul was tried on top of these fonts and rolled back (commit `31f9ab2`); the v2.3 look stands.
+
+**v3 look (2026-10-17), on trial:** replaces the typefaces and palette above with Big Shoulders Display / Geist / Geist Mono and the "Night Game" tokens — see §4. Revert steps in HANDOFF.
 - **CSS class names:** prefix new feature classes (e.g. `gg-` for the slot) — a generic name like `.slot` once broke the box score.
 - **Live Game Center (2026-10-10):** tapping a game on Home opens it player by player (`GET /api/live/:week/:mid`). Fantasy only: points, projected finals, NFL game status. Before a team plays, Home shows 0.00 with the projection small underneath (Jayson).
 - **Player cards (2026-10-10):** any NFL player's name is tappable (`data-pl`) and opens his card (`GET /api/player/:pid`): bio, NFL seasons scored with our league's settings, league history. No players tab. Taps should open the most relevant detail (the game, the week, the bench), not just the manager page.

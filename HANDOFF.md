@@ -1,14 +1,32 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-11 17:25 (Pacific) · **AI:** Claude
-**Current phase:** Game Center now shows each player's real NFL stat line (Jayson's Sleeper comparison). Grok's Home matchup desk shipped alongside it; Front Office records (v2.5) before that.
-**Last commit:** "This week: a brief for every game, every upset tagged"
-**App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app
+**Last updated:** 2026-10-17 (Pacific) · **AI:** Claude
+**Current phase:** v3 "Night Game" look **on trial** — Jayson asked for a complete new UI he can undo by saying "revert".
+**Last commit:** "v3 look: polish, light theme, share cards, docs"
+**App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app · old look for comparison: **/test/classic**
 
 ## What we're working toward right now
-Jayson asked for the home card to carry the weekly match, using numbers the app already had. That desk is shipped (see the newest Done item). Next feature work is still the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x or prototype/dist.
+Jayson is trying the v3 look on his phone. **If he says "revert", do the section below first, before anything else.** If he keeps it, delete the "on trial" lines here and in BIBLE §4. Feature work after that is unchanged: the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x, prototype/dist or prototype/classic.
+
+## Revert the v3 look (when Jayson says "revert")
+The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= commit `96e2206`, main right before v3), the frozen copy in **`prototype/classic/`**, and the live comparison page **`/test/classic`**.
+- **If nothing else has touched the three front-end files since v3** (check `git log --oneline 96e2206..HEAD -- prototype/v2.0`): 
+  `git checkout release-v2.6-classic -- prototype/v2.0/app.html prototype/v2.0/app.css prototype/v2.0/app.js` then commit "Revert to the classic look" and push. Railway redeploys; the phone shows the old look on the next refresh.
+- **If features were added after v3**, don't overwrite them: `git revert` the v3 commits instead (`git log --oneline --grep "v3 look"`), resolve conflicts in favour of the new feature code, and re-check at 390px.
+- Leave the extra fonts in `public/fonts`, the `/test/classic` route and `prototype/classic/` alone — they're harmless. Phones keep an unused `mh-theme` value in localStorage; the classic page ignores it.
+- Update this file, CHANGELOG and BIBLE §4 (put the "Night" design system text back from `release-v2.6-classic`).
 
 ## Done (newest first)
+- 2026-10-17 — **v3 "Night Game" look, on trial** (Claude; Jayson: "do a complete professional pass on my UI, layout, color pallet, theme… modern, sleek, user friendly, beautiful, inventive, and unique… go back to just how it is now if I say revert").
+  - **Before anything changed:** branch `release-v2.6-classic` pushed, `prototype/classic/` frozen (asset paths → `/test/classic/`), route `/test/classic` added in `server/index.js`.
+  - **Palette:** ink black + volt accent + iris for the opponent + broadcast-red LIVE. Old token names kept and re-pointed (`--gold` = accent text, `--volt` = accent fill; full table in BIBLE §4). `restyle` pass turned every hard-coded neon `rgba(...)` into `color-mix()` on a token, scaled radii up, calmed the uppercase labels, and moved mid-size numbers off the display font (Big Shoulders' "1" reads as "I" under ~18px).
+  - **Type:** Big Shoulders Display + Geist + Geist Mono, self-hosted in `public/fonts` with their OFL licences. Google Fonts link removed from `app.html`.
+  - **Layout:** floating glass dock (active icon in a volt pill), header with a new inline-SVG "MH" mark and a Bucks pill, page headers are titles on a yard-line "field" instead of boxes, Home › Your game is a face-off scorebug (`.yg-go` grid + `::after` VS), LIVE is a red bug in headers and a pulsing dot in rows (`.eyebrow .live`, `.gc-h .live`; plain `.live` is the dot), Book balance reads "1,240.5 BUCKS", record picker and chips select in volt.
+  - **Light theme:** `html[data-theme="light"]` token set. Me › Appearance (Dark / Light / Match phone) → `store('theme')`, `applyTheme()`; `app.html` applies it before first paint and the theme-color meta follows. Default is Dark.
+  - **Motion:** cards rise in once on a tab switch (`enterAnim()` in `go()`), never on the 10–60 s refreshes; press-scale on big tap targets; all off under reduced motion.
+  - **Images:** `shareCard` and `ticketPng` redrawn in the new fonts/colours (yard lines, volt mark). Avatar fallback colours (`PAL`) are softer and skip volt so nobody's avatar looks like "you".
+  - **Untouched on purpose:** the Gridiron Gold cabinet (only its LED text moved to Geist Mono), the paper tickets, all server logic, the app icon / favicon (still Jayson's crest).
+  - Checked headless at 390px with mocked API data (every tab, Game Center, team, wire, week, game, rivals, record picker, slip, tickets, share images, slot, logged-out Home/Book/Me) in **both themes**: no page errors, no sideways scroll. `npm test` 28/28.
 - 2026-10-13 — **Front office cards match the rest** (Claude; Jayson: "These pages need to be updated just like the other one").
   - The `boardView` refactor from the Career push already gave them the new header and compact actions — his screenshots were the deploy just before it. These are the two gaps that were left.
   - **Player rows.** Front office rows carried `pid` but no `name`/`pos`, so the hero photo fell back to a "?" and DEF couldn't be detected. `server/records/frontoffice.js` now puts `name` and `pos` on every player row and **drops the player's name from the `sub`**, since it has its own row. Boards touched: grab, gotaway, bid, spent, wasted, steal, bust, keeper.
@@ -225,11 +243,15 @@ Jayson asked for the home card to carry the weekly match, using numbers the app 
 - Git tags cannot be pushed from some agents. Saved versions live on branches (`release-v1.0` through `release-v1.8`).
 
 ## Files changed in the latest push
+- prototype/v2.0/app.css — new base (tokens, light theme, fonts, dock, hero, cards, sheet) + palette remap of everything after it
+- prototype/v2.0/app.js — theme switch (Me › Appearance), enterAnim, PAL, Book balance label, ticket mark, shareCard/ticketPng
+- prototype/v2.0/app.html — self-hosted font preloads, theme-before-paint script, SVG mark, Bucks dot
+- public/fonts — Big Shoulders Display, Geist, Geist Mono (+ OFL licences)
+- prototype/classic/ (frozen old look) · server/index.js (/test/classic route)
+- HANDOFF.md, CHANGELOG.md, BIBLE.md
+
+## Files changed in the push before
 - prototype/v2.0/app.js — thisWeek list, recapOne, Explore row of three
 - prototype/v2.0/app.css — tw- list, row, tags, recap (does not touch .tw tables)
 - HANDOFF.md, CHANGELOG.md, BIBLE.md, docs/V2-HANDOFF.md
 
-## Files changed in the push before
-- server/sleeper/client.js (injury_status kept as `i`), server/book/data.js (players `inj`; homeCard warn/empty)
-- prototype/v2.0/app.js (medianLine, warnLine, standStrip, EXPLAIN.median, slot root `.ggslot`), app.css (card lines, strip, `.ggslot`, box header wrap)
-- HANDOFF.md, CHANGELOG.md, BIBLE.md

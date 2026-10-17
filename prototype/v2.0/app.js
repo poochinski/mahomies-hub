@@ -1360,7 +1360,7 @@ function stub(b,mine){var st=tStatus(b);rememberBets([b]);
    '<div class="stub-r"><span class="stamp s-'+st+'">'+st+'</span><small>#'+tktNo(b.id)+'</small></div></button>'}
 function barcode(id){var s=String(id)+'MH',h='';for(var i=0;i<34;i++){var c=s.charCodeAt(i%s.length)*(i+7);h+='<i style="width:'+(1+c%3)+'px;margin-right:'+(1+(c>>2)%3)+'px"></i>'}return '<div class="bcode">'+h+'</div>'}
 function ticketHtml(b){var st=tStatus(b),mgr=M(b.user_id).name;
-  return '<div class="tkt"><div class="tkt-top"><img src="/brand-96.png" alt="" width="44" height="44"><div><b>MAHOMIE\'S SPORTSBOOK</b><small>Rollin\' with Mahomies · Week '+b.week+'</small></div></div>'+
+  return '<div class="tkt"><div class="tkt-top"><svg class="tkt-mark" viewBox="0 0 36 36" width="44" height="44" aria-hidden="true"><rect width="36" height="36" rx="11" fill="#0b0e05"/><text x="18" y="24.6" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="17" fill="#d2ff3c">MH</text></svg><div><b>MAHOMIE\'S SPORTSBOOK</b><small>Rollin\' with Mahomies · Week '+b.week+'</small></div></div>'+
    '<div class="tkt-dash"></div><div class="tkt-meta"><span>TICKET #'+tktNo(b.id)+'</span><span>'+esc(new Date(b.placed_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+'</span></div>'+
    '<div class="tkt-who">BETTOR: <b>'+esc(team(b.user_id))+'</b>'+(mgr?' ('+esc(mgr)+')':'')+'</div>'+
    '<div class="tkt-type">'+(b.kind==='parlay'?b.legs.length+'-LEG PARLAY':'STRAIGHT BET')+' · '+odds(b.odds)+'</div><div class="tkt-dash"></div>'+
@@ -1376,7 +1376,7 @@ function ticketPng(b){var W=720,legH=96,H=640+b.legs.length*legH,c=document.crea
   x.fillStyle='#07090d';x.fillRect(0,0,W,H);
   var px=40,pw=W-80;x.fillStyle='#f6f1e4';x.beginPath();x.moveTo(px,30);for(var i=0;i<=pw;i+=20)x.lineTo(px+i,30+(i/20%2?10:0));x.lineTo(px+pw,H-30);for(i=pw;i>=0;i-=20)x.lineTo(px+i,H-30-(i/20%2?10:0));x.closePath();x.fill();
   var y=80,ink='#1a1405',mut='#6b6250';var fit=function(t,w){t=String(t);if(x.measureText(t).width<=w)return t;while(t.length>1&&x.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'};
-  return new Promise(function(res){var img=new Image();img.onload=img.onerror=function(){try{x.drawImage(img,px+30,y-14,76,76)}catch(e){}
+  return new Promise(function(res){(function(){x.fillStyle='#0b0e05';x.beginPath();if(x.roundRect)x.roundRect(px+30,y-14,76,76,22);else x.rect(px+30,y-14,76,76);x.fill();x.fillStyle='#d2ff3c';x.font='900 40px '+disp;x.textAlign='center';x.fillText('MH',px+68,y+38);x.textAlign='left';
     x.fillStyle=ink;x.font='800 38px '+disp;x.fillText("MAHOMIE'S SPORTSBOOK",px+124,y+18);x.fillStyle=mut;x.font='500 19px '+mono;x.fillText("ROLLIN' WITH MAHOMIES · WEEK "+b.week,px+124,y+50);
     y+=100;var dash=function(){x.strokeStyle='#b9ae95';x.setLineDash([8,6]);x.beginPath();x.moveTo(px+24,y);x.lineTo(px+pw-24,y);x.stroke();x.setLineDash([]);y+=34};dash();
     x.fillStyle=ink;x.font='600 20px '+mono;x.fillText('TICKET #'+tktNo(b.id),px+30,y);x.textAlign='right';x.fillText(new Date(b.placed_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),px+pw-30,y);x.textAlign='left';y+=38;
@@ -1386,7 +1386,7 @@ function ticketPng(b){var W=720,legH=96,H=640+b.legs.length*legH,c=document.crea
     tot.forEach(function(t,i){var cx=px+30+i*(pw-60)/3;x.fillStyle=mut;x.font='500 18px '+mono;x.fillText(t[0],cx,y);x.fillStyle=ink;x.font='700 30px '+mono;x.fillText(t[1],cx,y+38)});y+=80;
     var st=tStatus(b).toUpperCase();x.save();x.translate(px+pw-120,y+58);x.rotate(-0.12);x.strokeStyle=st==='WON'||st==='LIVE'?'#1b8a3c':st==='LOST'?'#c0392b':'#2a5bd7';x.fillStyle=x.strokeStyle;x.lineWidth=4;x.strokeRect(-80,-34,160,52);x.font='700 30px '+mono;x.textAlign='center';x.fillText(st,0,4);x.restore();
     var bx=px+30;for(var k=0;k<60;k++){var cc=String(b.id+'MH').charCodeAt(k%String(b.id+'MH').length)*(k+7),bw=2+cc%4;x.fillStyle=ink;x.fillRect(bx,y+20,bw,70);bx+=bw+2+(cc>>2)%3;if(bx>px+pw-200)break}
-    x.fillStyle=mut;x.font='500 16px '+mono;x.fillText('#'+tktNo(b.id)+' · MAHOMIE BUCKS · NO CASH VALUE',px+30,y+120);res(c.toDataURL('image/png'))};img.src='/brand-96.png'})}
+    x.fillStyle=mut;x.font='500 16px '+mono;x.fillText('#'+tktNo(b.id)+' · MAHOMIE BUCKS · NO CASH VALUE',px+30,y+120);res(c.toDataURL('image/png'))})()})}
 function shareTickets(ids){var bs=ids.map(function(i){return TK[i]}).filter(Boolean);if(!bs.length)return;
   Promise.all(bs.map(ticketPng)).then(function(urls){openSheet('<div class="ph" style="margin:0"><div><div class="kicker">Share</div><h2>Ready for the league chat</h2></div></div>'+urls.map(function(u){return '<img class="share-img" src="'+u+'" alt="Bet ticket">'}).join('')+'<p class="muted" style="font-size:12.5px;text-align:center">Press and hold to save or share.</p>'+CLOSE)})}
 function book(){
@@ -2510,7 +2510,9 @@ function render(){
   view.innerHTML=S.tab==='home'?home():S.tab==='league'?league():S.tab==='records'?records():S.tab==='book'?book():me();
   $('#bucks').textContent=BK.me?money(BK.me.balance):'Book';
 }
-function go(tab,sub){S.tab=tab;if(tab==='league'&&sub)S.lseg=sub;closeSheetQuiet();render();window.scrollTo(0,0);try{history.replaceState(null,'','#'+tab)}catch(e){}}
+function go(tab,sub){S.tab=tab;if(tab==='league'&&sub)S.lseg=sub;closeSheetQuiet();render();window.scrollTo(0,0);enterAnim();try{history.replaceState(null,'','#'+tab)}catch(e){}}
+/* v3: cards rise in once when you switch tabs (not on the minute-by-minute refreshes) */
+var ENTER_T=0;function enterAnim(){view.classList.remove('enter');void view.offsetWidth;view.classList.add('enter');clearTimeout(ENTER_T);ENTER_T=setTimeout(function(){view.classList.remove('enter')},800)}
 function closeSheetQuiet(){SH=[];$('#sheet').classList.remove('open');$('#scrim').classList.remove('open')}
 var CLOSE='<button type="button" class="ghost" id="closeP">Close</button>';
 function centerChip(sel){var t=document.querySelector(sel);if(t&&t.scrollIntoView)t.scrollIntoView({inline:'center',block:'nearest'})}
@@ -2598,6 +2600,6 @@ function twHit(e){var r=e.target.closest&&e.target.closest('[data-tw]');if(!r)re
 document.addEventListener('click',twHit);document.addEventListener('pointermove',function(e){if(e.pointerType==='mouse')twHit(e)});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
 var h=(location.hash||'').replace('#','');if(['home','league','records','book','me'].indexOf(h)>=0)S.tab=h;
-render();
+render();enterAnim();
 })();
 
