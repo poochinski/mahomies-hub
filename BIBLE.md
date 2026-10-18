@@ -104,9 +104,9 @@ mahomies-hub/
 
 ---
 
-## 4. Design system ("Night Game", v3 — on trial since 2026-10-17)
+## 4. Design system ("Night Game", v3 — current since 2026-10-18)
 
-**On trial.** Jayson asked for a complete new look he can back out of. If he says **"revert"**, follow HANDOFF › "Revert the v3 look" — it puts `prototype/v2.0/{app.html,app.css,app.js}` back exactly as they were (branch `release-v2.6-classic`; the old look is also live at `/test/classic`). If he keeps it, drop the "on trial" line.
+**Current version (2026-10-18).** The old app is kept as an option: Me › Settings › App style › Old style sends a phone to `/classic` and remembers it; Me in the old app switches back. Details in HANDOFF › "Old style switch".
 
 Ink-black ground, **volt** (electric yellow-green) as the one accent, **iris** for the other side of a matchup, green/red for up/down, a broadcast-red **LIVE** bug. **Light** is the default (Jayson's pick, 2026-10-17); **Dark** and **Match phone** are a per-phone choice in Me › Settings (`mh-theme` in localStorage, applied in `app.html` before first paint).
 Type: **Big Shoulders Display** for titles and big scores (18px and up only — its "1" gets lost when small), **Geist** for everything else with tabular numbers on, **Geist Mono** for paper tickets and the slot's LED text. All three are self-hosted in `/public/fonts` (no Google Fonts call).
@@ -133,6 +133,7 @@ Old names are kept on purpose so every older rule follows the palette. **Rule:**
 | Trophy gold | Championships and medals |
 
 ### Layout and flow (v3, 2026-10-17)
+- **Home** has no page header (Jayson, 2026-10-18): it opens on Your matchup, which carries the week.
 - **Tabs:** Home (this week) · League (this season: Standings, Scores, Power, Playoffs, Wire) · Hall (history: Record book, All-time, Rivals, Awards, Seasons, Draft room, Lab) · Book · Me (This season, Career, Settings).
 - Every tab opens with a big page title; tabs with sections have sticky underline sub-tabs. The top bar is sticky and turns to glass on scroll, swapping the wordmark for the page title.
 - Anything that is a page (game, team, player, manager, season, week…) pushes in full screen with a back button. Only transactional pop-ups (bet slip, PIN, commish forms, tickets, share images, the record picker) are bottom sheets.

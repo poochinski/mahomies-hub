@@ -95,6 +95,8 @@ app.use('/test/v2.5', express.static(V25, { index: false, redirect: false, setHe
 // prototype/v2.0/{app.html,app.css,app.js} from branch release-v2.6-classic (see HANDOFF).
 const CLASSIC = path.join(proto, 'classic');
 app.get('/test/classic', (_req, res) => res.set('Cache-Control', 'no-store').type('html').send(pageFrom(CLASSIC)));
+// Me › Settings › Old style sends phones here (and app.html remembers the choice in localStorage 'mh-style').
+app.get('/classic', (_req, res) => res.set('Cache-Control', 'no-store').type('html').send(pageFrom(CLASSIC)));
 app.use('/test/classic', express.static(CLASSIC, { index: false, redirect: false, setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
 app.get('/test/v1.8', (_req, res) => res.sendFile(path.join(proto, 'v1.8', 'night.html')));
 app.get('/test/v1.7', (_req, res) => res.sendFile(path.join(proto, 'v1.7', 'night.html')));

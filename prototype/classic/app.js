@@ -2303,6 +2303,7 @@ function me(){
       (open.length?'<div class="me-open">'+open.slice(0,3).map(function(b){return stub(b,true)}).join('')+'</div>':'')+'</section>'}
   h+=profile(u,true);
   h+='<button type="button" class="twih-go" data-howto="1"><span>📖</span><b>How the app works</b><em>Every stat explained in plain English</em>'+CHEV+'</button>';
+  if(location.pathname.indexOf('/classic')===0)h+='<button type="button" class="twih-go" data-newstyle="1"><span>✨</span><b>Switch to the new style</b><em>The redesigned app</em>'+CHEV+'</button>';
   h+=admPanel();
   return h+foot();
 }
@@ -2568,6 +2569,7 @@ document.addEventListener('click',function(e){
   if(d.team){nav(function(){teamOpen(d.team)});return}
   if(d.wire){nav(function(){openSheet(wireSheet()+CLOSE)});return}
   if(d.howto){nav(function(){openSheet(explainPanel()+CLOSE)});return}
+  if(d.newstyle){try{localStorage.setItem('mh-style',JSON.stringify('new'))}catch(e){}location.replace('/'+location.hash);return}
   if(d.rival){var rp=d.rival.split('|');S.h2a=rp[0];S.h2b=rp[1];go('league','h2h');var rt=document.getElementById('rivalTop');if(rt)rt.scrollIntoView({block:'start'});return}
   if(d.search){nav(searchOpen);return}
   if(t.id==='closeP'){closeSheet();return}

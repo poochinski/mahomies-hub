@@ -2455,12 +2455,9 @@ function spark(arr,w,h){arr=(arr||[]).filter(function(v){return v!=null});if(arr
 /* ---------------- HOME: gameday ---------------- */
 function homeV3(){
   var L=D.league,me=S.me,my=D.lines.filter(function(l){return l.a===me||l.b===me})[0];
-  var eb=CUR()+' · Week '+L.week;
-  if(pulseForWeek()&&PULSE.live)eb+=' <span class="live"><i></i>Live</span>';
-  else if(pulseForWeek()&&PULSE.delayed)eb+=' · Kickoff delayed';
-  else if(pulseForWeek()&&PULSE.next)eb+=' · <span class="kick">Next kickoff '+esc(PULSE.next)+'</span>';
-  var phase=pulseForWeek()?esc(PULSE.phase):(L.week>=L.playoff_start?'Playoffs':'Week '+L.week+' matchups');
-  var h=pageHead({eb:eb,title:phase});
+  // No page header on Home (Jayson, 2026-10-18): the season/week/kickoff line and the big
+  // "Sunday: 12 games" title didn't tell him anything. The week lives in the matchup card now.
+  var h='';
   h+=newLookNote();
   h+=matchupCard(my);
   h+=topNow();
@@ -2481,10 +2478,10 @@ function matchupCard(my){
   var mineA=my.a===me,opp=mineA?my.b:my.a,sg=slateGame(me),sMe=sg?slateSide(sg,me):null,sOpp=sg?slateSide(sg,opp):null;
   if(!sMe)sMe={pts:mineA?my.live_a:my.live_b,proj:null,now:0,left:0,on:true,fin:false};
   if(!sOpp)sOpp={pts:mineA?my.live_b:my.live_a,proj:null,now:0,left:0,on:true,fin:false};
-  var row=function(u,s){return '<div class="yg-row">'+av(u,48)+'<div class="yg-n"><b>'+esc(team(u))+'</b><span>'+esc(recOf(u))+'</span>'+ygMeta(s)+'</div>'+ygScore(s)+'</div>'};
+  var row=function(u,s){return '<div class="yg-row">'+av(u,48)+'<div class="yg-n"><b>'+esc(team(u))+'</b><span>'+esc(recOf(u))+'</span></div>'+ygScore(s)+'</div>'};
   var stage=sMe.fin&&sOpp.fin?'Final':(sMe.on||sOpp.on)?'Live game':'Preview';
   var h='<section class="mx-card">'+(savedTeam()?'':'<button type="button" class="yg-pick" data-tab="me">Pick your team</button>')+
-    '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your matchup<span class="mx-open">'+stage+' ›</span></div>'+row(me,sMe)+row(opp,sOpp)+'</button>';
+    '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your matchup · Week '+D.league.week+'<span class="mx-open">'+stage+' ›</span></div>'+row(me,sMe)+row(opp,sOpp)+'</button>';
   var a=sMe.fin||sMe.proj==null?sMe.pts:sMe.proj,b=sOpp.fin||sOpp.proj==null?sOpp.pts:sOpp.proj;
   if(a+b>0){var pc=Math.round(a/(a+b)*100);
     h+='<div class="mx-tug" aria-hidden="true"><i style="width:'+pc+'%"></i></div><div class="mx-tugl"><span>'+f1(a)+'</span><em>'+(sMe.fin&&sOpp.fin?'Final':'Projected finish')+'</em><span>'+f1(b)+'</span></div>'}
@@ -2632,6 +2629,7 @@ function meV3(){
   if(seg==='settings'){
     h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Account</div><h2>Sportsbook login</h2></div></div>'+(AUTH?'<div class="set-r"><span><b>Logged in as '+esc(team(AUTH.user_id))+'</b><small>Your PIN unlocks betting on this phone.</small></span><button type="button" class="ghost sm" data-logout="1">Log out</button></div>':'<div class="set-r"><span><b>Not logged in</b><small>Everything works without it. Your PIN only unlocks the Book.</small></span>'+(LIVE?'<button type="button" class="ghost sm" data-login="1">Log in</button>':'')+'</div>')+'</section>';
     h+='<section class="panel tight"><div class="ph"><div><div class="kicker">On this phone</div><h2>Appearance</h2></div></div><div class="seg theme-seg">'+[['light','Light'],['dark','Dark'],['auto','Match phone']].map(function(x){return '<button type="button" data-theme-set="'+x[0]+'" class="'+(themePref()===x[0]?'on':'')+'">'+x[1]+'</button>'}).join('')+'</div></section>';
+    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">On this phone</div><h2>App style</h2></div></div><div class="set-r"><span><b>Old style</b><small>The app the way it looked before the redesign. You can switch back from Me in the old app.</small></span><button type="button" class="ghost sm" data-style-set="classic">Use old style</button></div></section>';
     h+='<button type="button" class="twih-go" data-howto="1"><span>📖</span><b>How the app works</b><em>Every stat explained in plain English</em>'+CHEV+'</button>';
     h+=admPanel();
   }
@@ -2749,6 +2747,7 @@ document.addEventListener('click',function(e){
   if(d.team){nav(function(){teamOpen(d.team)});return}
   if(d.wire){nav(function(){openSheet(wireSheet()+CLOSE)});return}
   if(d.howto){nav(function(){openSheet(explainPanel()+CLOSE)});return}
+  if(d.styleSet){store('style',d.styleSet);location.replace(d.styleSet==='classic'?'/classic'+location.hash:'/'+location.hash);return}
   if(d.themeSet){store('theme',d.themeSet);applyTheme();render();return}
   if(d.rival){var rp=d.rival.split('|');S.h2a=rp[0];S.h2b=rp[1];go('league','h2h');var rt=document.getElementById('rivalTop');if(rt)rt.scrollIntoView({block:'start'});return}
   if(d.search){nav(searchOpen);return}

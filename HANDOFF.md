@@ -1,14 +1,20 @@
 # HANDOFF — where we left off
 
 **Last updated:** 2026-10-17 (Pacific) · **AI:** Claude
-**Current phase:** v3 **new layout and flow** on trial (second pass) — Jayson wanted the app reorganized, not just recolored, and still wants "revert" to bring back the original.
-**Last commit:** "v3 layout: new tabs, Hall of Fame, full-screen pages, light by default"
+**Current phase:** v3 layout is **the current version** (Jayson, 2026-10-18). The old app stays available as **Me › Settings › Old style** (`/classic`). Now trimming Home based on his screenshots.
+**Last commit:** "Home: drop the week header and players-left lines; Old style switch in Settings"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app · old look for comparison: **/test/classic**
 
 ## What we're working toward right now
-Jayson is trying the v3 layout on his phone. **If he says "revert", do the section below first, before anything else.** "Revert" means back to the original (pre-v3) app. If he instead says to go back to the *colors-only* v3 pass, that is branch `release-v3-colors` (commit `6490778`). If he keeps it, delete the "on trial" lines here and in BIBLE §4. Feature work after that is unchanged: the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x, prototype/dist or prototype/classic.
+v3 is the version going forward. The old app is kept as an option anyone can pick in Me › Settings › Old style (and switch back from Me in the old app). **If he says "revert" for everyone, do the section below.** "Revert" means back to the original (pre-v3) app. If he instead says to go back to the *colors-only* v3 pass, that is branch `release-v3-colors` (commit `6490778`). If he keeps it, delete the "on trial" lines here and in BIBLE §4. Feature work after that is unchanged: the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x, prototype/dist or prototype/classic.
 
-## Revert the v3 look (when Jayson says "revert")
+## Old style switch (2026-10-18)
+- Me › Settings › App style › **Use old style** stores `mh-style = "classic"` and goes to **`/classic`** (server route in `server/index.js`, serves the frozen `prototype/classic/`). From then on, opening `/` on that phone jumps to `/classic` before anything paints (script at the top of `prototype/v2.0/app.html`).
+- In the old app, Me has **Switch to the new style** (only on `/classic`, not `/test/classic`), which stores `mh-style = "new"` and goes to `/`.
+- Login, team pick and theme are shared localStorage, so switching keeps you logged in.
+- `prototype/classic/` is the old app frozen on Oct 17 plus that one Me row and its click handler. It does **not** get new features. If a server change ever breaks it (an endpoint it uses changes shape), fix it there or drop the option.
+
+## Revert the v3 look for everyone (only if Jayson asks)
 The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= commit `96e2206`, main right before v3), the frozen copy in **`prototype/classic/`**, and the live comparison page **`/test/classic`**.
 - **If nothing else has touched the three front-end files since v3** (check `git log --oneline 96e2206..HEAD -- prototype/v2.0`): 
   `git checkout release-v2.6-classic -- prototype/v2.0/app.html prototype/v2.0/app.css prototype/v2.0/app.js test/account-ui.test.js` then commit "Revert to the classic look" and push. Railway redeploys; the phone shows the old look on the next refresh. (The account test is in the list because v3 moved the commish's Book controls to Me › Settings and the test clicks there.)
@@ -17,6 +23,10 @@ The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= c
 - Update this file, CHANGELOG and BIBLE §4 (put the "Night" design system text back from `release-v2.6-classic`).
 
 ## Done (newest first)
+- 2026-10-18 — **Home trimmed + Old style option** (Claude; Jayson circled them on a screenshot: "I don't think they show any useful information", and "let's say that's the next version… have it an option in the settings as old style").
+  - Home has no page header any more: the "2026 · Week 6 · Next kickoff…" line and the big phase title ("Sunday: 12 games") are gone. The week moved into the matchup card's header ("Your matchup · Week 6"). `homeV3()` starts straight with the new-look note and the matchup card.
+  - The matchup face-off no longer shows "7 left / 3 playing" under each team (`ygMeta` dropped from `matchupCard`'s rows). The other games' list still has it — ask Jayson before removing it there.
+  - Old style switch — see "Old style switch" above.
 - 2026-10-17 (evening) — **v3 layout: new tabs, flow and pages** (Claude; Jayson after the colors pass: "I like the light mode colors, but I thought you were going to change around the layout, the user experience, the flow… grab some more ideas from Sleeper… still let me revert back").
   - **Saved first:** branch `release-v3-colors` = the colors-only pass. The original is still `release-v2.6-classic` / `/test/classic`.
   - **Tabs:** Home · League · **Hall** · Book · Me. Internal tab keys are unchanged (`records` is the Hall) so old links and `#records` still work. `go()` maps the old League segments (`awards`, `draft`, `history`, `alltime`, `h2h`, `lab`) to Hall sections, and `book:<seg>` works too. Tapping Hall while on a Hall section goes back to the hub.
