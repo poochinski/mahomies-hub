@@ -1,22 +1,35 @@
 # HANDOFF — where we left off
 
 **Last updated:** 2026-10-17 (Pacific) · **AI:** Claude
-**Current phase:** v3 "Night Game" look **on trial** — Jayson asked for a complete new UI he can undo by saying "revert".
-**Last commit:** "v3 look: polish, light theme, share cards, docs"
+**Current phase:** v3 **new layout and flow** on trial (second pass) — Jayson wanted the app reorganized, not just recolored, and still wants "revert" to bring back the original.
+**Last commit:** "v3 layout: new tabs, Hall of Fame, full-screen pages, light by default"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app · old look for comparison: **/test/classic**
 
 ## What we're working toward right now
-Jayson is trying the v3 look on his phone. **If he says "revert", do the section below first, before anything else.** If he keeps it, delete the "on trial" lines here and in BIBLE §4. Feature work after that is unchanged: the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x, prototype/dist or prototype/classic.
+Jayson is trying the v3 layout on his phone. **If he says "revert", do the section below first, before anything else.** "Revert" means back to the original (pre-v3) app. If he instead says to go back to the *colors-only* v3 pass, that is branch `release-v3-colors` (commit `6490778`). If he keeps it, delete the "on trial" lines here and in BIBLE §4. Feature work after that is unchanged: the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x, prototype/dist or prototype/classic.
 
 ## Revert the v3 look (when Jayson says "revert")
 The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= commit `96e2206`, main right before v3), the frozen copy in **`prototype/classic/`**, and the live comparison page **`/test/classic`**.
 - **If nothing else has touched the three front-end files since v3** (check `git log --oneline 96e2206..HEAD -- prototype/v2.0`): 
-  `git checkout release-v2.6-classic -- prototype/v2.0/app.html prototype/v2.0/app.css prototype/v2.0/app.js` then commit "Revert to the classic look" and push. Railway redeploys; the phone shows the old look on the next refresh.
+  `git checkout release-v2.6-classic -- prototype/v2.0/app.html prototype/v2.0/app.css prototype/v2.0/app.js test/account-ui.test.js` then commit "Revert to the classic look" and push. Railway redeploys; the phone shows the old look on the next refresh. (The account test is in the list because v3 moved the commish's Book controls to Me › Settings and the test clicks there.)
 - **If features were added after v3**, don't overwrite them: `git revert` the v3 commits instead (`git log --oneline --grep "v3 look"`), resolve conflicts in favour of the new feature code, and re-check at 390px.
 - Leave the extra fonts in `public/fonts`, the `/test/classic` route and `prototype/classic/` alone — they're harmless. Phones keep an unused `mh-theme` value in localStorage; the classic page ignores it.
 - Update this file, CHANGELOG and BIBLE §4 (put the "Night" design system text back from `release-v2.6-classic`).
 
 ## Done (newest first)
+- 2026-10-17 (evening) — **v3 layout: new tabs, flow and pages** (Claude; Jayson after the colors pass: "I like the light mode colors, but I thought you were going to change around the layout, the user experience, the flow… grab some more ideas from Sleeper… still let me revert back").
+  - **Saved first:** branch `release-v3-colors` = the colors-only pass. The original is still `release-v2.6-classic` / `/test/classic`.
+  - **Tabs:** Home · League · **Hall** · Book · Me. Internal tab keys are unchanged (`records` is the Hall) so old links and `#records` still work. `go()` maps the old League segments (`awards`, `draft`, `history`, `alltime`, `h2h`, `lab`) to Hall sections, and `book:<seg>` works too. Tapping Hall while on a Hall section goes back to the hub.
+  - **Shell** (`/* v3 shell */` block above `/* ---------- sheets ---------- */` in app.js): `pageHead()` big title per tab, `utabs()` sticky underline sub-tabs (`data-lseg`, `data-bseg`, `data-meseg`), sticky glass top bar whose wordmark swaps to the page title on scroll (`onScroll()` sets `body.scrolled` / `body.titled`; `tabTitle()`), your own avatar on the Me tab.
+  - **Home** (`homeV3`): one-time "New look" note (`store('tour3')`), matchup card with a projected-finish bar and the desk folded into tabs (Lineup · Form · Stakes · Series, `S.desk`), **Top performers** from the pulse (`topNow`), the other games, Last week (your result, high/low/top player, the recap), League Wire, this week in history.
+  - **League** (`leagueV3`): Standings (rows with seed, streak chip, all-play, luck, playoff line), Scores (week stepper `S.scw`; the live week shows every game, past weeks show recap + results), Power (with a sparkline of each team's weekly scores), Playoffs (odds as bars), Wire (inline, with a FAAB bar chart).
+  - **Hall** (`hallV3`, `hallSection`): Champions wall, #1 record spotlight, league-by-the-numbers strip, tiles into Record book · All-time · Rivals · Awards · Seasons · Draft room · Lab (`S.hall`, `data-hall`). Each section has a "‹ Hall of Fame" crumb and "More in the Hall" links. The old Lab/Draft hero titles were folded into the page header.
+  - **Book:** page title + `walletCard()` (dark card in both themes) + sticky tabs with an open-bets count on My bets.
+  - **Me** (`meV3`): profile header (big avatar, record, place, titles), tabs This season · Career · Settings. Settings holds the login, Appearance and the commish's Book controls.
+  - **Pages vs sheets:** `openSheet(html, kind)` — anything that is a page (game, team, player, manager, season, week, wire, how-it-works…) now pushes in full screen from the right with a nav bar (back / close, title appears on scroll; the Game Center's bar shows the live score, `gcTitle()`). Bet slip, PIN login, commish forms, tickets, the record picker and share images stay bottom sheets — `PANEL_RE` decides by what's in the HTML.
+  - **Removed:** `home()`, `league()`, `seasonView()`, `oddsView()`, `me()`, `bookHero()` (replaced, see above). `thisWeek(all)` now takes a flag for the full scoreboard.
+  - **Light is the default theme now** (Jayson liked it). Dark and Match phone are in Me › Settings.
+  - Checked headless at 390 and 360px with mocked API data, every tab/section/page and the panels, both themes: no page errors, no sideways scroll. `npm test` 28/28 (account test updated for Settings).
 - 2026-10-17 — **v3 "Night Game" look, on trial** (Claude; Jayson: "do a complete professional pass on my UI, layout, color pallet, theme… modern, sleek, user friendly, beautiful, inventive, and unique… go back to just how it is now if I say revert").
   - **Before anything changed:** branch `release-v2.6-classic` pushed, `prototype/classic/` frozen (asset paths → `/test/classic/`), route `/test/classic` added in `server/index.js`.
   - **Palette:** ink black + volt accent + iris for the opponent + broadcast-red LIVE. Old token names kept and re-pointed (`--gold` = accent text, `--volt` = accent fill; full table in BIBLE §4). `restyle` pass turned every hard-coded neon `rgba(...)` into `color-mix()` on a token, scaled radii up, calmed the uppercase labels, and moved mid-size numbers off the display font (Big Shoulders' "1" reads as "I" under ~18px).
@@ -243,15 +256,17 @@ The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= c
 - Git tags cannot be pushed from some agents. Saved versions live on branches (`release-v1.0` through `release-v1.8`).
 
 ## Files changed in the latest push
+- prototype/v2.0/app.js — v3 shell block (pageHead, utabs, homeV3, leagueV3 + standings/scores/power/playoffs/wire views, hallV3/hallSection, walletCard, meV3, topNow, newLookNote, PANEL_RE/sheetChrome), openSheet(kind), go() mapping, click router, render(); old home/league/seasonView/oddsView/me/bookHero removed; light default
+- prototype/v2.0/app.css — "v3 layout" block at the end (top bar, page header, sub-tabs, full-screen pages, matchup card, standings, power, playoffs, Hall, wallet, Me)
+- prototype/v2.0/app.html — header (brand button + title), Hall tab, League icon, page nav bar in the sheet, light theme before paint
+- test/account-ui.test.js — opens Me › Settings before the commish controls
+- HANDOFF.md, CHANGELOG.md, BIBLE.md
+
+## Files changed in the push before
 - prototype/v2.0/app.css — new base (tokens, light theme, fonts, dock, hero, cards, sheet) + palette remap of everything after it
 - prototype/v2.0/app.js — theme switch (Me › Appearance), enterAnim, PAL, Book balance label, ticket mark, shareCard/ticketPng
 - prototype/v2.0/app.html — self-hosted font preloads, theme-before-paint script, SVG mark, Bucks dot
 - public/fonts — Big Shoulders Display, Geist, Geist Mono (+ OFL licences)
 - prototype/classic/ (frozen old look) · server/index.js (/test/classic route)
 - HANDOFF.md, CHANGELOG.md, BIBLE.md
-
-## Files changed in the push before
-- prototype/v2.0/app.js — thisWeek list, recapOne, Explore row of three
-- prototype/v2.0/app.css — tw- list, row, tags, recap (does not touch .tw tables)
-- HANDOFF.md, CHANGELOG.md, BIBLE.md, docs/V2-HANDOFF.md
 

@@ -60,6 +60,8 @@ test('account UI handles setup-code retry, PIN confirmation, code issuance and e
     assert.match(doc.querySelector('#sheetBody').textContent, /valid setup code/);
     await setup('private-test-code');
     await until(() => JSON.parse(w.localStorage.getItem('mh-auth') || 'null')?.token === 'fixture-session');
+    // v3 layout: the commish's Book controls live in Me › Settings.
+    await until(() => doc.querySelector('[data-meseg="settings"]')); click('[data-meseg="settings"]');
     await until(() => doc.querySelector('[data-adm="pin"]'));
     click('[data-adm="pin"]'); doc.querySelector('#aUser').value = other; click('[data-admgo="pin"]');
     await until(() => doc.querySelector('[aria-label="Private setup code"]'));
