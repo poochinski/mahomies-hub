@@ -1492,10 +1492,11 @@ body[data-tab="leagues"] main{padding-bottom:calc(env(safe-area-inset-bottom,0px
 .lg-f{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lg-f em{font-style:normal;font-weight:650;color:var(--gold)}
 .lg-names{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-size:12px;min-width:0}
-.lg-names>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lg-names>span:last-child{text-align:right}
-.lg-names b{font-weight:600}
-.lg-names i{font-style:normal;color:var(--faint)}
+.lg-names>span{display:flex;gap:4px;min-width:0;max-width:50%;white-space:nowrap}
+.lg-names>span:last-child{justify-content:flex-end}
+.lg-names b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lg-names i{flex:none;font-style:normal;color:var(--faint)}
+.lg-bar.zero{background:var(--panel-3)}
 .lg-sc{display:flex;align-items:center;gap:8px;margin-top:4px}
 .lg-sc strong{font:700 17px/1 var(--body);color:var(--muted);min-width:0}
 .lg-sc strong.up{color:var(--ink)}

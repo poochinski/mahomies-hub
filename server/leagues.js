@@ -47,7 +47,7 @@ async function oneLeague(lg, uid, week) {
   const oppM = myM && myM.matchup_id != null ? (ms || []).find((m) => m.matchup_id === myM.matchup_id && m.roster_id !== myM.roster_id) : null;
   const oppR = oppM && (rosters || []).find((r) => r.roster_id === oppM.roster_id);
   return {
-    id, sport: lg.sport || 'nfl', season: lg.season, name: lg.name, status: lg.status,
+    id, sport: lg.sport || 'nfl', season: lg.season, name: String(lg.name || 'League').trim(), status: lg.status,
     avatar: avatarUrl(lg.avatar), format: formatLabel(lg), week: week || null,
     home: id === LEAGUE_ID,
     me: side(mine, myM), opp: side(oppR, oppM)

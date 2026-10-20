@@ -2500,11 +2500,11 @@ function lgPic(url,name,sz,cls){var ini=String(name||'?').replace(/[^A-Za-z0-9 ]
 function lgRow(x){
   var a=x.me,b=x.opp,cur=(x.home&&isHomeLg())||(!isHomeLg()&&x.id===LG.id);
   var h='<button type="button" class="lgc'+(cur?' cur':'')+'" data-lg="'+esc(x.id)+'">'+lgPic(x.avatar,x.name,48,'lg-pic')+
-    '<span class="lg-tx"><b class="lg-n">'+esc(x.name)+'</b><small class="lg-f">'+esc(x.format)+(x.home?' · <em>Home league</em>':'')+'</small>';
+    '<span class="lg-tx"><b class="lg-n">'+esc(x.name)+'</b><small class="lg-f">'+esc(x.format)+(x.week&&a&&b?' · Week '+x.week:'')+(x.home?' · <em>Home league</em>':'')+'</small>';
   if(a&&b){var pa=Number(a.pts)||0,pb=Number(b.pts)||0,tot=pa+pb,lead=pa===pb?'':pa>pb?'a':'b';
     h+='<span class="lg-names"><span><b>'+esc(a.team)+'</b> <i>('+a.w+'-'+a.l+')</i></span><span><i>('+b.w+'-'+b.l+')</i> <b>'+esc(b.team)+'</b></span></span>'+
       '<span class="lg-sc">'+lgPic(a.avatar,a.team,24,'lg-av')+'<strong class="num'+(lead==='a'?' up':'')+'">'+f2(pa)+'</strong>'+
-      '<span class="lg-bar">'+(tot>0?'<i style="width:'+Math.round(pa/tot*100)+'%"></i>':'')+'</span>'+
+      '<span class="lg-bar'+(tot>0?'':' zero')+'">'+(tot>0?'<i style="width:'+Math.round(pa/tot*100)+'%"></i>':'')+'</span>'+
       '<strong class="num'+(lead==='b'?' up':'')+'">'+f2(pb)+'</strong>'+lgPic(b.avatar,b.team,24,'lg-av')+'</span>';
   } else if(a)h+='<span class="lg-solo">'+esc(a.team)+' · '+a.w+'-'+a.l+(x.week?' · no game this week':'')+'</span>';
   return h+'</span>'+CHEV+'</button>'}

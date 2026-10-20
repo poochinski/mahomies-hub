@@ -405,7 +405,7 @@ export async function buildHub(leagueId, me) {
   const updated_label = now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const st = cur.league.settings || {};
   return {
-    league: { id: cur.league.league_id, sport, avatar: cur.league.avatar || null, name: cur.league.name, season: CUR, week: cur.liveWeek || Number(state.week) || cur.last, teams: cur.teams,
+    league: { id: cur.league.league_id, sport, avatar: cur.league.avatar || null, name: String(cur.league.name || 'League').trim(), season: CUR, week: cur.liveWeek || Number(state.week) || cur.last, teams: cur.teams,
       scoring: sport !== 'nfl' ? 'Points' : cur.league.scoring_settings?.rec === 1 ? 'PPR' : cur.league.scoring_settings?.rec === 0.5 ? 'Half PPR' : 'Standard',
       playoff_start: cur.P, playoff_teams: Number(st.playoff_teams) || 6, median: cur.median, first: SE[0].s, last_scored: cur.last, live: !!cur.liveWeek },
     managers, seasons, records, recf, alltime, h2h, games, power, lines, odds, awards, backtest,
