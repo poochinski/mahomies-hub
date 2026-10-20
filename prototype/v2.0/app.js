@@ -99,7 +99,9 @@ document.addEventListener('visibilitychange',backInApp);window.addEventListener(
 function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
 function gsig(j){return (j&&j.games||[]).map(function(g){var ss=function(k){return (g['slots_'+k]||[]).map(function(p){return p.p}).join(',')};return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b,(g.warn_a||[]).length,(g.warn_b||[]).length,g.empty_a,g.empty_b,ss('a'),ss('b')].join(':')}).join('|')}
 function savedTeam(){return (store('auth')||{}).user_id||store('me')||''}
-function slateGame(uid){var gs=PULSE&&PULSE.games;if(!gs)return null;for(var i=0;i<gs.length;i++)if(gs[i].a===uid||gs[i].b===uid)return gs[i];return null}
+// Only the pulse for the week the page is showing (2026-10-19: Sleeper rolls to the next week at
+// midnight Eastern on Monday night; mixing that week's 0-0 into this week's card made the game vanish).
+function slateGame(uid){var gs=pulseForWeek()&&PULSE.games;if(!gs)return null;for(var i=0;i<gs.length;i++)if(gs[i].a===uid||gs[i].b===uid)return gs[i];return null}
 function slateSide(g,uid){var k=g.a===uid?'a':'b';return {pts:g['pts_'+k],proj:g['proj_'+k],now:g['now_'+k],left:g['left_'+k],on:g['on_'+k],fin:g['fin_'+k],warn:g['warn_'+k]||[],empty:g['empty_'+k]||0}}
 /* Home part 3 (v2.0): median game, lineup warning, standings strip. Fantasy only, no betting numbers. */
 function finalOf(s){return s.fin?s.pts:(s.proj!=null?s.proj:s.pts)}

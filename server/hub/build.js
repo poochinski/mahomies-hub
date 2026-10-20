@@ -33,13 +33,19 @@ async function pull(leagueId) {
     ]);
     const st = league.settings || {};
     const P = Number(st.playoff_week_start) || 15;
-    let last = Number(st.last_scored_leg) || 0;
+    const sleeperLast = Number(st.last_scored_leg) || 0;
+    let last = sleeperLast;
     if (!last && league.status === 'complete') last = 17;
+    // Sleeper moves its "current week" forward at midnight Eastern after Monday night, but only marks
+    // the old week scored later (usually Tuesday, after stat corrections). In between, that week was
+    // neither live nor scored, so it vanished from Home. Any week before Sleeper's current week is over.
+    if (isCur && (state.season_type === 'regular' || state.season_type === 'post') && Number(state.week) > 1) last = Math.max(last, Number(state.week) - 1);
     const liveWeek = isCur && state.season_type === 'regular' && Number(state.week) > last ? Number(state.week) : null;
     const maxFetch = isCur ? Math.max(last, P - 1) : last; // current season: whole regular-season schedule (for odds)
     const weeks = {};
     await Promise.all(Array.from({ length: maxFetch }, (_, i) => i + 1).map(async (w) => {
-      const age = !isCur || w < last ? WEEK : w === liveWeek ? 2 * 60 * 1000 : 30 * 60 * 1000;
+      // Weeks Sleeper hasn't officially scored yet can still get stat corrections: keep them fresh.
+      const age = !isCur || w <= sleeperLast - 1 ? WEEK : w === liveWeek ? 2 * 60 * 1000 : w <= last ? 10 * 60 * 1000 : 30 * 60 * 1000;
       weeks[w] = await sleeper(`/league/${c.league_id}/matchups/${w}`, { maxAgeMs: age }).catch(() => []);
     }));
     let wb = [], lb = [];
