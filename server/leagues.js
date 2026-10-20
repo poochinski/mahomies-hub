@@ -24,10 +24,11 @@ const avatarUrl = (id) => (id ? `https://sleepercdn.com/avatars/thumbs/${id}` : 
 
 async function oneLeague(lg, uid, week) {
   const id = lg.league_id;
+  let pending = false; // Sleeper didn't answer for this week's matchups (it sometimes 404s while re-scoring)
   const [users, rosters, ms] = await Promise.all([
     sleeper(`/league/${id}/users`, { maxAgeMs: 30 * MIN }).catch(() => []),
     sleeper(`/league/${id}/rosters`, { maxAgeMs: 5 * MIN }).catch(() => []),
-    week ? sleeper(`/league/${id}/matchups/${week}`, { maxAgeMs: MIN }).catch(() => []) : []
+    week ? sleeper(`/league/${id}/matchups/${week}`, { maxAgeMs: MIN }).catch(() => { pending = true; return []; }) : []
   ]);
   const userOf = Object.fromEntries((users || []).map((u) => [u.user_id, u]));
   const side = (roster, m) => {
@@ -49,7 +50,7 @@ async function oneLeague(lg, uid, week) {
   return {
     id, sport: lg.sport || 'nfl', season: lg.season, name: String(lg.name || 'League').trim(), status: lg.status,
     avatar: avatarUrl(lg.avatar), format: formatLabel(lg), week: week || null,
-    home: id === LEAGUE_ID,
+    home: id === LEAGUE_ID, pending,
     me: side(mine, myM), opp: side(oppR, oppM)
   };
 }

@@ -14,7 +14,11 @@ export async function sleeper(path, { maxAgeMs = 5 * 60 * 1000 } = {}) {
   if (inflight.has(path)) return inflight.get(path);
   const p = (async () => {
     try {
-      const res = await fetch(BASE + path, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(15000) });
+      const get = (url) => fetch(url, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(15000) });
+      let res = await get(BASE + path);
+      // Oct 19: Sleeper's edge kept answering one week's matchups for two leagues with a 404 to our
+      // server while browsers got the data. A one-off query string skips that cached answer.
+      if (res.status === 404 || res.status >= 500) res = await get(BASE + path + (path.includes('?') ? '&' : '?') + 'cb=' + Date.now());
       if (!res.ok) throw new Error(`Sleeper ${path} → ${res.status}`);
       const data = await res.json();
       cache.set(path, { at: Date.now(), data });

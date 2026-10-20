@@ -2500,20 +2500,20 @@ function lgPic(url,name,sz,cls){var ini=String(name||'?').replace(/[^A-Za-z0-9 ]
 function lgRow(x){
   var a=x.me,b=x.opp,cur=(x.home&&isHomeLg())||(!isHomeLg()&&x.id===LG.id);
   var h='<button type="button" class="lgc'+(cur?' cur':'')+'" data-lg="'+esc(x.id)+'">'+lgPic(x.avatar,x.name,48,'lg-pic')+
-    '<span class="lg-tx"><b class="lg-n">'+esc(x.name)+'</b><small class="lg-f">'+esc(x.format)+(x.week&&a&&b?' · Week '+x.week:'')+(x.home?' · <em>Home league</em>':'')+'</small>';
+    '<span class="lg-tx"><span class="lg-nr"><b class="lg-n">'+esc(x.name)+'</b>'+(x.home?'<em class="lg-home">Home</em>':'')+'</span><small class="lg-f">'+esc(x.format)+(x.week&&a&&b?' · Week '+x.week:'')+'</small></span>'+CHEV+'<span class="lg-mx">';
   if(a&&b){var pa=Number(a.pts)||0,pb=Number(b.pts)||0,tot=pa+pb,lead=pa===pb?'':pa>pb?'a':'b';
     h+='<span class="lg-names"><span><b>'+esc(a.team)+'</b> <i>('+a.w+'-'+a.l+')</i></span><span><i>('+b.w+'-'+b.l+')</i> <b>'+esc(b.team)+'</b></span></span>'+
       '<span class="lg-sc">'+lgPic(a.avatar,a.team,24,'lg-av')+'<strong class="num'+(lead==='a'?' up':'')+'">'+f2(pa)+'</strong>'+
       '<span class="lg-bar'+(tot>0?'':' zero')+'">'+(tot>0?'<i style="width:'+Math.round(pa/tot*100)+'%"></i>':'')+'</span>'+
       '<strong class="num'+(lead==='b'?' up':'')+'">'+f2(pb)+'</strong>'+lgPic(b.avatar,b.team,24,'lg-av')+'</span>';
-  } else if(a)h+='<span class="lg-solo">'+esc(a.team)+' · '+a.w+'-'+a.l+(x.week?' · no game this week':'')+'</span>';
-  return h+'</span>'+CHEV+'</button>'}
+  } else if(a)h+='<span class="lg-solo">'+esc(a.team)+' · '+a.w+'-'+a.l+(x.pending?' · Sleeper hasn\'t sent this week\'s matchup yet':x.week?' · no game this week':'')+'</span>';
+  return h+'</span></button>'}
 function leaguesV3(){
   var uid=sleeperId(),L=LGS.list,nm=sleeperName();
   if(!LGS.at)loadLeagues();
   var h=pageHead({eb:'Sleeper'+(nm?' · '+esc(nm):''),title:'Your leagues'});
   if(!uid)h+='<section class="panel"><p class="muted">Pick your team in Me first, or add your Sleeper username below.</p></section>';
-  else if(!L){h+='<section class="lg-sec">'+[1,2,3].map(function(){return '<div class="lgc sk"><span class="lg-pic"></span><span class="lg-tx"><b class="sk-l"></b><small class="sk-l s"></small><span class="sk-l"></span></span></div>'}).join('')+'</section>';
+  else if(!L){h+='<section class="lg-sec">'+[1,2,3].map(function(){return '<div class="lgc sk"><span class="lg-pic"></span><span class="lg-tx"><b class="sk-l"></b><small class="sk-l s"></small></span><span></span><span class="lg-mx"><span class="sk-l"></span></span></div>'}).join('')+'</section>';
     if(LGS.err)h+='<p class="err">'+esc(LGS.err)+'</p>'}
   else if(!L.length)h+='<section class="panel"><p class="muted">No Sleeper leagues for this account this season.</p></section>';
   else{var fb=L.filter(function(x){return x.sport==='nfl'}),bb=L.filter(function(x){return x.sport==='nba'}),ot=L.filter(function(x){return x.sport!=='nfl'&&x.sport!=='nba'});

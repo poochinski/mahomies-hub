@@ -47,7 +47,12 @@ async function pull(leagueId) {
     await Promise.all(Array.from({ length: maxFetch }, (_, i) => i + 1).map(async (w) => {
       // Weeks Sleeper hasn't officially scored yet can still get stat corrections: keep them fresh.
       const age = !isCur || w <= sleeperLast - 1 ? WEEK : w === liveWeek ? 2 * 60 * 1000 : w <= last ? 10 * 60 * 1000 : 30 * 60 * 1000;
-      weeks[w] = await sleeper(`/league/${c.league_id}/matchups/${w}`, { maxAgeMs: age }).catch(() => []);
+      // Sleeper now and then answers a week's matchups with a 404 for a few minutes (seen Oct 19 on two
+      // leagues right after Monday night). Try once more before treating the week as empty.
+      const path = `/league/${c.league_id}/matchups/${w}`;
+      weeks[w] = await sleeper(path, { maxAgeMs: age })
+        .catch(() => new Promise((r) => setTimeout(r, 1500)).then(() => sleeper(path, { maxAgeMs: age })))
+        .catch(() => []);
     }));
     let wb = [], lb = [];
     if (last >= P) {
