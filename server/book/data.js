@@ -322,7 +322,15 @@ export async function gameCenter(week, matchupId) {
       proj: !g ? Math.round(got * 10) / 10 : pj == null ? null : Math.round((got + pj * (1 - prog)) * 10) / 10,
       state, status, opp: opp ? (g.home === nfl ? 'vs ' : '@ ') + opp : '',
       nfl_score: g && g.state !== 'pre' && opp ? `${nfl} ${g.score?.[nfl] ?? 0}–${g.score?.[opp] ?? 0} ${opp}` : '',
-      sc: g && g.state !== 'pre' && opp ? `${g.score?.[nfl] ?? 0}–${g.score?.[opp] ?? 0}` : ''
+      sc: g && g.state !== 'pre' && opp ? `${g.score?.[nfl] ?? 0}–${g.score?.[opp] ?? 0}` : '',
+      // Sleeper-style game line: his team's score first, a W/L once it's final, and while it's
+      // live who has the ball (off = his team, def = the other team) and red-zone drives.
+      ts: g && g.state !== 'pre' ? (g.score?.[nfl] ?? 0) : null,
+      os: g && g.state !== 'pre' && opp ? (g.score?.[opp] ?? 0) : null,
+      res: g && g.state === 'post' && opp ? ((g.score?.[nfl] ?? 0) > (g.score?.[opp] ?? 0) ? 'W' : (g.score?.[nfl] ?? 0) < (g.score?.[opp] ?? 0) ? 'L' : 'T') : '',
+      ball: g && g.state === 'in' && g.sit ? (g.sit.pos === nfl ? 'off' : 'def') : '',
+      dd: g && g.state === 'in' && g.sit ? g.sit.dd : '',
+      rz: !!(g && g.state === 'in' && g.sit && g.sit.pos === nfl && g.sit.rz && pos !== 'DEF')
     };
   };
   const side = (m) => {

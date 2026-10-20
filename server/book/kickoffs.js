@@ -49,7 +49,8 @@ async function fetchKickoffs(season, week, key, hit) {
       clock: Number(e.status?.clock ?? 900),
       detail: e.status?.type?.shortDetail || '', // "Q3 8:12", "Final", "Halftime"…
       home: (() => { const c = (e.competitions?.[0]?.competitors || []).find((x) => x.homeAway === 'home'); const t = c?.team?.abbreviation || ''; return FIX[t] || t; })(),
-      score: Object.fromEntries((e.competitions?.[0]?.competitors || []).map((c) => { const t = c.team?.abbreviation || ''; return [FIX[t] || t, Number(c.score) || 0]; }))
+      score: Object.fromEntries((e.competitions?.[0]?.competitors || []).map((c) => { const t = c.team?.abbreviation || ''; return [FIX[t] || t, Number(c.score) || 0]; })),
+      sit: situation(e)
     })).filter((g) => !Number.isNaN(g.at.getTime()));
     // How much of each game has been played (0 = not started, 1 = final).
     for (const g of games) {
@@ -69,6 +70,19 @@ async function fetchKickoffs(season, week, key, hit) {
     if (hit) return hit.data; // stale beats nothing
     throw err;
   }
+}
+
+// Live games only: who has the ball, down & distance, and whether it's a red-zone drive.
+// ESPN's competitions[0].situation names the team with the ball by its ESPN team id.
+// (Added 2026-10-19 for the Game Center highlight; verify field names on the first live game.)
+export function situation(e) {
+  const c = e?.competitions?.[0], s = c?.situation;
+  if (!s || e?.status?.type?.state !== 'in') return null;
+  const abbr = {};
+  for (const x of c.competitors || []) { const t = x.team?.abbreviation || ''; abbr[String(x.team?.id ?? x.id ?? '')] = FIX[t] || t; }
+  const pos = abbr[String(s.possession ?? '')] || '';
+  if (!pos) return null;
+  return { pos, dd: s.downDistanceText || s.shortDownDistanceText || '', rz: !!s.isRedZone };
 }
 
 // ---------- Pacific-time helpers ----------

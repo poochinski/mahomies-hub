@@ -263,8 +263,18 @@ function gcCell(p,side){if(!p)return '<div class="gc-p '+side+'"></div>';
   return '<div class="gc-p '+side+'"'+(p.pid?' data-pl="'+esc(p.pid)+'"':'')+'>'+
    '<span class="gc-pp">'+(p.pid?plPic(p.pid,p.name,22,p.pos,p.espn):'')+'</span>'+
    '<span class="gc-tx"><b'+(p.pid?' class="plk"':'')+'>'+esc(p.name)+'</b>'+
-   '<span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+(p.opp?' '+esc(p.opp):'')+inj+'</span>'+
-   '<span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(p.status)+'</span></span></div>'}
+   '<span>'+esc([p.pos,p.nfl].filter(Boolean).join(' · '))+inj+'</span>'+
+   '<span class="gc-st '+st+'">'+(st==='live'?'<i></i>':'')+esc(gcLine(p,st))+'</span>'+
+   (st==='live'&&p.ball?'<span class="gc-ball'+(p.rz?' rz':'')+'">'+(p.rz?'<em>Red zone</em>':'')+esc(p.ball==='off'?'Has the ball'+(p.dd?' · '+p.dd:''):'On defense')+'</span>':'')+
+   '</span></div>'}
+/* Sleeper-style game line (2026-10-19): live "Q3 9:45 · 14–10 @ LV", final "W 26–19 vs NYJ", not started "Sun 1:25 PM @ LV". */
+function gcClock(t){var m=/^(\d+:\d+)\s*-\s*(\d)(st|nd|rd|th)$/i.exec(String(t||''));if(m)return 'Q'+m[2]+' '+m[1];m=/^(\d+:\d+)\s*-\s*OT$/i.exec(String(t||''));return m?'OT '+m[1]:String(t||'Live')}
+function gcLine(p,st){
+  if(st==='bye')return 'Bye';
+  if(st==='pre')return [p.status,p.opp].filter(Boolean).join(' ');
+  var sc=p.ts!=null&&p.os!=null?p.ts+'–'+p.os:(p.sc||'');
+  if(st==='live')return gcClock(p.status)+(sc?' · '+sc:'')+(p.opp?' '+p.opp:'');
+  return (p.res?p.res+' ':'Final ')+sc+(p.opp?' '+p.opp:'')}
 function slotShort(s){return String(s||'').replace('SUPER_FLEX','SF').replace('WRRB_FLEX','W/R').replace('REC_FLEX','RFX').replace('FLEX','FLX')}
 /* What he actually did. Before kickoff there's nothing to show, so his season so far goes there instead. */
 function gcStat(p,side){if(!p||p.empty)return '<div class="gc-sl '+side+'"></div>';
@@ -307,7 +317,8 @@ function gcHtml(){var d=GC.data,L=D.lines.find(function(l){return l.id===GC.id})
   h+='<div class="gc-rows"><div class="gc-r gc-hd"><span>'+esc(team(A.user))+'</span><span></span><span></span><span></span><span>'+esc(team(B.user))+'</span></div>';
   var n=Math.max(A.starters.length,B.starters.length);
   for(var i=0;i<n;i++){var a=A.starters[i],b=B.starters[i],ap=a&&!a.empty?a.pts:-1,bp=b&&!b.empty?b.pts:-1;
-    h+='<div class="gc-r">'+gcCell(a,'a')+gcPts(a,'a',ap>bp&&ap>0)+'<span class="gc-slot">'+esc(slotShort((a||b).slot))+'</span>'+gcPts(b,'b',bp>ap&&bp>0)+gcCell(b,'b')+gcStat(a,'a')+gcStat(b,'b')+'</div>'}
+    var la=a&&!a.empty&&a.state==='in',lb=b&&!b.empty&&b.state==='in';
+    h+='<div class="gc-r'+(la?' on-a':'')+(lb?' on-b':'')+(la&&a.rz?' rz-a':'')+(lb&&b.rz?' rz-b':'')+'">'+gcCell(a,'a')+gcPts(a,'a',ap>bp&&ap>0)+'<span class="gc-slot">'+esc(slotShort((a||b).slot))+'</span>'+gcPts(b,'b',bp>ap&&bp>0)+gcCell(b,'b')+gcStat(a,'a')+gcStat(b,'b')+'</div>'}
   h+='</div><p class="gc-key">Big number = points so far · small = projected final (points + Sleeper\'s projection for the rest of his game). Under each name is his real stat line this week — before his game starts you get his season instead.</p>';
   var bench=function(X){var tot=X.bench.reduce(function(s,p){return s+(p.pts||0)},0);return '<details class="gc-bench"><summary>'+esc(team(X.user))+' bench · '+f1(tot)+' pts</summary>'+
     X.bench.map(function(p){return '<div class="gc-br">'+gcCell(p,'a')+gcPts(p,'b',false)+gcStat(p,'bn')+'</div>'}).join('')+'</details>'};
@@ -443,6 +454,13 @@ function slotSummary(desk){
   if(you>him)return 'Ahead '+you+'–'+him;
   return 'Behind '+him+'–'+you;
 }
+/* Lineup chart labels (Jayson, 2026-10-19): a finished 0 is "0.0", not a dot.
+   Played (live or final) → points, even 0 · not played yet → kickoff day (SUN/MON/THU) · bye → BYE · no one in the slot → red dash. */
+function slotNum(p,v){if(!p)return '';if(p.e)return '—';if(p.st==='bye')return 'BYE';
+  if(p.st==='in'||p.st==='post')return f1(v);
+  if(p.k){var d=new Date(p.k);if(!isNaN(d))return d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase()}
+  return '·'}
+function slotNumCls(p){return !p?'':p.e?' emp':(p.st==='pre'||p.st==='bye')?' wait':''}
 function slotBlock(desk){
   if(!desk.mine.length)return '';
   var n=Math.max(desk.mine.length,desk.his.length),vals=[];
@@ -450,9 +468,11 @@ function slotBlock(desk){
   var mx=Math.max.apply(null,vals.concat([1])),cols='';
   for(var i=0;i<n;i++){var a=desk.mine[i],b=desk.his[i],lab=(a&&a.s)||(b&&b.s)||'';
     var ah=slotPts(a),bh=slotPts(b);
-    var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;return '<i class="'+cls+'" style="'+(pct?'height:'+pct+'%':'height:0;min-height:0')+'"></i>'};
-    var num='<i class="you">'+(ah>0?f1(ah):'·')+'</i><i class="him">'+(bh>0?f1(bh):'·')+'</i>';
-    cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><b class="mh-n">'+num+'</b><small>'+esc(lab)+'</small></span>'}
+    var bar=function(p,v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0,played=p&&!p.e&&(p.st==='in'||p.st==='post');
+      return '<i class="'+cls+(pct?'':played?' zero':'')+'" style="'+(pct?'height:'+pct+'%':played?'height:3px;min-height:3px':'height:0;min-height:0')+'"></i>'};
+    var num='<i class="you'+slotNumCls(a)+'">'+slotNum(a,ah)+'</i><i class="him'+slotNumCls(b)+'">'+slotNum(b,bh)+'</i>';
+    var on=(a&&!a.e&&a.st==='in')||(b&&!b.e&&b.st==='in');
+    cols+='<span class="mh-col'+(on?' on':'')+'"><span class="mh-bars">'+bar(a,ah,'you')+bar(b,bh,'him')+'</span><b class="mh-n">'+num+'</b><small>'+esc(lab)+'</small></span>'}
   var sum=slotSummary(desk);
   return '<button type="button" class="mh-slots" data-mh="slots">'+(sum?'<div class="mh-sum">'+sum+'</div>':'')+'<span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
 }
@@ -507,7 +527,7 @@ function kickTxt(iso){
   return d.toDateString()===new Date().toDateString()?t:d.toLocaleDateString([],{weekday:'short'})+' '+t;
 }
 function slotTag(p){
-  if(p.st==='in')return '<em class="mh-tag live"><u class="mh-dot"></u>'+(p.c?esc(p.c):'LIVE')+(p.j!=null?' · on pace '+f1(p.j):'')+'</em>';
+  if(p.st==='in')return '<em class="mh-tag live"><u class="mh-dot"></u>'+(p.c?esc(gcClock(p.c)):'LIVE')+(p.j!=null?' · on pace '+f1(p.j):'')+'</em>';
   if(p.st==='pre')return '<em class="mh-tag">'+(p.k?esc(kickTxt(p.k)):'Not started')+(p.j!=null?' · proj '+f1(p.j):'')+'</em>';
   if(p.st==='post')return '<em class="mh-tag">Final</em>';
   if(p.st==='bye')return '<em class="mh-tag">Bye</em>';
@@ -2518,7 +2538,7 @@ function topNow(){
   PULSE.games.forEach(function(g){['a','b'].forEach(function(k){(g['slots_'+k]||[]).forEach(function(p){if(!p.e&&p.id&&Number(p.p)>0)all.push({p:p,u:g[k]})})})});
   if(all.length<3)return '';all.sort(function(a,b){return b.p.p-a.p.p});
   return '<section class="panel tight"><div class="ph"><div><div class="kicker">Week '+D.league.week+' · every starter in the league</div><h2>Top performers</h2></div></div><div class="tp-grid">'+all.slice(0,3).map(function(x,i){var p=x.p;
-    return '<button type="button" class="tp" data-plw="'+esc(p.id)+'"><span class="tp-rk">'+(i+1)+'</span>'+plPic(p.id,p.n,52,p.s)+'<b>'+esc(p.n)+'</b><span class="tp-pts num">'+f1(p.p)+'</span><span class="tp-own">'+av(x.u,16)+esc(team(x.u))+'</span>'+(p.st==='in'?'<span class="tp-live"><i></i>'+esc(p.c||'Live')+'</span>':p.st==='post'?'<span class="tp-fin">Final</span>':'')+'</button>'}).join('')+'</div></section>'}
+    return '<button type="button" class="tp" data-plw="'+esc(p.id)+'"><span class="tp-rk">'+(i+1)+'</span>'+plPic(p.id,p.n,52,p.s)+'<b>'+esc(p.n)+'</b><span class="tp-pts num">'+f1(p.p)+'</span><span class="tp-own">'+av(x.u,16)+esc(team(x.u))+'</span>'+(p.st==='in'?'<span class="tp-live"><i></i>'+esc(p.c?gcClock(p.c):'Live')+'</span>':p.st==='post'?'<span class="tp-fin">Final</span>':'')+'</button>'}).join('')+'</div></section>'}
 /* One-time note for the league: where things moved in the new layout. */
 function newLookNote(){if(store('tour3'))return '';
   return '<section class="nl"><button type="button" class="nl-x" data-tour="1" aria-label="Dismiss">✕</button><b>New look</b><p><b>League</b> is this season: standings, every score, power, playoff odds and the wire. <b>Hall</b> is the history: record book, all-time, rivals, awards, seasons and the draft. Your stuff lives in <b>Me</b>.</p></section>'}

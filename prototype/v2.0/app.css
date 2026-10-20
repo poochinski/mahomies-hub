@@ -1437,3 +1437,33 @@ button.mx-card{width:100%;color:inherit;font:inherit;text-align:left}
 .nl p b{font-weight:750}
 .nl-x{position:absolute;top:10px;right:10px;width:30px;height:30px;border:0;border-radius:50%;background:rgba(0,0,0,.1);color:var(--volt-ink);font:600 13px var(--body)}
 @media (max-width:380px){.ut{font-size:13px}.pagehead h1{font-size:42px}.me-hx h1{font-size:32px}.wl-bal{font-size:58px}}
+
+/* Lineup chart: zero, waiting, empty (2026-10-19) */
+.mh-bars i.zero{opacity:.55}
+.mh-n i.wait{font-size:8px;letter-spacing:.02em;color:var(--faint)}
+.mh-n i.emp{color:var(--loss)}
+
+/* Game Center (2026-10-19): you can see who's on the field. A live player's half of the row
+   lights up; a red-zone drive lights it red. Names are full ink (they inherited the faint
+   colour of .gc-p span before). */
+:root{--field:#2fe08a}
+html[data-theme="light"]{--field:#0b9a55}
+.gc-p .gc-tx,.gc-p b{color:var(--ink)}
+.gc-r{position:relative;isolation:isolate;padding:10px 0}
+.gc-r.on-a::before,.gc-r.on-b::before,.gc-r.on-a::after,.gc-r.on-b::after{content:"";position:absolute;z-index:-1;top:3px;bottom:3px;border-radius:16px;pointer-events:none}
+.gc-r.on-a::before{left:-8px;right:calc(50% + 17px);background:color-mix(in srgb,var(--field) 11%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--field) 40%,transparent),0 6px 18px -10px color-mix(in srgb,var(--field) 60%,transparent)}
+.gc-r.on-b::after{right:-8px;left:calc(50% + 17px);background:color-mix(in srgb,var(--field) 11%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--field) 40%,transparent),0 6px 18px -10px color-mix(in srgb,var(--field) 60%,transparent)}
+.gc-r.rz-a::before,.gc-r.rz-b::after{background:color-mix(in srgb,var(--live) 11%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--live) 50%,transparent),0 6px 18px -10px color-mix(in srgb,var(--live) 60%,transparent)}
+.gc-r.on-a .gc-p.a b,.gc-r.on-b .gc-p.b b{font-weight:750}
+.gc-st{display:block}
+.gc-st.live{color:var(--ink);font-weight:650}
+.gc-ball{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px;font:600 10px var(--body)!important;color:var(--field)!important;white-space:normal!important}
+.gc-p.b .gc-ball{justify-content:flex-end}
+.gc-ball.rz{color:var(--live)!important}
+.gc-ball em{font:800 9px/1.5 var(--body);font-style:normal;letter-spacing:.06em;text-transform:uppercase;padding:0 6px;border-radius:99px;background:var(--live);color:#fff}
+/* Home lineup chart: live column */
+.mh-col.on{background:color-mix(in srgb,var(--field) 12%,var(--panel));border-color:color-mix(in srgb,var(--field) 45%,transparent);position:relative}
+.mh-col.on::after{content:"";position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--live);animation:livepulse 1.4s ease-in-out infinite}
+/* Slot vs slot: live rows get the same light */
+.mh-line.on{background:color-mix(in srgb,var(--field) 10%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--field) 45%,transparent)}
+.gc-p .gc-st{white-space:normal!important;overflow:visible!important;line-height:1.3}
