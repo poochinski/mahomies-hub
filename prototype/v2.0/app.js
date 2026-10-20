@@ -39,7 +39,7 @@ var S={tab:'home',lseg:'season',rec:'high',rf:'all',resMore:false,recMore:false,
 S.h2a=S.me;
 /* On Railway the page sits next to our server: turn on live lineups + real avatars. */
 var LIVE=false;
-try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render();loadHub();loadPulse();loadWire();bookLoad()}}).catch(function(){})}catch(e){}
+try{fetch('/api/health',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.app==="Mahomie's Hub"){LIVE=true;render();loadHub();loadPulse();loadWire();bookLoad();loadLeagues()}}).catch(function(){})}catch(e){}
 
 /* League Wire (v2.3): trades, waivers and adds this season. */
 var WIRE=null;
@@ -57,7 +57,7 @@ function wireRow(x){
     if(sd.got.length)body='<div class="wr-sub">'+(sd.gave.length?'Dropped '+wireNames(sd.gave)+' · ':'')+(sd.value||sd.got.some(function(p){return p.starts})?f1(sd.value)+' pts in the lineup since':'Hasn\'t started yet')+'</div>';
   }
   return '<div class="wr"><div class="wr-top">'+head+'<span class="wr-wk">Wk '+x.week+'</span></div>'+body+'</div>'}
-function wireHome(){if(!WIRE||!WIRE.moves.length)return '';
+function wireHome(){if(!isHomeLg()||!WIRE||!WIRE.moves.length)return '';
   return '<section class="panel tight"><div class="ph"><div><div class="kicker">Trades, waivers, adds · '+WIRE.season+'</div><h2>League Wire</h2></div><button class="link" data-wire="1">All '+WIRE.total+' →</button></div>'+WIRE.moves.slice(0,4).map(wireRow).join('')+'</section>'}
 function wireSheet(){var W=WIRE;if(!W)return '<p class="muted">Loading…</p>';
   var spend=Object.keys(W.faab||{}).map(function(u){return {u:u,v:W.faab[u]}}).sort(function(a,b){return b.v-a.v});
@@ -65,9 +65,9 @@ function wireSheet(){var W=WIRE;if(!W)return '<p class="muted">Loading…</p>';
    '<p class="sub" style="font-size:12px">"In the lineup since" counts only points a player scored as a starter for his new team, from the week of the move.</p></section>';
   if(spend.length)h+='<section class="panel"><div class="ph"><div><div class="kicker">Waiver budget spent</div><h2>FAAB</h2></div></div><div class="rows">'+spend.map(function(x){return '<div class="row">'+whoT(x.u,'',24)+'<span class="val" style="font-size:15px">$'+x.v+'</span></div>'}).join('')+'</div></section>';
   return h+'<section class="panel tight">'+W.moves.map(wireRow).join('')+'</section>'}
-function loadHub(){
-  fetch('/api/hub',{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
-    if(!j||!j.league||!j.seasons)return;
+function loadHub(){var lid=isHomeLg()?'':LG.id;if(lid&&LG.loading)return;
+  fetch('/api/hub'+(lid?'?league='+encodeURIComponent(lid):''),{headers:{accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){
+    if(!j||!j.league||!j.seasons)return;if((isHomeLg()?'':LG.id)!==lid)return;
     D=j;ids=Object.keys(D.managers);
     S.hw=D.league.last_scored||1;S.aws=CUR();S.labs=CUR();S.h2b=null;
     render();
@@ -96,7 +96,7 @@ var LAST_BACK=0;
 function backInApp(){if(!LIVE||document.visibilityState!=='visible')return;var t=Date.now();if(t-LAST_BACK<3000)return;LAST_BACK=t;
   loadPulse();if(document.getElementById('gc')&&$('#sheet').classList.contains('open'))gcLoad();if(document.getElementById('pw')&&$('#sheet').classList.contains('open'))pwLoad();}
 document.addEventListener('visibilitychange',backInApp);window.addEventListener('focus',backInApp);window.addEventListener('pageshow',backInApp);
-function pulseForWeek(){return PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
+function pulseForWeek(){return isHomeLg()&&PULSE&&PULSE.phase!=null&&(!PULSE.week||PULSE.week===D.league.week)}
 function gsig(j){return (j&&j.games||[]).map(function(g){var ss=function(k){return (g['slots_'+k]||[]).map(function(p){return p.p}).join(',')};return [g.id,g.pts_a,g.pts_b,g.proj_a,g.proj_b,g.now_a,g.left_a,g.now_b,g.left_b,g.on_a,g.on_b,(g.warn_a||[]).length,(g.warn_b||[]).length,g.empty_a,g.empty_b,ss('a'),ss('b')].join(':')}).join('|')}
 function savedTeam(){return (store('auth')||{}).user_id||store('me')||''}
 // Only the pulse for the week the page is showing (2026-10-19: Sleeper rolls to the next week at
@@ -341,7 +341,7 @@ function nav(f){if($('#sheet').classList.contains('open')){var b=$('#sheetBody')
 function shBack(){var s=SH.pop();if(!s)return;openSheet(s.html);$('#sheet').scrollTop=s.top;var q=document.getElementById('srQ');if(q)q.value=SR.q;
   if(s.gc){GC.id=s.gc;gcLoad();gcTimer()}}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-brk]');if(!t||!t.dataset.brk)return;e.stopPropagation();e.preventDefault();var pid=t.dataset.brk;nav(function(){brkOpen(pid)})},true);
-document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl)return;e.stopPropagation();e.preventDefault();nav(function(){plOpen(t.dataset.pl)})},true);
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-pl]');if(!t||!t.dataset.pl||!isHomeLg())return;e.stopPropagation();e.preventDefault();nav(function(){plOpen(t.dataset.pl)})},true);
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-bsh],[data-shback],b[data-team]');if(!t)return;e.stopPropagation();
   if(t.dataset.team){var u=t.dataset.team;nav(function(){teamOpen(u)});return}
   if(t.dataset.bsh!=null){nav(function(){openSheet(benchSheet(+t.dataset.bsh))});return}
@@ -491,7 +491,7 @@ function formBlock(me,opp){
   var end=D.league.last_scored||0;if(end<1)return '';
   var start=Math.max(1,end-3),weeks=[],max=1,w;
   for(w=start;w<=end;w++)weeks.push(w);
-  loadProjHist(weeks);
+  if(isHomeLg())loadProjHist(weeks);
   weeks.forEach(function(w){var a=P26(w,me),b=P26(w,opp);if(a!=null)max=Math.max(max,a);if(b!=null)max=Math.max(max,b)});
   function row(u,mine){
     var bars=weeks.map(function(w){var p=P26(w,u),h=p==null?0:Math.max(4,Math.round(p/max*44)),g=p==null?-1:gi(CUR(),w,u);
@@ -984,6 +984,7 @@ function recGame(k,x){var t=recType(k);
   if(t==='team'||t==='player')return gi(x.s,x.w,x.uid);
   if(t==='game')return gi(x.s,x.w,x.win);return -1}
 function records(){
+  if(isFO(S.rec)&&!isHomeLg())S.rec='high';
   if(isFO(S.rec))return foRecords();
   if(isCA(S.rec))return caRecords();
   var k=S.rec,list=recList(k),t=recType(k),name=RECS.find(function(r){return r[0]===k})[1];
@@ -1151,9 +1152,9 @@ function recPickSheet(){
   var pk=function(k,label){return '<button type="button" class="pk'+(k===S.rec?' on':'')+'" data-rec="'+k+'">'+esc(label)+'</button>'};
   var h='<div class="ph" style="margin:0"><div><div class="kicker">Record book</div><h2>Pick a record</h2></div></div>'+
    groups.map(function(g){return '<div class="kicker" style="margin-top:4px">'+g[0]+'</div><div class="pick-grid">'+g[1].map(function(k){return pk(k,RECS.find(function(x){return x[0]===k})[1])}).join('')+'</div>'}).join('');
-  h+='<div class="fo-div"><b>Career</b><span>Everything a manager has done since 2023</span></div>'+
+  h+='<div class="fo-div"><b>Career</b><span>Everything a manager has done since '+esc(D.league.first)+'</span></div>'+
    CARECS.map(function(g){return '<div class="kicker" style="margin-top:4px">'+g[0]+'</div><div class="pick-grid">'+g[1].map(function(x){return pk(x[0],x[1])}).join('')+'</div>'}).join('');
-  h+='<div class="fo-div"><b>Front office</b><span>How you built the team, not how it scored</span></div>'+
+  if(isHomeLg())h+='<div class="fo-div"><b>Front office</b><span>How you built the team, not how it scored</span></div>'+
    FORECS.map(function(g){return '<div class="kicker" style="margin-top:4px">'+esc(g[0])+'</div><div class="pick-grid">'+g[1].map(function(x){return pk(x[0],x[1])}).join('')+'</div>'}).join('');
   return h;
 }
@@ -2175,7 +2176,8 @@ if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash}; // loca
 /* ---------- ME / PROFILE ---------- */
 function profile(u,isMe){
   var a=D.alltime.find(function(x){return x.uid===u});var m=M(u);
-  var h='<section class="hero">'+(isMe?'<div class="eyebrow">'+D.league.first+' – '+CUR()+' · career</div>':'<div style="display:flex;gap:12px;align-items:center">'+av(u,56)+'<div style="min-width:0"><div class="eyebrow">Manager'+(m.active?'':' · former')+'</div><h1 style="font-size:24px;letter-spacing:-.7px;margin:4px 0 2px;overflow-wrap:anywhere">'+esc(team(u))+'</h1><p class="sub">'+esc(m.name)+'</p></div></div>'+(m.active?'<button type="button" class="link" data-team="'+u+'">This season: roster &amp; schedule ›</button>':''))+
+  if(!a)return '<section class="panel"><p class="muted">No games on record for this team yet.</p></section>';
+  var h='<section class="hero">'+(isMe?'<div class="eyebrow">'+D.league.first+' – '+CUR()+' · career</div>':'<div style="display:flex;gap:12px;align-items:center">'+av(u,56)+'<div style="min-width:0"><div class="eyebrow">Manager'+(m.active?'':' · former')+'</div><h1 style="font-size:24px;letter-spacing:-.7px;margin:4px 0 2px;overflow-wrap:anywhere">'+esc(team(u))+'</h1><p class="sub">'+esc(m.name)+'</p></div></div>'+(m.active&&isHomeLg()?'<button type="button" class="link" data-team="'+u+'">This season: roster &amp; schedule ›</button>':''))+
    '<div class="tiles"><div class="tile t-y"><small>Titles</small><strong>'+a.titles.length+'</strong><span>'+(a.titles.join(', ')||'Not yet')+'</span></div>'+
    '<div class="tile t-b"><small>Career W-L</small><strong class="num">'+a.w+'-'+a.l+'</strong><span>'+(a.pct*100).toFixed(1)+'% · '+f1(a.avg)+' ppg</span></div>'+
    '<button type="button" class="tile t-g" data-game="'+gi(a.best.s,a.best.w,u)+'"><small>Best week ›</small><strong class="num">'+f2(a.best.v)+'</strong><span>'+sw(a.best.s,a.best.w)+'</span></button>'+
@@ -2198,7 +2200,7 @@ function profile(u,isMe){
 /* ---------- TEAM PAGE (v2.3): this season for one team ---------- */
 var TM={uid:null,data:null};
 function stOf(u){return ((D.seasons[CUR()]||{}).standings||[]).filter(function(x){return x.uid===u})[0]||null}
-function teamOpen(uid){TM.uid=uid;TM.data=null;openSheet(teamHtml(uid,null));if(!LIVE)return;
+function teamOpen(uid){if(!isHomeLg()){openSheet(profile(uid,false)+CLOSE);return}TM.uid=uid;TM.data=null;openSheet(teamHtml(uid,null));if(!LIVE)return;
   fetch('/api/team/'+encodeURIComponent(uid),{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(TM.uid!==uid)return;TM.data=d;var el=document.getElementById('tm');if(el)el.outerHTML=teamHtml(uid,d)})
    .catch(function(){var el=document.getElementById('tmErr');if(el)el.textContent='Couldn\'t load the roster right now.'})}
 function gotTxt(g){if(!g)return '';if(g.how==='draft')return 'Drafted R'+g.round+(g.pick?' · #'+g.pick:'');if(g.how==='trade')return 'Trade · Wk '+g.week;if(g.how==='waiver')return 'Waivers'+(g.bid!=null?' $'+g.bid:'')+' · Wk '+g.week;return 'Free agent · Wk '+g.week}
@@ -2286,7 +2288,7 @@ function gameSheet(i){
 
 function loadLineups(i){
   if(!LIVE)return;var g=D.games[i];
-  fetch('/api/game?season='+g.s+'&week='+g.w+'&users='+g.win+','+g.lose).then(function(r){return r.json()}).then(function(d){
+  fetch('/api/game?season='+g.s+'&week='+g.w+'&users='+g.win+','+g.lose+(isHomeLg()?'':'&league='+encodeURIComponent(LG.id))).then(function(r){return r.json()}).then(function(d){
     var el=document.getElementById('lineups');if(!el)return;
     if(!d||!d.teams||d.error){el.innerHTML='<p class="err">Couldn\'t load lineups: '+esc(d&&d.error||'unknown error')+'</p>';return}
     el.innerHTML=lineupHtml(g,d);
@@ -2320,7 +2322,7 @@ function byeSheet(key){
 }
 function loadByeLineup(key){
   if(!LIVE)return;var p=key.split('|');
-  fetch('/api/game?season='+p[0]+'&week='+p[1]+'&users='+p[2]).then(function(r){return r.json()}).then(function(d){
+  fetch('/api/game?season='+p[0]+'&week='+p[1]+'&users='+p[2]+(isHomeLg()?'':'&league='+encodeURIComponent(LG.id))).then(function(r){return r.json()}).then(function(d){
     var el=document.getElementById('lineups');if(!el)return;var T=d&&d.teams&&d.teams[0];
     if(!T||!T.starters.length){el.innerHTML='<p class="err">Couldn\'t load the lineup.</p>';return}
     var row=function(x){return '<div class="bn"><div class="pl a"><b>'+esc(x.name)+'</b><span>'+esc((x.slot?x.slot.replace('FLEX','FLX')+' · ':'')+[x.pos,x.team].filter(Boolean).join(' · '))+'</span></div><span class="pp hi">'+f1(x.pts)+'</span></div>'};
@@ -2443,7 +2445,8 @@ function shareSeason(s){var x=D.seasons[s];showShare({eyebrow:s+' season',title:
      transactional ones (bet slip, PIN, commish forms, share images) stay bottom sheets.
    ===================================================================================== */
 var HALLSEG={records:1,alltime:1,h2h:1,awards:1,history:1,draft:1,lab:1};
-function hallList(){return [
+function hallList(){return hallAll().filter(function(x){return isHomeLg()||(x[0]!=='draft'&&x[0]!=='lab')})}
+function hallAll(){return [
   ['records','Record book','Every all-time board: scores, games, careers and the front office.','📖'],
   ['alltime','All-time','Every manager since '+D.league.first+', ranked any way you like.','👑'],
   ['h2h','Rivals','Pick any two teams. Every meeting, every margin.','⚔️'],
@@ -2456,6 +2459,7 @@ function pageHead(o){
 function utabs(items,cur,attr){
   return '<nav class="utabs" role="tablist">'+items.map(function(x){var on=cur===x[0];return '<button type="button" role="tab" aria-selected="'+on+'" class="ut'+(on?' on':'')+'" data-'+attr+'="'+x[0]+'">'+x[1]+(x[2]?'<i class="ut-n">'+x[2]+'</i>':'')+'</button>'}).join('')+'</nav>'}
 function tabTitle(){
+  if(S.tab==='leagues')return 'Your leagues';
   if(S.tab==='league')return 'League';
   if(S.tab==='records'){var x=S.hall&&hallList().filter(function(h){return h[0]===S.hall})[0];return x?x[1]:'Hall of Fame'}
   if(S.tab==='book')return 'Sportsbook';
@@ -2473,6 +2477,74 @@ function spark(arr,w,h){arr=(arr||[]).filter(function(v){return v!=null});if(arr
   var mx=Math.max.apply(null,arr),mn=Math.min.apply(null,arr),r=mx-mn||1,pts=arr.map(function(v,i){return (i*(w-4)/(arr.length-1)+2).toFixed(1)+','+(h-2-(v-mn)/r*(h-4)).toFixed(1)}).join(' ');
   var lp=pts.split(' ').pop().split(',');
   return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="'+lp[0]+'" cy="'+lp[1]+'" r="2.4" fill="currentColor"/></svg>'}
+
+
+/* ---------------- LEAGUES (2026-10-19): every Sleeper league you're in, football + basketball ----------------
+   The picker comes from your Sleeper user id (the team you picked / logged in as in Rollin' with Mahomies, or
+   any Sleeper username in Settings). Opening another league swaps D for /api/hub?league=<id>; Rollin' with
+   Mahomies stays the home league and keeps everything that's only built for it (the Book, live Game Center,
+   Slot vs slot, the Wire, the Draft room, the Lab, Front office records, player cards, player search). */
+var LG={id:'',home:true,sport:'nfl',name:'',loading:false,err:''};
+var HOME_D=null,HOME_ME=null;
+var LGS={list:store('lgs')||null,busy:false,err:'',at:0};
+function isHomeLg(){return LG.home!==false}
+function sleeperId(){var s=store('sid');return (s&&s.id)||(AUTH&&AUTH.user_id)||store('me')||(isHomeLg()?D:(HOME_D||D)).me||''}
+function sleeperName(){var s=store('sid');if(s&&s.name)return s.name;var H=isHomeLg()?D:(HOME_D||D),u=sleeperId();return H.managers[u]?H.managers[u].name:''}
+function loadLeagues(force){var uid=sleeperId();if(!uid||!LIVE||LGS.busy)return;if(!force&&LGS.at&&Date.now()-LGS.at<60000)return;LGS.busy=true;
+  fetch('/api/leagues?user='+encodeURIComponent(uid),{headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(j){LGS.busy=false;LGS.at=Date.now();
+    if(j&&j.leagues){LGS.list=j.leagues;LGS.err='';store('lgs',j.leagues)}else LGS.err=(j&&j.error)||'Couldn\'t load your leagues.';
+    if(S.tab==='leagues'&&!$('#sheet').classList.contains('open'))render()})
+   .catch(function(){LGS.busy=false;LGS.err='Couldn\'t reach Sleeper just now.';if(S.tab==='leagues')render()})}
+function lgPic(url,name,sz,cls){var ini=String(name||'?').replace(/[^A-Za-z0-9 ]/g,'').trim().split(/\s+/).map(function(w){return w[0]}).join('').slice(0,2).toUpperCase()||'?';
+  return '<span class="'+cls+'" style="width:'+sz+'px;height:'+sz+'px">'+esc(ini)+(url&&LIVE?'<img src="'+esc(url)+'" alt="" loading="lazy" onerror="this.remove()">':'')+'</span>'}
+function lgRow(x){
+  var a=x.me,b=x.opp,cur=(x.home&&isHomeLg())||(!isHomeLg()&&x.id===LG.id);
+  var h='<button type="button" class="lgc'+(cur?' cur':'')+'" data-lg="'+esc(x.id)+'">'+lgPic(x.avatar,x.name,48,'lg-pic')+
+    '<span class="lg-tx"><b class="lg-n">'+esc(x.name)+'</b><small class="lg-f">'+esc(x.format)+(x.home?' · <em>Home league</em>':'')+'</small>';
+  if(a&&b){var pa=Number(a.pts)||0,pb=Number(b.pts)||0,tot=pa+pb,lead=pa===pb?'':pa>pb?'a':'b';
+    h+='<span class="lg-names"><span><b>'+esc(a.team)+'</b> <i>('+a.w+'-'+a.l+')</i></span><span><i>('+b.w+'-'+b.l+')</i> <b>'+esc(b.team)+'</b></span></span>'+
+      '<span class="lg-sc">'+lgPic(a.avatar,a.team,24,'lg-av')+'<strong class="num'+(lead==='a'?' up':'')+'">'+f2(pa)+'</strong>'+
+      '<span class="lg-bar">'+(tot>0?'<i style="width:'+Math.round(pa/tot*100)+'%"></i>':'')+'</span>'+
+      '<strong class="num'+(lead==='b'?' up':'')+'">'+f2(pb)+'</strong>'+lgPic(b.avatar,b.team,24,'lg-av')+'</span>';
+  } else if(a)h+='<span class="lg-solo">'+esc(a.team)+' · '+a.w+'-'+a.l+(x.week?' · no game this week':'')+'</span>';
+  return h+'</span>'+CHEV+'</button>'}
+function leaguesV3(){
+  var uid=sleeperId(),L=LGS.list,nm=sleeperName();
+  if(!LGS.at)loadLeagues();
+  var h=pageHead({eb:'Sleeper'+(nm?' · '+esc(nm):''),title:'Your leagues'});
+  if(!uid)h+='<section class="panel"><p class="muted">Pick your team in Me first, or add your Sleeper username below.</p></section>';
+  else if(!L){h+='<section class="lg-sec">'+[1,2,3].map(function(){return '<div class="lgc sk"><span class="lg-pic"></span><span class="lg-tx"><b class="sk-l"></b><small class="sk-l s"></small><span class="sk-l"></span></span></div>'}).join('')+'</section>';
+    if(LGS.err)h+='<p class="err">'+esc(LGS.err)+'</p>'}
+  else if(!L.length)h+='<section class="panel"><p class="muted">No Sleeper leagues for this account this season.</p></section>';
+  else{var fb=L.filter(function(x){return x.sport==='nfl'}),bb=L.filter(function(x){return x.sport==='nba'}),ot=L.filter(function(x){return x.sport!=='nfl'&&x.sport!=='nba'});
+    if(fb.length)h+='<section class="lg-sec"><div class="lg-h"><span>🏈</span>Football</div>'+fb.map(lgRow).join('')+'</section>';
+    if(bb.length)h+='<section class="lg-sec"><div class="lg-h"><span>🏀</span>Basketball</div>'+bb.map(lgRow).join('')+'</section>';
+    if(ot.length)h+='<section class="lg-sec"><div class="lg-h"><span>🏆</span>More</div>'+ot.map(lgRow).join('')+'</section>'}
+  h+='<section class="lg-acct">'+(S.sidEdit?'<label class="fld"><span>Sleeper username</span><input id="sidName" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="e.g. Poochinski" value=""></label><div class="lg-acct-b"><button type="button" class="cta" data-sidgo="1">Show my leagues</button>'+(store('sid')?'<button type="button" class="ghost" data-sidclear="1">Go back to my Mahomie\'s Hub team</button>':'')+'</div>'+(S.sidErr?'<p class="err">'+esc(S.sidErr)+'</p>':''):
+    '<span>Leagues for <b>'+esc(nm||'your Sleeper account')+'</b> this season, straight from Sleeper.</span><button type="button" class="link" data-sidedit="1">Use a different Sleeper account</button>')+'</section>';
+  return h+foot()}
+function leagueReset(){S.hw=D.league.last_scored||1;S.aws=CUR();S.labs=CUR();S.h2a=S.me;S.h2b=null;S.lseg='season';S.hall=null;S.scw=null;S.desk=null;
+  if(isFO(S.rec)||!isHomeLg())S.rec='high';S.rf='all';S.recMore=false;S.drs=null;S.ss=null;S.sw=null}
+function openLeague(id){
+  var x=(LGS.list||[]).filter(function(l){return l.id===id})[0]||{};
+  closeSheetQuiet();
+  if(x.home){if(!isHomeLg()){D=HOME_D||D;ids=Object.keys(D.managers);S.me=HOME_ME||S.me}
+    LG={id:id,home:true,sport:'nfl',name:x.name||'',loading:false,err:''};store('lg','');leagueReset();go('home');loadHub();return}
+  if(isHomeLg()){HOME_D=D;HOME_ME=S.me}
+  LG={id:id,home:false,sport:x.sport||'nfl',name:x.name||'League',loading:true,err:''};store('lg',id);
+  S.tab='home';render();window.scrollTo(0,0);try{history.replaceState(null,'','#home')}catch(e){}
+  fetchLeague(id)}
+function fetchLeague(id){
+  fetch('/api/hub?league='+encodeURIComponent(id),{headers:{accept:'application/json'}}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j&&j.error||'Couldn\'t load that league');return j})})
+   .then(function(j){if(LG.id!==id||isHomeLg())return;if(!j||!j.league||!j.seasons)throw new Error('Couldn\'t load that league');
+     D=j;ids=Object.keys(D.managers);LG.loading=false;LG.err='';LG.sport=j.league.sport||LG.sport;LG.name=j.league.name||LG.name;
+     var me=sleeperId();S.me=D.managers[me]?me:ids[0];leagueReset();render();enterAnim()})
+   .catch(function(e){if(LG.id!==id)return;LG.loading=false;LG.err=/^Sleeper /.test(e.message)?'Sleeper didn\'t send this league just now.':e.message;render()})}
+function lgWait(){
+  var h=pageHead({eb:LG.sport==='nba'?'Basketball':'Football',title:esc(LG.name||'League')});
+  if(LG.err)return h+'<section class="panel"><p class="err">'+esc(LG.err)+'</p><div class="lg-acct-b"><button type="button" class="cta" data-lg="'+esc(LG.id)+'">Try again</button><button type="button" class="ghost" data-leagues="1">Back to your leagues</button></div></section>'+foot();
+  return h+'<section class="panel tight lg-load"><div class="lg-spin" aria-hidden="true"></div><p>Reading every season of this league from Sleeper. The first time takes a few seconds.</p></section>'+foot()}
+function homeOnly(what){return pageHead({eb:esc(D.league.name),title:what})+'<section class="panel"><p class="muted">'+what+' runs in Rollin\' with Mahomies, the home league.</p><div class="lg-acct-b"><button type="button" class="cta" data-lghome="1">Go to Rollin\' with Mahomies</button></div></section>'+foot()}
 
 /* ---------------- HOME: gameday ---------------- */
 function homeV3(){
@@ -2501,12 +2573,12 @@ function matchupCard(my){
   if(!sMe)sMe={pts:mineA?my.live_a:my.live_b,proj:null,now:0,left:0,on:true,fin:false};
   if(!sOpp)sOpp={pts:mineA?my.live_b:my.live_a,proj:null,now:0,left:0,on:true,fin:false};
   var row=function(u,s){return '<div class="yg-row">'+av(u,48)+'<div class="yg-n"><b>'+esc(team(u))+'</b><span>'+esc(recOf(u))+'</span></div>'+ygScore(s)+'</div>'};
-  var stage=sMe.fin&&sOpp.fin?'Final':(sMe.on||sOpp.on)?'Live game':'Preview';
+  var stage=sMe.fin&&sOpp.fin?'Final':!sg&&!isHomeLg()?'Matchup':(sMe.on||sOpp.on)?'Live game':'Preview';
   var h='<section class="mx-card">'+(savedTeam()?'':'<button type="button" class="yg-pick" data-tab="me">Pick your team</button>')+
     '<button type="button" class="yg-go" data-prev="'+my.id+'"><div class="yg-k">Your matchup · Week '+D.league.week+'<span class="mx-open">'+stage+' ›</span></div>'+row(me,sMe)+row(opp,sOpp)+'</button>';
   var a=sMe.fin||sMe.proj==null?sMe.pts:sMe.proj,b=sOpp.fin||sOpp.proj==null?sOpp.pts:sOpp.proj;
   if(a+b>0){var pc=Math.round(a/(a+b)*100);
-    h+='<div class="mx-tug" aria-hidden="true"><i style="width:'+pc+'%"></i></div><div class="mx-tugl"><span>'+f1(a)+'</span><em>'+(sMe.fin&&sOpp.fin?'Final':'Projected finish')+'</em><span>'+f1(b)+'</span></div>'}
+    h+='<div class="mx-tug" aria-hidden="true"><i style="width:'+pc+'%"></i></div><div class="mx-tugl"><span>'+f1(a)+'</span><em>'+(sMe.fin&&sOpp.fin?'Final':sMe.proj==null?'Score now':'Projected finish')+'</em><span>'+f1(b)+'</span></div>'}
   if(savedTeam()){
     h+=warnLine(sg?sMe:null)+needLine(my.id,opp,sg?sMe:null,sg?sOpp:null);
     var desk=myDesk(),stakes=stakeBlock(me,opp,sg?sMe:null,sg?sOpp:null),tabs=[];
@@ -2547,9 +2619,10 @@ function newLookNote(){if(store('tour3'))return '';
 /* ---------------- LEAGUE: this season ---------------- */
 var LSEGS3=[['season','Standings'],['scores','Scores'],['power','Power'],['odds','Playoffs'],['wire','Wire']];
 function leagueV3(){
-  if(!LSEGS3.some(function(x){return x[0]===S.lseg}))S.lseg='season';
+  var segs=LSEGS3.filter(function(x){return isHomeLg()||x[0]!=='wire'});
+  if(!segs.some(function(x){return x[0]===S.lseg}))S.lseg='season';
   var L=D.league,h=pageHead({eb:CUR()+' season · '+L.teams+' teams · '+esc(L.scoring||'PPR'),title:esc(L.name||'League')});
-  h+=utabs(LSEGS3,S.lseg,'lseg');
+  h+=utabs(segs,S.lseg,'lseg');
   h+=({season:standingsView,scores:scoresView,power:powerView,odds:playoffsView,wire:wireView}[S.lseg])();
   return h+foot();
 }
@@ -2599,9 +2672,9 @@ function wireView(){
 
 /* ---------------- HALL: history, records, rivals ---------------- */
 function hallV3(){
-  if(S.hall&&HALLSEG[S.hall])return hallSection(S.hall);
+  if(S.hall&&HALLSEG[S.hall]&&hallList().some(function(x){return x[0]===S.hall}))return hallSection(S.hall);
   var past=PAST(),seasons=ALLS().length,games=D.games.length,pts=0;D.games.forEach(function(g){pts+=(g.wp||0)+(g.lp||0)});
-  var h=pageHead({eb:'Rollin\' with Mahomies · since '+D.league.first,title:'Hall of Fame'});
+  var h=pageHead({eb:esc(D.league.name)+' · since '+D.league.first,title:'Hall of Fame'});
   h+='<section class="champs"><div class="ch-h"><span>Champions</span><small>Tap a season</small></div><div class="ch-grid">'+past.map(function(s){var x=D.seasons[s];if(!x.champ)return '';
     return '<button type="button" class="ch" data-season="'+s+'"><span class="ch-y">'+s+'</span><span class="ch-cup">🏆</span>'+av(x.champ,46)+'<b>'+esc(tnS(s,x.champ))+'</b><small>'+esc(M(x.champ).name)+'</small></button>'}).join('');
   var cs=D.seasons[CUR()],lead=cs&&cs.standings&&cs.standings[0];
@@ -2634,17 +2707,18 @@ function meV3(){
   var act=ids.filter(function(u){return M(u).active}),u=S.me,st=stOf(u),seg=S.meseg||'team',a=D.alltime.find(function(x){return x.uid===u});
   var chips=[];if(st)chips.push('<span>'+st.w+'-'+st.l+'</span>','<span>'+ord(st.seed)+' place</span>');
   if(a&&a.titles.length)chips.push('<span class="gold">🏆 '+a.titles.join(' · ')+'</span>');
-  var h='<header class="me-hero">'+av(u,76)+'<div class="me-hx"><div class="eyebrow">'+(AUTH?'Logged in':'Viewing as')+'</div><h1>'+esc(team(u))+'</h1><p>'+esc(M(u).name)+'</p><div class="me-chips">'+chips.join('')+'</div></div></header>';
-  if(!AUTH)h+='<section class="panel tight me-who"><label for="meSel" class="me-lbl">Not you? Pick your team</label><select id="meSel">'+act.map(function(x){return '<option value="'+x+'"'+(x===u?' selected':'')+'>'+esc(team(x))+' · '+esc(M(x).name)+'</option>'}).join('')+'</select>'+
+  var h='<header class="me-hero">'+av(u,76)+'<div class="me-hx"><div class="eyebrow">'+(!isHomeLg()?esc(D.league.name):AUTH?'Logged in':'Viewing as')+'</div><h1>'+esc(team(u))+'</h1><p>'+esc(M(u).name)+'</p><div class="me-chips">'+chips.join('')+'</div></div></header>';
+  if(!AUTH&&isHomeLg())h+='<section class="panel tight me-who"><label for="meSel" class="me-lbl">Not you? Pick your team</label><select id="meSel">'+act.map(function(x){return '<option value="'+x+'"'+(x===u?' selected':'')+'>'+esc(team(x))+' · '+esc(M(x).name)+'</option>'}).join('')+'</select>'+
     (LIVE?'<button type="button" class="cta me-login" data-login="1">Log in to bet</button><p class="muted me-note">Everything else works without logging in. Your PIN only unlocks the Book.</p>':'')+'</section>';
   h+=utabs([['team','This season'],['career','Career'],['settings','Settings']],seg,'meseg');
   if(seg==='team'){
     var my=(D.lines||[]).filter(function(l){return l.a===u||l.b===u})[0];
-    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">'+CUR()+' season</div><h2>My team</h2></div><button class="link" data-team="'+u+'">Roster ›</button></div>';
+    h+='<section class="panel tight"><div class="ph"><div><div class="kicker">'+CUR()+' season</div><h2>My team</h2></div>'+(isHomeLg()?'<button class="link" data-team="'+u+'">Roster ›</button>':'')+'</div>';
     if(st)h+='<div class="tm-stats"><div><b class="num">'+st.w+'-'+st.l+'</b><small>record</small></div><div><b class="num">'+ord(st.seed)+'</b><small>place</small></div><div><b class="num">'+f1(st.avg)+'</b><small>per week</small></div><div><b class="num">'+(st.luck>0?'+':'')+f1(st.luck)+'</b><small>luck</small></div></div>';
     if(my){var opp=my.a===u?my.b:my.a;h+='<button type="button" class="row me-next" data-prev="'+my.id+'">'+whoS(opp,'Week '+D.league.week+' opponent · '+recOf(opp),32)+CHEV+'</button>'}
-    h+='<button type="button" class="row me-next" data-team="'+u+'"><span class="me-ic">📋</span><span class="me-rt"><b>Roster &amp; schedule</b><small>Lineup, bench, every week and every move</small></span>'+CHEV+'</button></section>';
-    if(AUTH&&BK.me){var open=(BK.me.bets||[]).filter(function(b){return b.status==='open'});
+    if(isHomeLg())h+='<button type="button" class="row me-next" data-team="'+u+'"><span class="me-ic">📋</span><span class="me-rt"><b>Roster &amp; schedule</b><small>Lineup, bench, every week and every move</small></span>'+CHEV+'</button>';
+    h+='</section>';
+    if(AUTH&&BK.me&&isHomeLg()){var open=(BK.me.bets||[]).filter(function(b){return b.status==='open'});
       h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Mahomie Bucks · play money</div><h2>My Book</h2></div><button class="link" data-go="book">Open the Book ›</button></div>'+walletCard()+(open.length?'<div class="me-open">'+open.slice(0,3).map(function(b){return stub(b,true)}).join('')+'</div>':'')+'</section>'}
   }
   if(seg==='career')h+=profile(u,true);
@@ -2652,6 +2726,7 @@ function meV3(){
     h+='<section class="panel tight"><div class="ph"><div><div class="kicker">Account</div><h2>Sportsbook login</h2></div></div>'+(AUTH?'<div class="set-r"><span><b>Logged in as '+esc(team(AUTH.user_id))+'</b><small>Your PIN unlocks betting on this phone.</small></span><button type="button" class="ghost sm" data-logout="1">Log out</button></div>':'<div class="set-r"><span><b>Not logged in</b><small>Everything works without it. Your PIN only unlocks the Book.</small></span>'+(LIVE?'<button type="button" class="ghost sm" data-login="1">Log in</button>':'')+'</div>')+'</section>';
     h+='<section class="panel tight"><div class="ph"><div><div class="kicker">On this phone</div><h2>Appearance</h2></div></div><div class="seg theme-seg">'+[['light','Light'],['dark','Dark'],['auto','Match phone']].map(function(x){return '<button type="button" data-theme-set="'+x[0]+'" class="'+(themePref()===x[0]?'on':'')+'">'+x[1]+'</button>'}).join('')+'</div></section>';
     h+='<section class="panel tight"><div class="ph"><div><div class="kicker">On this phone</div><h2>App style</h2></div></div><div class="set-r"><span><b>Old style</b><small>The app the way it looked before the redesign. You can switch back from Me in the old app.</small></span><button type="button" class="ghost sm" data-style-set="classic">Use old style</button></div></section>';
+    h+='<button type="button" class="twih-go" data-leagues="1"><span>🏟️</span><b>Your leagues</b><em>Football and basketball</em>'+CHEV+'</button>';
     h+='<button type="button" class="twih-go" data-howto="1"><span>📖</span><b>How the app works</b><em>Every stat explained in plain English</em>'+CHEV+'</button>';
     h+=admPanel();
   }
@@ -2678,7 +2753,8 @@ function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');c
 /* ---------- render + events ---------- */
 function render(){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===S.tab);t.setAttribute('aria-current',t.dataset.tab===S.tab?'page':'false')});
-  view.innerHTML=S.tab==='home'?homeV3():S.tab==='league'?leagueV3():S.tab==='records'?hallV3():S.tab==='book'?book():meV3();
+  view.innerHTML=S.tab==='leagues'?leaguesV3():(!isHomeLg()&&(LG.loading||LG.err))?lgWait():S.tab==='home'?homeV3():S.tab==='league'?leagueV3():S.tab==='records'?hallV3():S.tab==='book'?(isHomeLg()?book():homeOnly('The Sportsbook')):meV3();
+  document.body.classList.toggle('other',!isHomeLg());var tl=$('#tbLg');if(tl)tl.textContent=(isHomeLg()?D.league.name:LG.name||D.league.name)||'';
   $('#bucks').textContent=BK.me?money(BK.me.balance):'Book';
   document.body.setAttribute('data-tab',S.tab);$('#tbTitle').textContent=tabTitle();
   var mt=document.querySelector('.tab[data-tab="me"]');if(mt&&S.me&&mt.dataset.u!==S.me){mt.dataset.u=S.me;var ic=mt.querySelector('svg,.tab-av');if(ic)ic.outerHTML='<span class="tab-av">'+av(S.me,28)+'</span>'}
@@ -2699,6 +2775,14 @@ function centerChip(sel){var t=document.querySelector(sel);if(t&&t.scrollIntoVie
 document.addEventListener('click',function(e){
   var t=e.target.closest('button');if(!t)return;var d=t.dataset;
   if(t.id==='shBk'){if(SH.length)shBack();else closeSheet();return}
+  if(d.lg){openLeague(d.lg);return}
+  if(d.lghome){var hx=(LGS.list||[]).filter(function(l){return l.home})[0];if(hx)openLeague(hx.id);else{D=HOME_D||D;ids=Object.keys(D.managers);S.me=HOME_ME||S.me;LG={id:'',home:true,sport:'nfl',name:'',loading:false,err:''};store('lg','');leagueReset();go('home');loadHub()}return}
+  if(d.leagues){S.tab='leagues';closeSheetQuiet();render();window.scrollTo(0,0);enterAnim();loadLeagues(true);try{history.replaceState(null,'','#leagues')}catch(e){}return}
+  if(d.sidedit){S.sidEdit=true;S.sidErr='';render();var si=$('#sidName');if(si)si.focus();return}
+  if(d.sidclear){store('sid',null);S.sidEdit=false;LGS.list=null;LGS.at=0;store('lgs',null);render();loadLeagues(true);return}
+  if(d.sidgo){var nm=($('#sidName')||{}).value||'';t.disabled=true;fetch('/api/sleeper-user?name='+encodeURIComponent(nm.trim())).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Not found');return j})})
+    .then(function(j){store('sid',{id:j.user_id,name:j.display_name});S.sidEdit=false;S.sidErr='';LGS.list=null;LGS.at=0;store('lgs',null);render();loadLeagues(true)})
+    .catch(function(e){S.sidErr=e.message;render()});return}
   if(t.id==='shX'){closeSheet();return}
   if(d.hall!==undefined){if(d.recset){S.rec=d.recset;S.recMore=false}S.tab='records';S.hall=d.hall||null;closeSheetQuiet();render();window.scrollTo(0,0);enterAnim();return}
   if(d.desk){S.desk=d.desk;render();return}
@@ -2732,7 +2816,7 @@ document.addEventListener('click',function(e){
   if(d.pair){var pp=d.pair.split('|');S.h2a=pp[0];S.h2b=pp[1];render();var el=document.getElementById('rivalTop');if(el)el.scrollIntoView({block:'start'});return}
   if(d.plw){var pw=d.plw;nav(function(){pwOpen(pw)});return}
   if(d.mh){var kind=d.mh;nav(function(){var desk=myDesk();if(!desk){openSheet('<p class="muted">Pick your team first.</p>'+CLOSE);return}if(kind==='series')openSheet(seriesSheet(desk.me,desk.opp)+CLOSE);else if(kind==='slots')openSheet(slotSheet()+CLOSE);else if(kind==='seed')openSheet(seedSheet()+CLOSE)});return}
-  if(d.prev){nav(function(){if(S.tab!=='book'&&LIVE&&/^w\d+m\d+$/.test(d.prev)){gcOpen(d.prev);return}openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE)});return}
+  if(d.prev){nav(function(){if(S.tab!=='book'&&LIVE&&isHomeLg()&&/^w\d+m\d+$/.test(d.prev)){gcOpen(d.prev);return}openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE)});return}
   if(d.gcprev){nav(function(){openSheet(previewSheet(d.gcprev,false)+CLOSE)});return}
   if(d.season){S.ss=d.season;S.sw=null;nav(function(){openSheet(seasonSheet(d.season)+CLOSE)});return}
   if(d.sweek){var sp=d.sweek.split('|');S.sw=+sp[1];var keep=$('#sheet').scrollTop;openSheet(seasonSheet(sp[0])+CLOSE);$('#sheet').scrollTop=keep;return}
@@ -2776,7 +2860,7 @@ document.addEventListener('click',function(e){
   if(t.id==='closeP'){closeSheet();return}
 });
 document.addEventListener('change',function(e){
-  if(e.target.id==='meSel'){S.me=e.target.value;store('me',S.me);S.h2a=S.me;S.h2b=null;render();toast('Playing as '+team(S.me))}
+  if(e.target.id==='meSel'){S.me=e.target.value;store('me',S.me);if(!store('sid')&&!AUTH){LGS.list=null;LGS.at=0;store('lgs',null);loadLeagues(true)}S.h2a=S.me;S.h2b=null;render();toast('Playing as '+team(S.me))}
   if(e.target.id==='propSel'){S.propLine=e.target.value;render()}
   if(e.target.id==='h2a'){S.h2a=e.target.value;render()}
   if(e.target.id==='h2b'){S.h2b=e.target.value;render()}
@@ -2789,7 +2873,10 @@ function twHit(e){var r=e.target.closest&&e.target.closest('[data-tw]');if(!r)re
 document.addEventListener('click',twHit);document.addEventListener('pointermove',function(e){if(e.pointerType==='mouse')twHit(e)});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
 var h=(location.hash||'').replace('#','');if(['home','league','records','book','me'].indexOf(h)>=0)S.tab=h;
-if(h==='records'&&!S.hall)S.hall=null;
+if(h==='leagues')S.tab='leagues';
+else if(!h&&LGS.list&&LGS.list.length>1)S.tab='leagues';
+var lastLg=store('lg'),lx=lastLg&&(LGS.list||[]).filter(function(l){return l.id===lastLg&&!l.home})[0];
+if(lx&&h&&h!=='leagues'){HOME_D=D;HOME_ME=S.me;LG={id:lx.id,home:false,sport:lx.sport||'nfl',name:lx.name||'',loading:true,err:''};fetchLeague(lx.id)}
 render();enterAnim();
 })();
 

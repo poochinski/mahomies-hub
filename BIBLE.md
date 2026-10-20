@@ -138,6 +138,8 @@ Old names are kept on purpose so every older rule follows the palette. **Rule:**
 - Every tab opens with a big page title; tabs with sections have sticky underline sub-tabs. The top bar is sticky and turns to glass on scroll, swapping the wordmark for the page title.
 - Anything that is a page (game, team, player, manager, season, week…) pushes in full screen with a back button. Only transactional pop-ups (bet slip, PIN, commish forms, tickets, share images, the record picker) are bottom sheets.
 - Light is the default theme; Dark and Match phone are in Me › Settings.
+- **Your leagues** (2026-10-19): the header (wordmark + the open league's name ▾) opens a Sleeper-style list of every league the manager is in this season, football and basketball. Any league opens with Home, League, Hall and Me; Rollin' with Mahomies is the home league and the only one with the Book, live Game Center, Wire, Draft room, Lab, Front office records and player cards. No win % on the list — the bar is each side's share of the points.
+- **Game Center live players** (2026-10-19): a player whose NFL game is on gets a green panel on his side (`--field`), red-zone tint inside the 20, 🏈 for the side with the ball, and a game line (quarter · clock · score · down & distance). Finished players stay full strength.
 
 ### Shapes and pieces
 - Cards: 22px radius, hairline border, soft lift shadow. Wells inside cards use `--ground-2`. Pills for chips, tags and trophies.
@@ -489,11 +491,14 @@ Ties broken by points for.
 ```
 GET  /api/state                     current season/week + last sync time
 GET  /api/hub                       EVERYTHING the app shows, built live from Sleeper, cached 3 min (built)
+GET  /api/hub?league=<id>           the same for any Sleeper league, football or basketball (built 2026-10-19)
+GET  /api/leagues?user=<id>         every nfl + nba league a Sleeper user is in this season, with this week's matchup (built 2026-10-19)
+GET  /api/sleeper-user?name=        Sleeper username → user id (built 2026-10-19)
 GET  /api/pulse                     Home badge: NFL live / next kickoff / week phase from ESPN (built, polled ~1 min)
 GET  /api/history                   all seasons, champions, all-time table
 GET  /api/records                   record book
 GET  /api/managers/:id              profile
-GET  /api/game?season=&week=&users=a,b   box score: starters by slot + bench, names, positions, points (built)
+GET  /api/game?season=&week=&users=a,b[&league=]   box score: starters by slot + bench, names, positions, points (built; league= for other leagues)
 GET  /api/bench?season=              Bench Shame: optimal minus actual, per team + worst week (built)
 GET  /api/trades?season=             Trade grader v2: got/gave, picks, FAAB, week-by-week tracker, team before/after, verdict by pts started per week (built)
 GET  /api/draft                      every draft: seasons, loyalty, position habits, market, all-time drafters (built)

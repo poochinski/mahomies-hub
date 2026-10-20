@@ -20,9 +20,10 @@ function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v 
 
 // ---------- 1. pull everything from Sleeper ----------
 async function pull(leagueId) {
-  const state = await sleeper('/state/nfl');
   const chain = await leagueChain(leagueId); // newest first
-  const players = await getPlayers().catch(() => ({}));
+  const sport = chain[0]?.sport || 'nfl'; // basketball leagues work too (points scoring)
+  const state = await sleeper(`/state/${sport}`);
+  const players = await getPlayers(sport).catch(() => ({}));
   const seasons = [];
   for (const c of chain) {
     const isCur = c.season === state.season;
@@ -35,7 +36,7 @@ async function pull(leagueId) {
     const P = Number(st.playoff_week_start) || 15;
     const sleeperLast = Number(st.last_scored_leg) || 0;
     let last = sleeperLast;
-    if (!last && league.status === 'complete') last = 17;
+    if (!last && league.status === 'complete') last = sport === 'nfl' ? 17 : P + 2;
     // Sleeper moves its "current week" forward at midnight Eastern after Monday night, but only marks
     // the old week scored later (usually Tuesday, after stat corrections). In between, that week was
     // neither live nor scored, so it vanished from Home. Any week before Sleeper's current week is over.
@@ -58,12 +59,12 @@ async function pull(leagueId) {
     seasons.push({ s: c.season, isCur, league, users, rosters, P, last, liveWeek, weeks, wb, lb,
       median: !!st.league_average_match, teams: league.total_rosters || rosters.length });
   }
-  return { state, seasons: seasons.reverse(), players }; // oldest first
+  return { state, seasons: seasons.reverse(), players, sport }; // oldest first
 }
 
 // ---------- 2. build the app data ----------
 export async function buildHub(leagueId, me) {
-  const { state, seasons: SE, players } = await pull(leagueId);
+  const { state, seasons: SE, players, sport } = await pull(leagueId);
   const cur = SE[SE.length - 1];
   const CUR = cur.s;
   const names = {};
@@ -404,8 +405,8 @@ export async function buildHub(leagueId, me) {
   const updated_label = now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const st = cur.league.settings || {};
   return {
-    league: { name: cur.league.name, season: CUR, week: cur.liveWeek || Number(state.week) || cur.last, teams: cur.teams,
-      scoring: cur.league.scoring_settings?.rec === 1 ? 'PPR' : cur.league.scoring_settings?.rec === 0.5 ? 'Half PPR' : 'Standard',
+    league: { id: cur.league.league_id, sport, avatar: cur.league.avatar || null, name: cur.league.name, season: CUR, week: cur.liveWeek || Number(state.week) || cur.last, teams: cur.teams,
+      scoring: sport !== 'nfl' ? 'Points' : cur.league.scoring_settings?.rec === 1 ? 'PPR' : cur.league.scoring_settings?.rec === 0.5 ? 'Half PPR' : 'Standard',
       playoff_start: cur.P, playoff_teams: Number(st.playoff_teams) || 6, median: cur.median, first: SE[0].s, last_scored: cur.last, live: !!cur.liveWeek },
     managers, seasons, records, recf, alltime, h2h, games, power, lines, odds, awards, backtest,
     tw: twMap, names, avatars, me, version: '2.5', updated_label, updated: now.toISOString()

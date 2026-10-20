@@ -1467,3 +1467,53 @@ html[data-theme="light"]{--field:#0b9a55}
 /* Slot vs slot: live rows get the same light */
 .mh-line.on{background:color-mix(in srgb,var(--field) 10%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--field) 45%,transparent)}
 .gc-p .gc-st{white-space:normal!important;overflow:visible!important;line-height:1.3}
+
+/* ---------- Your leagues (2026-10-19): every Sleeper league you're in ---------- */
+.tb-names>.tb-lg{grid-area:2/1;align-self:start;display:flex;align-items:center;gap:4px;min-width:0;margin-top:3px;font:600 11px/1.1 var(--body);letter-spacing:.01em;color:var(--muted);white-space:nowrap}
+.tb-lg span{overflow:hidden;text-overflow:ellipsis;max-width:52vw}
+.tb-lg svg{flex:none;opacity:.7}
+body.other .tb-lg{color:var(--gold)}
+body.other .hsearch{display:none}
+body[data-tab="leagues"] .tabbar,body[data-tab="leagues"] .dock{display:none}
+body[data-tab="leagues"] main{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 28px)}
+.lg-sec{margin-top:14px}
+.lg-h{display:flex;align-items:center;gap:8px;margin:0 4px 9px;font:700 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.lg-h span{font-size:15px;letter-spacing:0}
+.lgc{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) 16px;gap:13px;align-items:start;width:100%;margin:0 0 10px;padding:14px 12px 14px 14px;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:var(--lift);text-align:left;color:var(--ink)}
+.lgc:active{transform:scale(.99)}
+.lgc.cur{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 30%,transparent),var(--lift)}
+.lgc>svg{align-self:center;color:var(--faint)}
+.lg-pic,.lg-av{position:relative;display:grid;place-items:center;flex:none;overflow:hidden;font:800 15px/1 var(--body);color:var(--ink);background:linear-gradient(140deg,color-mix(in srgb,var(--volt) 55%,var(--panel-3)),color-mix(in srgb,var(--pink) 30%,var(--panel-3)))}
+.lg-pic{border-radius:14px}
+.lg-av{border-radius:50%;font-size:9px;background:var(--panel-3);color:var(--muted)}
+.lg-pic img,.lg-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.lg-tx{display:grid;gap:3px;min-width:0}
+.lg-n{font:650 16px/1.2 var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg-f{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg-f em{font-style:normal;font-weight:650;color:var(--gold)}
+.lg-names{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-size:12px;min-width:0}
+.lg-names>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg-names>span:last-child{text-align:right}
+.lg-names b{font-weight:600}
+.lg-names i{font-style:normal;color:var(--faint)}
+.lg-sc{display:flex;align-items:center;gap:8px;margin-top:4px}
+.lg-sc strong{font:700 17px/1 var(--body);color:var(--muted);min-width:0}
+.lg-sc strong.up{color:var(--ink)}
+.lg-bar{flex:1;height:6px;min-width:24px;border-radius:99px;background:color-mix(in srgb,var(--pink) 55%,var(--panel-3));overflow:hidden}
+.lg-bar i{display:block;height:100%;border-radius:99px 0 0 99px;background:var(--volt)}
+html[data-theme="light"] .lg-bar i{background:var(--gold-2)}
+.lg-solo{margin-top:8px;font-size:12.5px;color:var(--muted)}
+.lgc.sk{pointer-events:none}
+.lgc.sk .lg-pic{width:48px;height:48px;background:var(--panel-3)}
+.sk-l{display:block;height:12px;width:70%;border-radius:6px;background:var(--panel-3);animation:livepulse 1.4s ease-in-out infinite}
+.sk-l.s{width:45%;height:10px}
+.lg-tx .sk-l:last-child{width:92%;height:22px;margin-top:8px}
+.lg-acct{display:grid;gap:10px;margin:16px 4px 0;padding:14px;border:1px dashed var(--line-2);border-radius:16px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.lg-acct b{color:var(--ink);font-weight:600}
+.lg-acct .link{justify-self:start;padding:0;font-size:13px}
+.lg-acct-b{display:grid;gap:8px;margin-top:4px}
+.lg-acct-b .cta{min-height:48px;font-size:18px}
+.lg-load{display:grid;justify-items:center;gap:12px;padding:30px 18px;text-align:center;color:var(--muted);font-size:13px}
+.lg-spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line-2);border-top-color:var(--gold);animation:ggrot .8s linear infinite}
+body.other .bucks{display:none}
+body.other .plk{text-decoration:none;cursor:default}

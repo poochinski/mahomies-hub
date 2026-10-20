@@ -1,8 +1,8 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-17 (Pacific) · **AI:** Claude
-**Current phase:** v3 layout is **the current version** (Jayson, 2026-10-18). The old app stays available as **Me › Settings › Old style** (`/classic`). Now trimming Home based on his screenshots.
-**Last commit:** "Home: drop the week header and players-left lines; Old style switch in Settings"
+**Last updated:** 2026-10-19 (Pacific) · **AI:** Claude
+**Current phase:** v3 layout is **the current version** (Jayson, 2026-10-18). The old app stays available as **Me › Settings › Old style** (`/classic`). Oct 19: **every Sleeper league you're in** (football + basketball) behind a league picker; Rollin' with Mahomies stays the home league.
+**Last commit:** "Your leagues: pick any Sleeper league you're in, football or basketball"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app · old look for comparison: **/test/classic**
 
 ## What we're working toward right now
@@ -14,6 +14,15 @@ v3 is the version going forward. The old app is kept as an option anyone can pic
 - Login, team pick and theme are shared localStorage, so switching keeps you logged in.
 - `prototype/classic/` is the old app frozen on Oct 17 plus that one Me row and its click handler. It does **not** get new features. If a server change ever breaks it (an endpoint it uses changes shape), fix it there or drop the option.
 
+## Other leagues (2026-10-19)
+Jayson: "I want to be able to add more league, if you are in more then one, and I'd like to add fantasy basketball into the app as well… you'd come to a screen like this [Sleeper's Fantasy Leagues list], and be able to click on which league you would like to explore."
+- **Picker:** tap the header (wordmark + league name ▾) or Me › Settings › Your leagues → **Your leagues** (`S.tab='leagues'`, `#leagues`, `leaguesV3()` in app.js). Football and Basketball groups; each row is the league (avatar, name, "12-Team Keeper PPR"), your team vs this week's opponent with records and points, and a points-share bar (no win % — betting numbers stay in the Book). The phone opens on the picker when it knows you're in more than one league and there's no `#tab` in the address.
+- **Whose leagues:** `sleeperId()` = the Sleeper username saved under "Use a different Sleeper account" (`mh-sid`), else the logged-in team, else the picked team (`mh-me`). The list is cached in `mh-lgs`; the last other league opened is `mh-lg` (reopened on refresh when the address has a tab).
+- **Server:** `GET /api/leagues?user=<sleeper user id>` (`server/leagues.js`: every nfl + nba league that season, Rollin' with Mahomies first), `GET /api/sleeper-user?name=` (username → id), `GET /api/hub?league=<id>` and `GET /api/game?...&league=<id>` (same builders, any league; `server/hub/cache.js` keeps Rollin' with Mahomies plus up to 40 others, 3 min fresh). `pull()` reads `/state/<sport>` and `/players/<sport>` from the league's own sport (`getPlayers('nba')` = name/position/team only, cached a day).
+- **Opening another league** swaps `D` for that league's hub (`openLeague()` / `fetchLeague()`; Rollin' with Mahomies' data is kept in `HOME_D`, your team there in `HOME_ME`). `body.other` is set while you're in one. Works there: Home (matchup card, This week, Last week, history), League (Standings, Scores, Power, Playoffs), Hall (Champions, Record book incl. Career boards, All-time, Rivals, Awards, Seasons), Me (This season, Career, Settings), box scores.
+- **Rollin' with Mahomies only** (gated with `isHomeLg()`): the Book (shows a "runs in Rollin' with Mahomies" card), live pulse + Game Center (the matchup card opens the preview page instead), Top performers, the Wire, Draft room, Lab, Front office records, player cards, player search, team roster pages, projections history, the team picker and My Book on Me.
+- **Testing:** `harness/mock_sleeper.py` (fake Sleeper with Rollin' with Mahomies, a second football league and a two-season basketball league) + `SLEEPER_BASE=http://127.0.0.1:3222/v1` on the server; `harness/lgshoot.py` screenshots the picker and the other-league screens. Not yet seen against Jayson's real second league / basketball league — check on the live app.
+
 ## Revert the v3 look for everyone (only if Jayson asks)
 The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= commit `96e2206`, main right before v3), the frozen copy in **`prototype/classic/`**, and the live comparison page **`/test/classic`**.
 - **If nothing else has touched the three front-end files since v3** (check `git log --oneline 96e2206..HEAD -- prototype/v2.0`): 
@@ -23,9 +32,12 @@ The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= c
 - Update this file, CHANGELOG and BIBLE §4 (put the "Night" design system text back from `release-v2.6-classic`).
 
 ## Done (newest first)
+- 2026-10-19 — **Your leagues** (football + basketball league picker) — see "Other leagues" above. (Claude)
+- 2026-10-19 — **Week rollover fix** (Claude; Jayson: "What happened to everything? This weeks game is gone"). Sleeper moves its current week forward at midnight Eastern after Monday night but marks the old week scored later, so the just-finished week was neither live nor scored and vanished, and the new week's pulse (0–0) got mixed into the old card. `server/hub/build.js` now treats every week before Sleeper's current week as finished (`last = max(last_scored_leg, state.week - 1)`; weeks not officially scored yet refresh every 10 min for stat corrections). `slateGame()` only uses the pulse when it's for the week the page shows (`pulseForWeek()`).
+- 2026-10-19 — **Game Center: live players light up; lineup chart shows real zeros** (Claude; Jayson: "You can't even tell who is actually playing at the time… see how Sleeper does it"; "Killa Cam had a 0 from his TE and the RB"). A player whose NFL game is on gets a green panel (`--field`) on his side, red-zone tint when his team is inside the 20, a 🏈 on the side with the ball and "On offense / On defense", and a game line with quarter, clock, score and down & distance (`server/book/kickoffs.js` `situation()`, `gameCenter` adds `ts/os/res/ball/dd/rz`). In the Home lineup chart a finished player with 0 shows **0.0** (not "·"); "·" now only means hasn't played, and an empty slot is "–".
 - 2026-10-18 — **Home trimmed + Old style option** (Claude; Jayson circled them on a screenshot: "I don't think they show any useful information", and "let's say that's the next version… have it an option in the settings as old style").
   - Home has no page header any more: the "2026 · Week 6 · Next kickoff…" line and the big phase title ("Sunday: 12 games") are gone. The week moved into the matchup card's header ("Your matchup · Week 6"). `homeV3()` starts straight with the new-look note and the matchup card.
-  - The matchup face-off no longer shows "7 left / 3 playing" under each team (`ygMeta` dropped from `matchupCard`'s rows). The other games' list still has it — ask Jayson before removing it there.
+  - The matchup face-off no longer shows "7 left / 3 playing" under each team (`ygMeta` dropped from `matchupCard`'s rows). The other games' list still has it — asked Jayson on Oct 19 whether it goes too; no answer yet.
   - Old style switch — see "Old style switch" above.
 - 2026-10-17 (evening) — **v3 layout: new tabs, flow and pages** (Claude; Jayson after the colors pass: "I like the light mode colors, but I thought you were going to change around the layout, the user experience, the flow… grab some more ideas from Sleeper… still let me revert back").
   - **Saved first:** branch `release-v3-colors` = the colors-only pass. The original is still `release-v2.6-classic` / `/test/classic`.
@@ -228,7 +240,7 @@ The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= c
 
 ## Next steps (in order)
 0. **More "clickable" passes** (Jayson wants everything to open relevant info; expand as the app grows): award rows → the game/week that won it; standings stats (PF, all-play, luck) → week-by-week breakdown; power-ranking score → the four ingredients; H2H cell → rivalry (exists); recap names → games; Last-week top player tile → player card; playoff odds row → that team's remaining schedule.
-1. ~~2.1 Live Game Center~~ done. Ideas for later: highlight players currently on the field, show big plays, push alerts.
+1. ~~2.1 Live Game Center~~ done; players on the field are highlighted (Oct 19). Ideas for later: big plays, push alerts. Other leagues: a live pulse/Game Center for them would need the pulse built per league.
 2. ~~Sportsbook batch 2~~ done (v2.3). Check the Week 6 post **Tue Oct 13, 6 AM PT** (lines + Specials); first settlement **Wed Oct 21, 3 AM PT**.
 3. **Record book push 2 (proposed, not started):** restructure the whole record book the way Front Office is built — categories and sections, plus timeframe / manager / stage / measure filters — and wire up the ~70 career, season, matchup and streak boards the hub already computes but doesn't surface.
 4. **Record book push 3 (proposed, not started):** add Sleeper's bulk weekly stats feed (`/v1/stats/nfl/regular/{season}/{week}`, ~260 players a call, 72 calls covers 2023–2026) for raw-stat boards — passing/rushing/receiving yards, TDs, receptions — about 66 more boards plus player records.
@@ -266,6 +278,13 @@ The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= c
 - Git tags cannot be pushed from some agents. Saved versions live on branches (`release-v1.0` through `release-v1.8`).
 
 ## Files changed in the latest push
+- server/leagues.js (new), server/routes/hub.js (/api/leagues, /api/sleeper-user, /api/hub?league=), server/routes/game.js (?league=), server/hub/cache.js (cache per league), server/hub/build.js (sport-aware), server/sleeper/client.js (getPlayers(sport), sport on the league chain)
+- prototype/v2.0/app.js — league picker (`leaguesV3`, `lgRow`, `openLeague`, `fetchLeague`, `lgWait`, `homeOnly`), `isHomeLg()` gates, loadHub/loadLineups with `league=`
+- prototype/v2.0/app.css — "Your leagues" block at the end; prototype/v2.0/app.html — header shows the league and opens the picker
+- test/leagues.test.js (new)
+- HANDOFF.md, CHANGELOG.md, BIBLE.md
+
+## Files changed in the v3 layout push
 - prototype/v2.0/app.js — v3 shell block (pageHead, utabs, homeV3, leagueV3 + standings/scores/power/playoffs/wire views, hallV3/hallSection, walletCard, meV3, topNow, newLookNote, PANEL_RE/sheetChrome), openSheet(kind), go() mapping, click router, render(); old home/league/seasonView/oddsView/me/bookHero removed; light default
 - prototype/v2.0/app.css — "v3 layout" block at the end (top bar, page header, sub-tabs, full-screen pages, matchup card, standings, power, playoffs, Hall, wallet, Me)
 - prototype/v2.0/app.html — header (brand button + title), Hall tab, League icon, page nav bar in the sheet, light theme before paint

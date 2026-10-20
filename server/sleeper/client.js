@@ -35,7 +35,28 @@ let playersAt = 0;
 let playersLoading = null;
 const DAY = 24 * 60 * 60 * 1000;
 
-export async function getPlayers() {
+// Other sports (basketball): names and positions only, one pull a day, kept apart from the NFL file.
+const otherPlayers = new Map(); // sport -> { at, data, loading }
+async function getSportPlayers(sport) {
+  const hit = otherPlayers.get(sport) || {};
+  if (hit.data && Date.now() - hit.at < DAY) return hit.data;
+  if (hit.loading) return hit.loading;
+  const loading = (async () => {
+    const res = await fetch(`${BASE}/players/${sport}`, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(60000) });
+    if (!res.ok) throw new Error(`Sleeper /players/${sport} → ${res.status}`);
+    const raw = await res.json(), slim = {};
+    for (const [id, p] of Object.entries(raw)) {
+      slim[id] = { n: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || id, p: p.position || (p.fantasy_positions || [])[0] || '', t: p.team || '' };
+    }
+    otherPlayers.set(sport, { at: Date.now(), data: slim });
+    return slim;
+  })();
+  otherPlayers.set(sport, { ...hit, loading });
+  try { return await loading; } catch (e) { otherPlayers.set(sport, { ...hit, loading: null }); throw e; }
+}
+
+export async function getPlayers(sport = 'nfl') {
+  if (sport && sport !== 'nfl') return getSportPlayers(sport);
   if (players && Date.now() - playersAt < DAY) return players;
   if (playersLoading) return playersLoading;
   playersLoading = (async () => {
@@ -81,7 +102,8 @@ export async function leagueChain(leagueId) {
       season: league.season,
       name: league.name,
       status: league.status,
-      total_rosters: league.total_rosters
+      total_rosters: league.total_rosters,
+      sport: league.sport || 'nfl'
     });
     id = league.previous_league_id;
   }

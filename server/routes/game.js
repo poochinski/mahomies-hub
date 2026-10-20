@@ -10,7 +10,10 @@ const HOUR = 60 * 60 * 1000;
 
 router.get('/game', async (req, res) => {
   const { season, week, users } = req.query;
-  const leagueId = LEAGUE_ID;
+  // ?league= any Sleeper league (the league picker); default Rollin' with Mahomies.
+  const other = String(req.query.league || '').trim();
+  if (other && !/^\d{5,25}$/.test(other)) return res.status(400).json({ error: 'Not a Sleeper league id' });
+  const leagueId = other || LEAGUE_ID;
   if (!leagueId) return res.status(500).json({ error: 'SLEEPER_LEAGUE_ID is not set' });
   if (!season || !week || !users) {
     return res.status(400).json({ error: 'Need season, week and users (two user ids, comma separated)' });
@@ -22,7 +25,8 @@ router.get('/game', async (req, res) => {
     const s = chain.find((x) => x.season === String(season));
     if (!s) return res.status(404).json({ error: `No league found for ${season}` });
 
-    const state = await sleeper('/state/nfl');
+    const sport = chain[0]?.sport || 'nfl';
+    const state = await sleeper(`/state/${sport}`);
     const isPast = String(season) < state.season || Number(week) < Number(state.week);
     const matchupAge = isPast ? 7 * 24 * HOUR : 2 * 60 * 1000; // old weeks never change
 
@@ -30,7 +34,7 @@ router.get('/game', async (req, res) => {
       sleeper(`/league/${s.league_id}`, { maxAgeMs: HOUR }),
       sleeper(`/league/${s.league_id}/rosters`, { maxAgeMs: HOUR }),
       sleeper(`/league/${s.league_id}/matchups/${week}`, { maxAgeMs: matchupAge }),
-      getPlayers()
+      getPlayers(sport)
     ]);
 
     const slots = (league.roster_positions || []).filter((p) => p !== 'BN' && p !== 'IR' && p !== 'TAXI');

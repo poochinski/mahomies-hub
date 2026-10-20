@@ -11,13 +11,29 @@ import { draftIndex, draftSeason } from '../draft.js';
 import { frontOffice } from '../records/frontoffice.js';
 import { sleeper } from '../sleeper/client.js';
 import { LEAGUE_ID, COMMISH_USER_ID } from '../config.js';
+import { userLeagues, lookupUser } from '../leagues.js';
 
 const router = Router();
-router.get('/hub', async (_req, res) => {
+
+// GET /api/leagues?user=<Sleeper user id> — the league picker: every league he's in this season
+// (football + basketball) with this week's matchup. GET /api/sleeper-user?name= — username → id.
+router.get('/leagues', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { res.json({ leagues: await userLeagues(req.query.user) }); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+router.get('/sleeper-user', async (req, res) => {
+  try { res.json(await lookupUser(req.query.name)); }
+  catch (err) { res.status(404).json({ error: err.message }); }
+});
+router.get('/hub', async (req, res) => {
   if (!LEAGUE_ID) return res.status(500).json({ error: 'SLEEPER_LEAGUE_ID is not set' });
+  // ?league=<Sleeper league id> builds any other league (the league picker). Default: Rollin' with Mahomies.
+  const other = String(req.query.league || '').trim();
+  if (other && !/^\d{5,25}$/.test(other)) return res.status(400).json({ error: 'Not a Sleeper league id' });
   try {
     res.set('Cache-Control', 'no-store');
-    res.json(await getHub());
+    res.json(await getHub(other ? { leagueId: other } : {}));
   } catch (err) {
     console.error('hub build failed', err);
     res.status(502).json({ error: err.message });
