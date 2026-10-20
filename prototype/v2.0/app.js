@@ -456,13 +456,11 @@ function slotSummary(desk){
   if(you>him)return 'Ahead '+you+'–'+him;
   return 'Behind '+him+'–'+you;
 }
-/* Lineup chart labels (Jayson, 2026-10-19): a finished 0 is "0.0", not a dot.
-   Played (live or final) → points, even 0 · not played yet → kickoff day (SUN/MON/THU) · bye → BYE · no one in the slot → red dash. */
-function slotNum(p,v){if(!p)return '';if(p.e)return '—';if(p.st==='bye')return 'BYE';
-  if(p.st==='in'||p.st==='post')return f1(v);
-  if(p.k){var d=new Date(p.k);if(!isNaN(d))return d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase()}
-  return '·'}
-function slotNumCls(p){return !p?'':p.e?' emp':(p.st==='pre'||p.st==='bye')?' wait':''}
+/* Lineup chart numbers (Jayson, 2026-10-19): the chart as it was, except a player whose game has
+   started (live or final) shows his points even when they're 0 ("0.0", like "14.3"). A dot still
+   means he hasn't played yet (or nobody's in the slot). He tried kickoff days / BYE in place of the
+   dots and didn't want them. */
+function slotNum(p,v){return v>0||(p&&!p.e&&(p.st==='in'||p.st==='post'))?f1(v):'·'}
 function slotBlock(desk){
   if(!desk.mine.length)return '';
   var n=Math.max(desk.mine.length,desk.his.length),vals=[];
@@ -470,11 +468,9 @@ function slotBlock(desk){
   var mx=Math.max.apply(null,vals.concat([1])),cols='';
   for(var i=0;i<n;i++){var a=desk.mine[i],b=desk.his[i],lab=(a&&a.s)||(b&&b.s)||'';
     var ah=slotPts(a),bh=slotPts(b);
-    var bar=function(p,v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0,played=p&&!p.e&&(p.st==='in'||p.st==='post');
-      return '<i class="'+cls+(pct?'':played?' zero':'')+'" style="'+(pct?'height:'+pct+'%':played?'height:3px;min-height:3px':'height:0;min-height:0')+'"></i>'};
-    var num='<i class="you'+slotNumCls(a)+'">'+slotNum(a,ah)+'</i><i class="him'+slotNumCls(b)+'">'+slotNum(b,bh)+'</i>';
-    var on=(a&&!a.e&&a.st==='in')||(b&&!b.e&&b.st==='in');
-    cols+='<span class="mh-col'+(on?' on':'')+'"><span class="mh-bars">'+bar(a,ah,'you')+bar(b,bh,'him')+'</span><b class="mh-n">'+num+'</b><small>'+esc(lab)+'</small></span>'}
+    var bar=function(v,cls){var pct=v>0?Math.max(8,Math.round(v/mx*100)):0;return '<i class="'+cls+'" style="'+(pct?'height:'+pct+'%':'height:0;min-height:0')+'"></i>'};
+    var num='<i class="you">'+slotNum(a,ah)+'</i><i class="him">'+slotNum(b,bh)+'</i>';
+    cols+='<span class="mh-col"><span class="mh-bars">'+bar(ah,'you')+bar(bh,'him')+'</span><b class="mh-n">'+num+'</b><small>'+esc(lab)+'</small></span>'}
   var sum=slotSummary(desk);
   return '<button type="button" class="mh-slots" data-mh="slots">'+(sum?'<div class="mh-sum">'+sum+'</div>':'')+'<span class="mh-cols">'+cols+'</span><span class="mh-legend"><i class="you"></i>You <i class="him"></i>'+esc(team(desk.opp))+'</span></button>';
 }

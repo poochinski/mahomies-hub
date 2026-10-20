@@ -1439,9 +1439,6 @@ button.mx-card{width:100%;color:inherit;font:inherit;text-align:left}
 @media (max-width:380px){.ut{font-size:13px}.pagehead h1{font-size:42px}.me-hx h1{font-size:32px}.wl-bal{font-size:58px}}
 
 /* Lineup chart: zero, waiting, empty (2026-10-19) */
-.mh-bars i.zero{opacity:.55}
-.mh-n i.wait{font-size:8px;letter-spacing:.02em;color:var(--faint)}
-.mh-n i.emp{color:var(--loss)}
 
 /* Game Center (2026-10-19): you can see who's on the field. A live player's half of the row
    lights up; a red-zone drive lights it red. Names are full ink (they inherited the faint
@@ -1462,8 +1459,6 @@ html[data-theme="light"]{--field:#0b9a55}
 .gc-ball.rz{color:var(--live)!important}
 .gc-ball em{font:800 9px/1.5 var(--body);font-style:normal;letter-spacing:.06em;text-transform:uppercase;padding:0 6px;border-radius:99px;background:var(--live);color:#fff}
 /* Home lineup chart: live column */
-.mh-col.on{background:color-mix(in srgb,var(--field) 12%,var(--panel));border-color:color-mix(in srgb,var(--field) 45%,transparent);position:relative}
-.mh-col.on::after{content:"";position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--live);animation:livepulse 1.4s ease-in-out infinite}
 /* Slot vs slot: live rows get the same light */
 .mh-line.on{background:color-mix(in srgb,var(--field) 10%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--field) 45%,transparent)}
 .gc-p .gc-st{white-space:normal!important;overflow:visible!important;line-height:1.3}
