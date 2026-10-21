@@ -1,11 +1,13 @@
 # HANDOFF — where we left off
 
-**Last updated:** 2026-10-19 (Pacific) · **AI:** Claude
-**Current phase:** v3 layout is **the current version** (Jayson, 2026-10-18). The old app stays available as **Me › Settings › Old style** (`/classic`). Oct 19: **every Sleeper league you're in** (football + basketball) behind a league picker; Rollin' with Mahomies stays the home league.
+**Last updated:** 2026-10-21 (Pacific) · **AI:** Claude
+**Current phase:** **Roadmap Phase 0 (Foundation)** — see `docs/ROADMAP.md` (live doc with Jayson's verdicts: https://claude.ai/artifact/L3aH1k5D7mJxkAV4MoJS9N). v3 layout is **the current version** (Jayson, 2026-10-18). The old app stays available as **Me › Settings › Old style** (`/classic`). Oct 19: **every Sleeper league you're in** (football + basketball) behind a league picker; Rollin' with Mahomies stays the home league.
 **Last commit:** "Your leagues: pick any Sleeper league you're in, football or basketball"
 **App status:** Working · **Live URL:** https://mahomies-hub-production.up.railway.app · old look for comparison: **/test/classic**
 
 ## What we're working toward right now
+**Oct 21: Jayson wants to go page by page, line by line, and build the app out to its full potential, testing it all season (real and fake data) and through the offseason with bots and AI.** The plan is `docs/ROADMAP.md` (copy of the live doc). Phase 0 (Weeks 7–8): move the test harness into the repo, a practice copy of the app on Railway, number checks on every hub build, start recording game days (Sleeper + ESPN once a minute, compressed — needed for offseason replays), an address for every page, a Report a problem button. Phase 1 (Weeks 9–14): one page review with Jayson a week, built by Thursday. 13 open decisions are at the end of the roadmap; ask about 1–6 first.
+
 v3 is the version going forward. The old app is kept as an option anyone can pick in Me › Settings › Old style (and switch back from Me in the old app). **If he says "revert" for everyone, do the section below.** "Revert" means back to the original (pre-v3) app. If he instead says to go back to the *colors-only* v3 pass, that is branch `release-v3-colors` (commit `6490778`). If he keeps it, delete the "on trial" lines here and in BIBLE §4. Feature work after that is unchanged: the two record-book pushes, then a free weekly pick'em, Trade Court, Matchup Hype. Front end is `prototype/v2.0/` (app.html, app.css, app.js, snapshot.json) — edit directly, no build step. Do not edit prototype/v1.x, prototype/dist or prototype/classic.
 
 ## Old style switch (2026-10-18)
@@ -240,6 +242,7 @@ The pre-v3 front end is saved three ways: branch **`release-v2.6-classic`** (= c
 - **Yahoo import: PARKED (Jayson, 2026-10-10).** Part 1 is live at /yahoo. Login works, but Yahoo still refuses the find-leagues call ("not authorized"), even after he checked the app permissions and the login started asking for `scope=fspt-r`. When we pick it up again: get a screenshot of the app's API Permissions on developer.yahoo.com, check `/api/yahoo/status` (connected_at/scope show whether a fresh login happened), and try a new Yahoo app with only Fantasy Sports → Read. Fallback: Jayson screenshots Yahoo's History pages (standings + champions).
 
 ## Next steps (in order)
+**Follow `docs/ROADMAP.md` (Phase 0 first). The older list below is folded into it; keep it for detail.**
 0. **More "clickable" passes** (Jayson wants everything to open relevant info; expand as the app grows): award rows → the game/week that won it; standings stats (PF, all-play, luck) → week-by-week breakdown; power-ranking score → the four ingredients; H2H cell → rivalry (exists); recap names → games; Last-week top player tile → player card; playoff odds row → that team's remaining schedule.
 1. ~~2.1 Live Game Center~~ done; players on the field are highlighted (Oct 19). Ideas for later: big plays, push alerts. Other leagues: a live pulse/Game Center for them would need the pulse built per league.
 2. ~~Sportsbook batch 2~~ done (v2.3). Check the Week 6 post **Tue Oct 13, 6 AM PT** (lines + Specials); first settlement **Wed Oct 21, 3 AM PT**.
