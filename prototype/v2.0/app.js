@@ -417,29 +417,65 @@ function needLine(id,opp,sMe,sOpp){
   if(bLeft&&need>0.05)return btn((youBehind?'Need ':'They need ')+'<b class="num">'+f1(need)+'</b>'+(aLeft?' more':' to win'));
   return '';
 }
+/* Stakes (Jayson, 2026-10-25): standings go by wins (head-to-head plus the median game), then total
+   points scored. So where a win or a loss leaves you depends on every other game this week and on
+   everyone's points too, not just yours. Last week the card said "3rd if you win"; three other 5-2
+   teams also won with more points and he finished 6th.
+   Now: every team's week is played out from where it stands right now (final scores locked, live
+   scores plus the projection for what's left). The headline is the place you'd finish if every other
+   game ends as projected; the range under it comes from playing the rest of the week out 2,000 times. */
+function weekState(){
+  var out={};
+  if(pulseForWeek()&&PULSE.games&&PULSE.games.length){
+    PULSE.games.forEach(function(g){[[g.a,g.b],[g.b,g.a]].forEach(function(p){var s=slateSide(g,p[0]),pts=Number(s.pts)||0;
+      out[p[0]]={uid:p[0],opp:p[1],pts:pts,proj:s.fin?pts:Math.max(pts,s.proj!=null?Number(s.proj)||0:pts),fin:!!s.fin}})});
+  } else (D.lines||[]).forEach(function(l){[['a','b'],['b','a']].forEach(function(k){var pts=Number(l['live_'+k[0]])||0;
+      out[l[k[0]]]={uid:l[k[0]],opp:l[k[1]],pts:pts,proj:Math.max(pts,Number(l['p'+k[0]])||0),fin:false}})});
+  return out;
+}
+function rng32(a){return function(){a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+// One finish of the week: who wins each game, the median game, points, then the order.
+function weekTable(st,ws,fin,me,opp,meWins){
+  if(meWins!=null&&fin[me]!=null&&fin[opp]!=null&&(meWins?fin[me]<=fin[opp]:fin[me]>=fin[opp])){var x=fin[me];fin[me]=fin[opp];fin[opp]=x;if(fin[me]===fin[opp])fin[meWins?me:opp]+=0.01}
+  var vals=Object.keys(fin).map(function(u){return fin[u]}).sort(function(a,b){return a-b}),n=vals.length;
+  var med=n?(vals[Math.floor((n-1)/2)]+vals[Math.ceil((n-1)/2)])/2:0;
+  return st.map(function(t){var r={uid:t.uid,w:t.w,l:t.l,pf:t.pf,wk:null},v=fin[t.uid],s=ws[t.uid];
+    if(v!=null&&s){r.wk=v;r.pf+=v;var o=fin[s.opp];if(o!=null){if(v>o)r.w++;else if(v<o)r.l++}
+      if(D.league.median){if(v>med)r.w++;else r.l++}}
+    return r}).sort(function(x,y){return (y.w-x.w)||(y.pf-x.pf)||(x.uid<y.uid?-1:1)});
+}
+var SEEDC={k:'',v:null};
 function seedOutlook(me,opp,sMe,sOpp){
   var L=D.league;if(!L||L.week>=L.playoff_start||L.last_scored>=L.week)return null;
   var st=(D.seasons[CUR()]||{}).standings||[];if(st.length<4)return null;
   var mine=st.filter(function(t){return t.uid===me})[0];if(!mine||!st.some(function(t){return t.uid===opp}))return null;
-  var counted=!!(sMe&&sOpp&&sMe.fin&&sOpp.fin);
-  function place(meWins){
-    var rows=st.map(function(t){return {uid:t.uid,w:t.w,l:t.l,pf:t.pf}});
-    var a=rows.filter(function(t){return t.uid===me})[0],b=rows.filter(function(t){return t.uid===opp})[0];
-    if(meWins){a.w++;b.l++}else{b.w++;a.l++}
-    if(counted){a.pf+=Number(sMe.pts)||0;b.pf+=Number(sOpp.pts)||0}
-    rows.sort(function(x,y){return (y.w-x.w)||(y.pf-x.pf)||(x.uid<y.uid?-1:1)});
-    var seed=1;rows.forEach(function(t,i){if(t.uid===me)seed=i+1});
-    return {seed:seed,rows:rows};
+  var ws=weekState();if(!ws[me]||!ws[opp]){ws[me]={uid:me,opp:opp,pts:sMe?Number(sMe.pts)||0:0,proj:sMe?finalOf(sMe):0,fin:!!(sMe&&sMe.fin)};ws[opp]={uid:opp,opp:me,pts:sOpp?Number(sOpp.pts)||0:0,proj:sOpp?finalOf(sOpp):0,fin:!!(sOpp&&sOpp.fin)}}
+  var key=me+'|'+opp+'|'+L.week+'|'+Object.keys(ws).map(function(u){var s=ws[u];return u+':'+s.pts.toFixed(1)+':'+s.proj.toFixed(1)+':'+(s.fin?1:0)}).join(',');
+  if(SEEDC.k===key)return SEEDC.v;
+  var counted=!!(ws[me].fin&&ws[opp].fin),allFin=Object.keys(ws).every(function(u){return ws[u].fin});
+  function seedIn(rows){for(var i=0;i<rows.length;i++)if(rows[i].uid===me)return i+1;return 0}
+  function scenario(meWins){
+    var proj={};Object.keys(ws).forEach(function(u){proj[u]=ws[u].proj});
+    var rows=weekTable(st,ws,proj,me,opp,meWins),seed=seedIn(rows),lo=seed,hi=seed;
+    if(!allFin){var R=rng32(9001+L.week*31+(meWins?7:0)),seen=[],N=2000;
+      for(var k=0;k<N;k++){var f={};Object.keys(ws).forEach(function(u){var s=ws[u];if(s.fin){f[u]=s.pts;return}
+          var left=Math.max(0,s.proj-s.pts),sd=left>0?2.2*Math.sqrt(left)+2:0,z=Math.sqrt(-2*Math.log(R()||1e-9))*Math.cos(2*Math.PI*R());
+          f[u]=Math.max(s.pts,s.proj+sd*z)});
+        seen.push(seedIn(weekTable(st,ws,f,me,opp,meWins)))}
+      seen.sort(function(a,b){return a-b});lo=Math.min(seed,seen[Math.floor(N*0.1)]);hi=Math.max(seed,seen[Math.floor(N*0.9)])}
+    return {seed:seed,lo:lo,hi:hi,rows:rows};
   }
-  return {cur:mine.seed,win:place(true),lose:place(false),counted:counted};
+  var v={cur:mine.seed,win:scenario(true),lose:scenario(false),counted:counted,allFin:allFin};
+  SEEDC={k:key,v:v};return v;
 }
-function seedCell(label,seed,from){
-  var sub=seed<from?'up from '+ord(from):seed>from?'down from '+ord(from):'same';
-  return '<button type="button" class="mh-fact" data-mh="seed"><small>'+label+'</small><b>'+ord(seed)+'</b><span>'+sub+'</span></button>';
+function seedCell(label,o,from){
+  var mv=o.seed<from?'up from '+ord(from):o.seed>from?'down from '+ord(from):'same as now';
+  var sub=o.lo!==o.hi?'range '+ord(o.lo)+'–'+ord(o.hi):mv;
+  return '<button type="button" class="mh-fact" data-mh="seed"><small>'+label+'</small><b>'+ord(o.seed)+'</b><span>'+sub+'</span></button>';
 }
 function stakeBlock(me,opp,sMe,sOpp){
   var med=medianLine(me),o=seedOutlook(me,opp,sMe,sOpp);if(!med&&!o)return '';
-  return '<div class="mh-facts">'+med+(o?seedCell('If you win',o.win.seed,o.cur)+seedCell('If you lose',o.lose.seed,o.cur):'')+'</div>';
+  return '<div class="mh-facts">'+med+(o?seedCell('If you win',o.win,o.cur)+seedCell('If you lose',o.lose,o.cur):'')+'</div>';
 }
 function slotSummary(desk){
   var mine=desk.mine,his=desk.his,n=Math.max(mine.length,his.length),you=0,him=0,one='';
@@ -612,10 +648,13 @@ function seedSheet(){
   var d=myDesk();if(!d)return '<p class="muted">Pick your team first.</p>';
   var o=seedOutlook(d.me,d.opp,d.sMe,d.sOpp);
   if(!o)return '<p class="muted">This is for the regular season, and only before the week is already in the standings.</p>';
-  function table(title,pack){return '<div class="kicker" style="margin:14px 0 4px">'+title+'</div><div class="rows">'+pack.rows.map(function(t,i){
-    return '<button type="button" class="row'+(t.uid===d.me?' me':'')+'" data-mgr="'+t.uid+'" style="grid-template-columns:28px minmax(0,1fr) auto"><span class="rk">'+(i+1)+'</span><b>'+esc(team(t.uid))+'</b><span class="num">'+t.w+'-'+t.l+'</span></button>'}).join('')+'</div>'}
-  var note=o.counted?'The week is over, so these points count in the tiebreaker.':'This week\'s points are not in the tiebreaker yet. If two teams have the same wins, the one with more points scored stays ahead.';
-  return '<div class="ph" style="margin:0"><div><div class="kicker">Regular season</div><h2>Where this game leaves you</h2></div></div><p class="mh-note">'+note+'</p>'+table('If you win · '+ord(o.win.seed),o.win)+table('If you lose · '+ord(o.lose.seed),o.lose);
+  function table(title,pack){return '<div class="kicker" style="margin:14px 0 4px">'+title+(pack.lo!==pack.hi?' · could be '+ord(pack.lo)+' to '+ord(pack.hi):'')+'</div><div class="rows">'+pack.rows.map(function(t,i){
+    var tie=pack.rows.filter(function(x){return x.w===t.w&&x.l===t.l}).length>1;
+    return '<button type="button" class="row'+(t.uid===d.me?' me':'')+'" data-mgr="'+t.uid+'" style="grid-template-columns:28px minmax(0,1fr) auto auto;column-gap:10px"><span class="rk">'+(i+1)+'</span><b style="overflow-wrap:anywhere">'+esc(team(t.uid))+'</b><span class="num">'+t.w+'-'+t.l+'</span><span class="num'+(tie?'':' muted')+'" style="min-width:58px;text-align:right'+(tie?';font-weight:700':'')+'">'+f1(t.pf)+'</span></button>'}).join('')+'</div>'}
+  var note='Standings go by record (head-to-head'+(D.league.median?' plus the median game':'')+'), then total points, so every game this week counts, not just yours. '+
+    (o.allFin?'Every game is final. ':'The place shown is where you\'d finish if every other game ends as projected; the range covers 8 of 10 ways the rest of the week could go. ')+
+    'Points are season totals with this week in; bold ones are breaking a tie.';
+  return '<div class="ph" style="margin:0"><div><div class="kicker">Regular season · after Week '+D.league.week+'</div><h2>Where this game leaves you</h2></div></div><p class="mh-note">'+note+'</p>'+table('If you win · '+ord(o.win.seed),o.win)+table('If you lose · '+ord(o.lose.seed),o.lose);
 }
 /* home() was replaced by homeV3() in the v3 layout (2026-10-17). */
 function weekSheet(s,w){
