@@ -1297,8 +1297,9 @@ function legLabel(p){var l=bl(p.line);if(!l)return '?';if(FUM[p.mkt])return fuNa
 function legKind(p){return FUM[p.mkt]?'Future':SPM[p.mkt]?'Special':p.mkt==='prop'?'Player prop':p.mkt==='ml'?'Moneyline':p.mkt==='spread'?'Spread':'Total'}
 function pkey(p){return p.line+'|'+p.mkt+'|'+p.side+'|'+(p.pid||'')}
 function bank(){return BK.me?BK.me.balance:0}
-function money2(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2})}
-function m2(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+var NF={};function nfmt(a,b){var k=a+'-'+b;if(!NF[k])try{NF[k]=new Intl.NumberFormat('en-US',{minimumFractionDigits:a,maximumFractionDigits:b})}catch(e){NF[k]={format:function(n){return Number(n).toFixed(b)}}}return NF[k]}
+function money2(n){return nfmt(0,2).format(Number(n))}
+function m2(n){return nfmt(2,2).format(Number(n))}
 function whenTxt(iso){return new Date(iso).toLocaleString('en-US',{weekday:'short',hour:'numeric',minute:'2-digit'})}
 function lockTxt(l){if(l.status==='final')return 'Final';if(l.status==='void')return 'Off the board';if(l.finished)return 'Games over · waiting on final';
   if(l.live)return 'Live'+(l.left!=null?' · '+l.left+'% left':'');
@@ -1767,7 +1768,7 @@ var GG_COL=['#ff4545','#3bd1ff','#ffd23b','#5dff8f','#ff5fd6','#ff9a3b','#b18cff
 var GG_SEQ=['RING','CAP','TROPHY','BALL','STADIUM','PLAYBOOK','WILD','CAP','BALL','TICKET','PLAYBOOK','DRAFT'];
 var GG_V=26; // reel speed, symbols per second
 var GG_JP=[['GRAND',250,'#ff5fd6'],['MAJOR',50,'#ff4545'],['MINOR',15,'#3bd1ff'],['MINI',5,'#5dff8f']];
-function gb(n){n=Math.round(Number(n)*100)/100;return n%1?m2(n):n.toLocaleString('en-US')}
+function gb(n){n=Math.round(Number(n)*100)/100;return n%1?m2(n):nfmt(0,0).format(n)}
 function fm(){return (SL.pt&&SL.pt.free_mult)||3}
 
 /* ---------- sound (WebAudio, nothing to download) ---------- */
@@ -1970,7 +1971,7 @@ function openSlot(){
     else if(SL.state.free_left>0)ggMsg(SL.state.free_left+' free spins left · tap FREE');
     else ggMsg(SL.cred<SL.bet?'Not enough Bucks to spin':'Play '+((SL.pt&&SL.pt.lines.length)||20)+' lines · good luck')}).catch(function(e){ggMsg(e.message)})}
 function closeSlot(){if(SL.spinning||SL.busy||SL.roll)return;SL.open=false;SL.auto=0;ggStopCycle();aHum(false);aMusic(null);var el=slotRoot();el.classList.remove('open');document.body.style.overflow='';bookLoad()}
-function slotRender(){
+function slotRender(){GG_OVER=0;
   var el=slotRoot(),st=SL.state,free=!!(st&&st.free_left>0);
   el.innerHTML='<div class="gg">'+
    '<div class="gg-top"><button type="button" class="gg-ib" data-slx="1" aria-label="Close">✕</button><div class="gg-ttl">Mahomie\'s Hub · after hours</div>'+
@@ -2000,17 +2001,20 @@ function slotRender(){
 }
 function ggBind(){var box=document.getElementById('ggReels');if(!box)return;var r0=box.querySelector('.gg-reel');var w=r0.clientWidth||60,h=Math.round(w*.9);
   box.parentNode.style.setProperty('--ch',h+'px');
-  GR.forEach(function(r,i){r.el=box.querySelector('[data-reel="'+i+'"]');r.strip=r.el.firstChild;r.h=h;r.base=null;r.cv=null;r.cvOn=false;rDraw(r)});ggCellSprites()}
+  GR.forEach(function(r,i){r.el=box.querySelector('[data-reel="'+i+'"]');r.strip=r.el.firstChild;r.h=h;r.base=null;r.cv=null;r.cvOn=false;rDraw(r)});ggCellSprites();if(GGB.cell)GR.forEach(function(r){if(!r.cv)rMake(r)});
+  var B=box.getBoundingClientRect();GG_GEO={w:B.width,h:B.height,x:GR.map(function(r){var c=r.el.getBoundingClientRect();return c.left-B.left+c.width/2})}}
+var GG_GEO=null;
 /* Spinning reels (2026-11-04, second pass). While a reel moves it is drawn on its own small canvas from pre-painted
    cells (symbol + its glow, sharp or motion-blurred): five pictures stamped per frame, nothing for the browser to
    re-lay-out or repaint. When the reel stops, the normal cells take over at the same spot (win frames, pops, lines). */
 /* Frame meter (hidden; triple-tap the HELLO screen). Times every frame of a spin, a win count-up and a Big Win on the
    phone itself and shows frames per second and the slowest frame, so a stutter can be measured, not guessed. */
-var GGP={on:false,ph:null,d:[],last:0,res:{}};try{GGP.on=localStorage.getItem('gg_fps')==='1'}catch(e){}
-function ggPerfStart(ph){if(!GGP.on)return;GGP.ph=ph;GGP.d=[];GGP.last=0;if(!GGP.raf){var f=function(t){if(!GGP.ph){GGP.raf=0;return}if(GGP.last)GGP.d.push(t-GGP.last);GGP.last=t;GGP.raf=requestAnimationFrame(f)};GGP.raf=requestAnimationFrame(f)}}
+var GGP={on:false,ph:null,d:[],last:0,res:{},tag:'',why:{}};var GG_TP={start:3,land:3,win:3,lines:3,count:2,screen:1};function ggTag(t){if(!GGP.tag||(GG_TP[t]||0)>=(GG_TP[GGP.tag]||0))GGP.tag=t}try{GGP.on=localStorage.getItem('gg_fps')==='1'}catch(e){}
+function ggPerfStart(ph){if(!GGP.on)return;GGP.ph=ph;GGP.d=[];GGP.last=0;if(!GGP.raf){var f=function(t){if(!GGP.ph){GGP.raf=0;return}if(GGP.last){var dd=t-GGP.last;GGP.d.push(dd);if(dd>34){var w=GGP.tag||'other';GGP.why[w]=(GGP.why[w]||0)+1}}GGP.tag='';GGP.last=t;GGP.raf=requestAnimationFrame(f)};GGP.raf=requestAnimationFrame(f)}}
 function ggPerfEnd(ph){if(!GGP.ph||(ph&&GGP.ph!==ph))return;var d=GGP.d,n=d.length;if(n>3){var sum=d.reduce(function(a,b){return a+b},0);GGP.res[GGP.ph]={fps:Math.round(1000*n/sum),worst:Math.round(Math.max.apply(null,d)),slow:d.filter(function(x){return x>34}).length,n:n}}GGP.ph=null;ggPerfUi()}
 function ggPerfUi(){var root=slotRoot(),el=document.getElementById('ggFps');if(!GGP.on){if(el)el.remove();return}if(!el){el=document.createElement('div');el.id='ggFps';el.className='gg-fps';root.appendChild(el)}
-  el.innerHTML=['spin','count','big'].map(function(k){var r=GGP.res[k];return '<span><b>'+k.toUpperCase()+'</b> '+(r?r.fps+' fps · slowest '+r.worst+' ms · '+r.slow+' slow':'—')+'</span>'}).join('')+'<span>'+esc((navigator.userAgent.match(/(iPhone OS|Android) [\d_.]+/)||[''])[0].replace(/_/g,'.'))+' · '+(GGB.cell?'fast reels':'basic reels')+'</span>'}
+  var wy=Object.keys(GGP.why).sort(function(a,b){return GGP.why[b]-GGP.why[a]}).map(function(k){return k+' '+GGP.why[k]}).join(' · ');
+  el.innerHTML=['spin','count','big'].map(function(k){var r=GGP.res[k];return '<span><b>'+k.toUpperCase()+'</b> '+(r?r.fps+' fps · slowest '+r.worst+' ms · '+r.slow+' slow':'—')+'</span>'}).join('')+(wy?'<span><b>SLOW AT</b> '+esc(wy)+'</span>':'')+'<span>'+esc((navigator.userAgent.match(/(iPhone OS|Android) [\d_.]+/)||[''])[0].replace(/_/g,'.'))+' · '+(GGB.cell?'fast reels':'basic reels')+'</span>'}
 var GG_GLOW={RING:['255,70,110',.22,.62],TROPHY:['246,207,76',.22,.62],WILD:['255,95,214',.28,.66],TICKET:['59,209,255',.25,.66],DRAFT:['59,209,255',.25,.66]};
 function ggCellSprites(){var r0=GR[0];if(!GGB.done||!r0||!r0.el||!r0.h)return;var w=r0.el.clientWidth,h=r0.h,dpr=Math.min(2,window.devicePixelRatio||1),key=w+'x'+h+'@'+dpr;
   if(!w||(GGB.cell&&GGB.cell.key===key))return;var W=Math.round(w*dpr),H=Math.round(h*dpr),sp={};
@@ -2018,15 +2022,17 @@ function ggCellSprites(){var r0=GR[0];if(!GGB.done||!r0||!r0.el||!r0.h)return;va
     if(g){var R=Math.sqrt(W*W+H*H)/2,gr=x.createRadialGradient(W/2,H/2,0,W/2,H/2,R);gr.addColorStop(0,'rgba('+g[0]+','+g[1]+')');gr.addColorStop(g[2],'rgba('+g[0]+',0)');x.fillStyle=gr;x.fillRect(0,0,W,H)}
     var z=Math.min(W,H)*.88;x.drawImage(GGB.c[k][v],(W-z)/2,H*.06,z,z);sp[k][v]=c})});
   GGB.cell={key:key,w:w,h:h,dpr:dpr,W:W,H:H,sp:sp};
-  GR.forEach(function(r){if(r.cv){r.cv.width=W;r.cv.height=H*3}})}
-function rCanvas(r){var C=GGB.cell;if(!r.cv){r.cv=document.createElement('canvas');r.cv.className='gg-rc';r.cv.width=C.W;r.cv.height=C.H*3;r.el.insertBefore(r.cv,r.strip.nextSibling)}
+  GR.forEach(function(r){if(r.cv){r.cv.width=W;r.cv.height=H*3}else rMake(r)})}
+function rMake(r){var C=GGB.cell;if(!C||!r.el||!r.strip)return;r.cv=document.createElement('canvas');r.cv.className='gg-rc';r.cv.width=C.W;r.cv.height=C.H*3;r.cx=r.cv.getContext('2d');r.el.insertBefore(r.cv,r.strip.nextSibling)}
+function rCanvas(r){var C=GGB.cell;if(!r.cv)rMake(r);
   if(!r.cvOn){r.cvOn=true;r.cv.style.visibility='visible';r.strip.style.visibility='hidden'}
-  var x=r.cv.getContext('2d'),len=r.s.length,bl=r.el.classList.contains('blur')?'b':'s',f=Math.floor(r.p);x.clearRect(0,0,r.cv.width,r.cv.height);
+  var x=r.cx||r.cv.getContext('2d'),len=r.s.length,bl=r.el.classList.contains('blur')?'b':'s',f=Math.floor(r.p);x.clearRect(0,0,r.cv.width,r.cv.height);
   for(var k=f-1;k<=f+3;k++){var c=C.sp[r.s[((k%len)+len)%len]];if(c)x.drawImage(c[bl],0,Math.round((k-r.p)*C.H))}}
 function rDraw(r){if(!r.strip)return;var len=r.s.length;
   if(r.mode&&r.mode!=='idle'&&GGB.cell){rCanvas(r);return}
   if(r.cvOn){r.cvOn=false;r.cv.style.visibility='hidden';r.strip.style.visibility=''}
-  if(r.base==null||r.p<r.base||r.p>=r.base+16){r.base=Math.floor(r.p)-14;var h='';for(var k=r.base-1;k<=r.base+19;k++)h+=gc(r.s[((k%len)+len)%len]);r.strip.innerHTML=h}
+  var sm=!!GGB.cell,span=sm?1:16;
+  if(r.base==null||r.p<r.base||r.p>=r.base+span){r.base=Math.floor(r.p)-(sm?0:14);var h='';for(var k=r.base-1;k<=r.base+(sm?3:19);k++)h+=gc(r.s[((k%len)+len)%len]);r.strip.innerHTML=h}
   r.strip.style.transform='translate3d(0,'+(-(r.p-(r.base-1))*r.h).toFixed(2)+'px,0)'}
 function cellEl(reel,row){var r=GR[reel];if(!r||!r.strip)return null;return r.strip.children[Math.round(r.p)+row-(r.base-1)]}
 function eob(x){var c1=1.15,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)}
@@ -2065,21 +2071,23 @@ function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getEl
    toward you and the odd spiral across the sky. Gold for the base game, green in free spins, blue in the drill;
    it speeds up while the reels spin and goes wild on big wins (the cabinet's .party). ---------- */
 function ggScreen(cv,fixed){if(!cv||!cv.getContext)return;var ctx=cv.getContext('2d');if(!ctx)return;
-  var dpr=Math.min(1.5,window.devicePixelRatio||1),W=0,H=0,last=0,bg=null,bgKey='',bmA=null,bmB=null,t0=performance.now(),fl=[],sp=[],ball=null,nextBall=2.5,stars=[],i;
+  var dpr=Math.min(1.5,window.devicePixelRatio||1),W=0,H=0,last=0,bg=null,bgKey='',bmA=null,bmB=null,resized=false,cab=cv.closest('.gg-cab'),twr=null,t0=performance.now(),fl=[],sp=[],ball=null,nextBall=2.5,stars=[],i;
   var calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   for(i=0;i<46;i++)stars.push([Math.random(),Math.random()*.42,Math.random()*6.3]);
   var PAL={base:['#090420','#45102e','255,196,64'],free:['#03160b','#0f5c35','93,255,143'],drill:['#020a1e','#0d3a72','80,200,255']};
-  function size(){W=cv.clientWidth||340;H=cv.clientHeight||160;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+  function size(){W=cv.clientWidth||340;H=cv.clientHeight||160;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);resized=false}
+  if(window.ResizeObserver)try{new ResizeObserver(function(){resized=true}).observe(cv)}catch(e){}
   function beam(len,ha,rgb){var hh=len*Math.sin(ha)+2,c=document.createElement('canvas');c.width=Math.ceil(len*dpr);c.height=Math.ceil(hh*2*dpr);var x=c.getContext('2d');x.scale(dpr,dpr);
     var g=x.createRadialGradient(0,hh,2,0,hh,len);g.addColorStop(0,'rgba('+rgb+',1)');g.addColorStop(1,'rgba('+rgb+',0)');x.fillStyle=g;x.beginPath();x.moveTo(0,hh);x.arc(0,hh,len,-ha,ha);x.closePath();x.fill();
     return {c:c,len:len,hh:hh}}
   function stamp(b,x,y,a,al){if(!b)return;ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.globalAlpha=Math.min(1,al);ctx.drawImage(b.c,0,-b.hh,b.len,b.hh*2);ctx.restore()}
-  function tower(x,y,s){ctx.fillStyle='#1a1d24';ctx.fillRect(x-1.5,y,3,H*.66-y);ctx.fillStyle='#2a2e38';ctx.fillRect(x-15,y-9,30,15);
-    for(var r=0;r<3;r++)for(var c=0;c<6;c++){ctx.fillStyle='rgba(255,252,230,'+(.75+.25*Math.sin(s*9+r+c))+')';ctx.fillRect(x-13+c*4.5,y-7+r*4.3,3,3)}}
+  function tower(x,y,s){if(!twr||twr.h!==H){var c=document.createElement('canvas');c.width=Math.ceil(30*dpr);c.height=Math.ceil((H*.66-y+9)*dpr);var g=c.getContext('2d');g.scale(dpr,dpr);
+      g.fillStyle='#1a1d24';g.fillRect(13.5,9,3,H*.66-y);g.fillStyle='#2a2e38';g.fillRect(0,0,30,15);g.fillStyle='#fffce6';for(var r=0;r<3;r++)for(var k=0;k<6;k++)g.fillRect(2+k*4.5,2+r*4.3,3,3);twr={c:c,h:H,w:30,hh:H*.66-y+9}}
+    ctx.globalAlpha=.85+.15*Math.sin(s*9);ctx.drawImage(twr.c,x-15,y-9,twr.w,twr.hh);ctx.globalAlpha=1}
   function frame(t){if(!cv.isConnected||(!fixed&&!SL.open))return;requestAnimationFrame(frame);if(t-last<(calm?400:(!fixed&&SL.spinning)?50:40))return;
-    if(!fixed&&document.querySelector('.gg-big,.gg-splash,.gg-drill')){last=t;return}var dt=last?Math.min(.1,(t-last)/1000):.033;last=t;
-    if(cv.clientWidth&&Math.abs(cv.clientWidth-W)>1)size();if(!W)return;
-    var s=(t-t0)/1000,cab=cv.closest('.gg-cab'),mode=fixed||(cab&&cab.classList.contains('free')?'free':'base'),P=PAL[mode],
+    if(!fixed&&(GG_OVER>0||document.getElementById('slBonus'))){last=t;return}var dt=last?Math.min(.1,(t-last)/1000):.033;last=t;
+    if(resized)size();if(!W)return;if(!fixed)ggTag('screen');
+    var s=(t-t0)/1000,mode=fixed||(cab&&cab.classList.contains('free')?'free':'base'),P=PAL[mode],
       hot=cab&&cab.classList.contains('party')?1:(!fixed&&SL.spinning)?.5:0,hz=H*.36,sy=H*.62,fy=H*.74;
     var key=mode+W+'x'+H;if(bgKey!==key){bgKey=key;bg=document.createElement('canvas');bg.width=cv.width;bg.height=cv.height;var b2=bg.getContext('2d');b2.setTransform(dpr,0,0,dpr,0,0);
       var g=b2.createLinearGradient(0,0,0,H);g.addColorStop(0,P[0]);g.addColorStop(.7,P[1]);g.addColorStop(1,'#000');b2.fillStyle=g;b2.fillRect(0,0,W,H);
@@ -2118,7 +2126,7 @@ function slotSpin(){
   SL.spinning=true;SL.res=null;SL.slam=false;SL.landed=0;SL.freeBase=free?(SL.state.free_won||0):0;SL.winShown=0;
   if(!free)SL.cred=Math.round((SL.cred-SL.bet)*100)/100;
   ggMeters();ggMsg(free?'Free spin · wins ×'+fm():'Good luck');
-  aPlay('spin');aHum(true);ggPerfStart('spin');
+  aPlay('spin');aHum(true);ggPerfStart('spin');ggTag('start');
   var t=performance.now();GR.forEach(function(r,i){r.mode='spin';r.st=t+i*45;r.v=0});ggKick();
   var t0=Date.now();
   api('/slots/spin',{body:{bet:SL.bet}}).then(function(r){SL.res=r;var wait=SL.slam?0:Math.max(0,560-(Date.now()-t0));setTimeout(function(){ggSchedule(r)},wait)})
@@ -2133,7 +2141,7 @@ function ggSchedule(r){SL.stopT.forEach(clearTimeout);SL.stopT=[];if(SL.slam){gg
     (function(i,ts){SL.stopT.push(setTimeout(function(){reelStop(GR[i],r.stops[i])},ts))})(i,t)}}
 function ggSlam(){if(SL.slam)return;SL.slam=true;aPlay('click');if(SL.res)ggSlamStop()}
 function ggSlamStop(){SL.stopT.forEach(clearTimeout);SL.stopT=[];var r=SL.res;GR.forEach(function(g,i){if(g.mode==='spin')reelStop(g,r.stops[i],true)})}
-function reelLanded(r){var res=SL.res;if(!res)return;var col=res.grid[r.i],sp=col.indexOf('TICKET')>=0||col.indexOf('DRAFT')>=0;
+function reelLanded(r){var res=SL.res;if(!res)return;ggTag('land');var col=res.grid[r.i],sp=col.indexOf('TICKET')>=0||col.indexOf('DRAFT')>=0;
   aPlay('stop',r.i);if(sp){SL.scat=(SL.scat||0);aPlay('scat',r.i)}
   try{if(navigator.vibrate)navigator.vibrate(sp?18:7)}catch(e){}
   if(sp)col.forEach(function(s,row){if(s==='TICKET'||s==='DRAFT'){var c=cellEl(r.i,row);if(c)c.classList.add('pop')}});
@@ -2142,18 +2150,18 @@ function ggPops(off){[].forEach.call(document.querySelectorAll('#ggReels .gc.pop
 function ggClearMarks(){[].forEach.call(document.querySelectorAll('#ggReels .gc.win,#ggReels .gc.dim'),function(c){c.classList.remove('win','dim')});var sv=document.getElementById('ggLines');if(sv)sv.innerHTML=''}
 function ggMark(cells){var on={};cells.forEach(function(c){on[c[0]+'-'+c[1]]=1});
   for(var i=0;i<5;i++)for(var row=0;row<3;row++){var e=cellEl(i,row);if(!e)continue;e.classList.toggle('win',!!on[i+'-'+row]);e.classList.toggle('dim',!on[i+'-'+row])}}
-function ggLineSvg(items){var box=document.getElementById('ggReels'),sv=document.getElementById('ggLines');if(!box||!sv||!SL.pt)return;var B=box.getBoundingClientRect(),html='';
+function ggLineSvg(items){var box=document.getElementById('ggReels'),sv=document.getElementById('ggLines');if(!box||!sv||!SL.pt)return;var G=GG_GEO,B=G?{width:G.w,height:G.h,left:0,top:0}:box.getBoundingClientRect(),html='';
   sv.setAttribute('viewBox','0 0 '+B.width.toFixed(1)+' '+B.height.toFixed(1));
   items.forEach(function(it){if(it.line<0)return;var ln=SL.pt.lines[it.line],pts=[];
-    GR.forEach(function(r,i){var c=r.el.getBoundingClientRect(),x=c.left-B.left+c.width/2,y=c.top-B.top+r.h*(ln[i]+.5);if(!i)pts.push([0,y]);pts.push([x,y]);if(i===4)pts.push([B.width,y])});
+    GR.forEach(function(r,i){var c=G?null:r.el.getBoundingClientRect(),x=G?G.x[i]:c.left-B.left+c.width/2,y=(G?0:c.top-B.top)+r.h*(ln[i]+.5);if(!i)pts.push([0,y]);pts.push([x,y]);if(i===4)pts.push([B.width,y])});
     var d=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
     html+='<polyline points="'+d+'" fill="none" stroke="#000" stroke-opacity=".6" stroke-width="7.5" stroke-linejoin="round" stroke-linecap="round"/><polyline points="'+d+'" fill="none" stroke="'+GG_COL[it.line]+'" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>'});
   sv.innerHTML=html}
 function ggShowAll(items){var all=[];items.forEach(function(it){all=all.concat(it.cells)});ggMark(all);ggLineSvg(items)}
-function ggCycle(){ggStopCycle();var it=SL.items;if(!it||!it.length)return;if(it.length===1){ggMark(it[0].cells);ggLineSvg(it);ggMsg(it[0].label,'hot');return}
-  var k=0,step=function(){var x=it[k%it.length];ggMark(x.cells);ggLineSvg([x]);ggMsg(x.label,'hot');k++};step();SL.cycleT=setInterval(step,1500)}
+function ggCycle(){ggTag('lines');ggStopCycle();var it=SL.items;if(!it||!it.length)return;if(it.length===1){ggMark(it[0].cells);ggLineSvg(it);ggMsg(it[0].label,'hot');return}
+  var k=0,step=function(){ggTag('lines');var x=it[k%it.length];ggMark(x.cells);ggLineSvg([x]);ggMsg(x.label,'hot');k++};step();SL.cycleT=setInterval(step,1500)}
 function ggStopCycle(){clearInterval(SL.cycleT);SL.cycleT=null}
-function ggDone(){var r=SL.res;SL.spinning=false;var st=SL.state;if(r.pots)st.pots=r.pots;
+function ggDone(){ggTag('win');var r=SL.res;SL.spinning=false;var st=SL.state;if(r.pots)st.pots=r.pots;
   st.free_left=r.free_left;st.free_bet=r.free_left>0?r.bet:null;st.balance=r.balance;
   var items=r.wins.map(function(w){return {line:w.line,cells:w.cells,label:'Line '+(w.line+1)+' · '+w.n+' '+GG_N[w.sym]+' · '+gb(w.pay)}});
   if(r.tickets>=3){var tc=[];r.grid.forEach(function(col,ri){col.forEach(function(s,row){if(s==='TICKET')tc.push([ri,row])})});items.push({line:-1,cells:tc,label:r.tickets+' tickets'+(r.scatter?' pay '+gb(r.scatter):'')+' · free spins!'})}
@@ -2166,7 +2174,7 @@ function ggDone(){var r=SL.res;SL.spinning=false;var st=SL.state;if(r.pots)st.po
   else if(items.length){ggShowAll(items);next()}
   else{ggMsg(r.free?r.free_left+' free spins left':'');st.free_won=r.free_won;ggMeters();ggAfter(r)}}
 function ggRoll(amt,dur,cb){var base=SL.cred,t0=performance.now(),last=0;SL.roll={amt:amt,base:base,cb:cb,done:false};var me=SL.roll;ggMeters();ggPerfStart('count');
-  var shown=0;function f(t){if(SL.roll!==me||me.done)return;var k=Math.min(1,(t-t0)/dur);if(t-shown>=30||k>=1){shown=t;SL.winShown=amt*k;SL.cred=base+amt*k;ggMetersFast()}
+  var shown=0;function f(t){if(SL.roll!==me||me.done)return;var k=Math.min(1,(t-t0)/dur);if(t-shown>=30||k>=1){shown=t;ggTag('count');SL.winShown=amt*k;SL.cred=base+amt*k;ggMetersFast()}
     if(t-last>62&&k<1){last=t;aPlay('tick',k)}if(k>=1)ggRollEnd();else requestAnimationFrame(f)}
   requestAnimationFrame(f)}
 function ggRollEnd(){var R=SL.roll;if(!R||R.done)return;R.done=true;ggPerfEnd('count');SL.winShown=R.amt;SL.cred=Math.round((R.base+R.amt)*100)/100;if(!R.big)ggWB(R.amt);SL.roll=null;ggMetersFast();aPlay('rollend');ggMeters();ggWBOut();if(R.cb)R.cb()}
@@ -2205,22 +2213,22 @@ var GG_SPLASH={
   freedone:function(n){return {icon:'TICKET',k:'Free spins complete',t:'YOU WON',n:gb(n),s:'Bucks',b:'Collect'}}};
 function ggSplash(kind,then,arg){var el=slotRoot(),d=document.createElement('div'),c=GG_SPLASH[kind](arg);d.className='gg-splash k-'+kind;
   d.innerHTML='<i class="gg-sp-fx"></i><canvas class="gg-coins"></canvas><div class="gg-sp-in">'+(c.clock?'<div class="gg-sp-clock num"><small>QTR 4</small><b id="ggClock">2:00</b></div>':'')+'<div class="gg-sp-i">'+gc(c.icon)+'</div><div class="gg-sp-k">'+esc(c.k)+'</div><div class="gg-sp-t">'+esc(c.t)+'</div>'+(c.n!=null?'<div class="gg-sp-n num">'+esc(String(c.n))+'</div>':'')+'<div class="gg-sp-s">'+esc(c.s)+'</div><button type="button" class="gg-sp-b">'+esc(c.b)+'</button></div>';
-  el.appendChild(d);if(kind==='drill'||kind==='freedone')aMusic(null);aPlay(kind==='drill'?'drill':kind==='freedone'?'fdone':'free');ggCoins(d.querySelector('canvas'),kind==='freedone'?70:kind==='drill'?30:45);
+  el.appendChild(d);GG_OVER++;if(kind==='drill'||kind==='freedone')aMusic(null);aPlay(kind==='drill'?'drill':kind==='freedone'?'fdone':'free');ggCoins(d.querySelector('canvas'),kind==='freedone'?70:kind==='drill'?30:45);
   var cab=document.getElementById('ggCab');if(cab)cab.classList.add('party','under');
   if(c.clock){var sec=120,ck=setInterval(function(){var e=document.getElementById('ggClock');if(!e||d._g){clearInterval(ck);return}sec--;e.textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');aPlay('tick',.2)},1000)}
-  var go=function(){if(d._g)return;d._g=1;aPlay('click');d.classList.add('out');if(cab)cab.classList.remove('party','under');setTimeout(function(){d.remove();if(then)then()},300)};
+  var go=function(){if(d._g)return;d._g=1;aPlay('click');d.classList.add('out');if(cab)cab.classList.remove('party','under');setTimeout(function(){d.remove();GG_OVER=Math.max(0,GG_OVER-1);if(then)then()},300)};
   d.querySelector('.gg-sp-b').addEventListener('click',function(e){e.stopPropagation();aInit();go()})}
-var GG_TIER=['','BIG WIN','MEGA WIN','EPIC WIN'];
+var GG_TIER=['','BIG WIN','MEGA WIN','EPIC WIN'],GG_OVER=0;
 function ggBig(amt,bet,cb,opt){opt=opt||{};SL.auto=0;var el=slotRoot(),d=document.createElement('div');d.className='gg-big';
   d.innerHTML='<div class="gg-rays"></div><canvas class="gg-coins"></canvas><div class="gg-big-in"><div class="gg-big-t" id="ggBigT">'+GG_TIER[1]+'</div><div class="gg-big-n num" id="ggBigN">0</div><div class="gg-big-s" id="ggBigS">Tap to skip</div></div>';
-  el.appendChild(d);var x=amt/bet,dur=x>=50?8000:x>=25?6200:4200,stopCoins=ggCoins(d.querySelector('canvas'),99999),cab=document.getElementById('ggCab');if(cab)cab.classList.add('party','under');
+  el.appendChild(d);GG_OVER++;var x=amt/bet,dur=x>=50?8000:x>=25?6200:4200,stopCoins=ggCoins(d.querySelector('canvas'),99999),cab=document.getElementById('ggCab');if(cab)cab.classList.add('party','under');
   aPlay('big');ggPerfStart('big');var t0=performance.now(),base=SL.cred,lvl=1,done=false,last=0,auto=null;if(!opt.noCred)SL.roll={amt:amt,base:base,done:false,big:true};
   function show(v){ggTx(document.getElementById('ggBigN'),gb(v));if(!opt.noCred){SL.winShown=v;SL.cred=base+v;ggMetersFast()}
     var cur=v/bet>=50?3:v/bet>=25?2:1;if(cur>lvl){lvl=cur;var tt=document.getElementById('ggBigT');if(tt){tt.textContent=GG_TIER[cur];tt.classList.remove('punch');void tt.offsetWidth;tt.classList.add('punch')}aPlay('lvl')}}
   function f(t){if(done)return;var k=Math.min(1,(t-t0)/dur);show(amt*(1-Math.pow(1-k,1.6)));if(t-last>75){last=t;aPlay('coin')}if(k>=1)finish();else requestAnimationFrame(f)}
   function finish(){if(done)return;done=true;ggPerfEnd('big');show(amt);if(!opt.noCred){SL.cred=Math.round((base+amt)*100)/100;SL.winShown=amt;SL.roll=null;ggMetersFast()}aPlay('rollend');
     var s=document.getElementById('ggBigS');if(s)s.textContent='Tap to continue';auto=setTimeout(close,3200)}
-  function close(){if(d._c)return;d._c=1;clearTimeout(auto);stopCoins();d.classList.add('out');if(cab)cab.classList.remove('party','under');setTimeout(function(){d.remove();ggMeters();if(cb)cb()},300)}
+  function close(){if(d._c)return;d._c=1;clearTimeout(auto);stopCoins();d.classList.add('out');if(cab)cab.classList.remove('party','under');setTimeout(function(){d.remove();GG_OVER=Math.max(0,GG_OVER-1);ggMeters();if(cb)cb()},300)}
   d.addEventListener('click',function(e){e.stopPropagation();if(!done)finish();else close()});requestAnimationFrame(f)}
 
 /* ---------- Two-Minute Drill (hold-and-spin bonus) ---------- */
@@ -2357,7 +2365,7 @@ document.addEventListener('input',function(e){if(e.target&&e.target.id==='ggVol'
 document.addEventListener('change',function(e){if(e.target&&e.target.id==='ggVol')aPlay('win1')});
 document.addEventListener('keydown',function(e){if(!SL.open||e.code!=='Space'||document.getElementById('slBonus')||document.querySelector('.gg-pt,.gg-splash,.gg-big'))return;e.preventDefault();slotSpin()});
 window.addEventListener('resize',function(){if(SL.open&&!SL.spinning)ggBind()});
-if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash,drill:drillStart,P:GGP,B:GGB}; // local test hook only
+if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash,drill:drillStart,P:GGP,B:GGB,aPlay:aPlay}; // local test hook only
 
 /* ---------- ME / PROFILE ---------- */
 function profile(u,isMe){

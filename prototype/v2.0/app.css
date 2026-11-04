@@ -1775,3 +1775,7 @@ body.other .plk{text-decoration:none;cursor:default}
 .gg-strip{position:absolute;left:0;right:0;top:0}
 .dr-slot .dc{position:absolute;left:8%;top:8%;width:84%}
 .dr-slot.spin .dc{filter:none}
+
+/* fourth pass: win frames and winning symbols without filters (Safari paints filters on the CPU) */
+.gc.win::before{filter:none}
+.gc.win>i{filter:none}
