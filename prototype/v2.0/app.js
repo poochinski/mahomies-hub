@@ -1756,7 +1756,7 @@ function explainSheet(k){var x=EXPLAIN[k];if(!x)return '';
 function explainPanel(){return '<section class="panel"><div class="ph"><div><div class="kicker">Plain English</div><h2>How the app works</h2></div></div><div class="rows">'+
   EXPLAIN_ORDER.map(function(k){return '<button type="button" class="row" data-info="'+k+'" style="grid-template-columns:minmax(0,1fr) 10px"><b style="font-size:14px;text-align:left">'+esc(EXPLAIN[k].t)+'</b>'+CHEV+'</button>'}).join('')+'</div></section>'}
 
-/* ---------- GRIDIRON GOLD v2: hidden slot machine (tap the pink dot at the bottom of the Sportsbook page) ----------
+/* ---------- GRIDIRON GOLD v3 (cabinet 2026-11-04; math unchanged since v2): hidden slot machine (tap the pink dot at the bottom of the Sportsbook page) ----------
    Casino-style video slot. Every outcome comes from the server (independent random stop per reel on fixed strips);
    the reels here scroll through those same strips and land where the server stopped them.
    Slam stop, anticipation, paylines, win rollups, big-win celebrations, Two-Minute Drill bonus,
@@ -1795,11 +1795,11 @@ function aO(type,f,t,dur,g,o){o=o||{};var c=GGA.ctx,os=c.createOscillator(),gn=c
   if(o.vib){var l=c.createOscillator(),lg=c.createGain();l.frequency.value=o.vib[0];lg.gain.value=o.vib[1];l.connect(lg);lg.connect(os.frequency);l.start(t);l.stop(t+dur+.05)}
   var a=o.a||.004;gn.gain.setValueAtTime(.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+a);if(o.hold)gn.gain.setValueAtTime(g,t+a+o.hold);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
   var src=os;if(o.lp){var fl=c.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(o.lp,t);if(o.lpTo)fl.frequency.exponentialRampToValueAtTime(o.lpTo,t+dur);fl.Q.value=o.q||.7;os.connect(fl);src=fl}
-  src.connect(gn);gn.connect(GGA.out);if(o.rev)gn.connect(GGA.rev);os.start(t);os.stop(t+dur+.05)}
+  src.connect(gn);gn.connect(o.bus||GGA.out);if(o.rev)gn.connect(GGA.rev);os.start(t);os.stop(t+dur+.05)}
 function aN(t,dur,g,o){o=o||{};var c=GGA.ctx,s=c.createBufferSource(),fl=c.createBiquadFilter(),gn=c.createGain();s.buffer=GGA.noise;s.loop=true;
   fl.type=o.type||'bandpass';fl.frequency.setValueAtTime(o.f||1000,t);if(o.to)fl.frequency.exponentialRampToValueAtTime(o.to,t+dur);fl.Q.value=o.q||1;
   var a=o.a||.003;gn.gain.setValueAtTime(.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+a);if(o.hold)gn.gain.setValueAtTime(g,t+a+o.hold);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  s.connect(fl);fl.connect(gn);gn.connect(GGA.out);if(o.rev)gn.connect(GGA.rev);s.start(t,Math.random()*1.5);s.stop(t+dur+.05)}
+  s.connect(fl);fl.connect(gn);gn.connect(o.bus||GGA.out);if(o.rev)gn.connect(GGA.rev);s.start(t,Math.random()*1.5);s.stop(t+dur+.05)}
 function aBell(f,t,g,dur){[[1,1],[2.76,.45],[5.4,.22],[8.93,.1]].forEach(function(p,i){aO('sine',f*p[0],t,dur*(1-i*.2),g*p[1],{a:.002,rev:true})})}
 function aBrass(n,t,dur,g){[0,-8,8].forEach(function(d){aO('sawtooth',nf(n),t,dur,g,{det:d,a:.03,hold:dur*.6,lp:900,lpTo:3500,rev:true})})}
 function aFanfare(t,short){var seq=short?[[72,0,.2],[76,.1,.2],[79,.2,.2],[84,.3,.6]]:[[67,0,.15],[67,.17,.15],[67,.34,.15],[72,.51,.45],[76,.98,.18],[72,1.17,.18],[76,1.36,.18],[79,1.55,1.2]];
@@ -1808,13 +1808,42 @@ function aFanfare(t,short){var seq=short?[[72,0,.2],[76,.1,.2],[79,.2,.2],[84,.3
 function aWhistle(t){[[0,.2],[.3,.5]].forEach(function(b){aO('sine',2950,t+b[0],b[1],.15,{a:.01,hold:b[1]-.07,vib:[34,120]});aN(t+b[0],b[1],.05,{f:2950,q:6,a:.01,hold:b[1]-.07})})}
 function aCrowd(t,dur,g,groan){aN(t,dur,g,{f:groan?450:900,q:.5,a:dur*.25,hold:dur*.3,rev:true,to:groan?260:1150});aN(t,dur,g*.55,{f:groan?800:2400,q:.8,a:dur*.3,hold:dur*.25,rev:true})}
 function aHorn(t){[155.6,196,233.1].forEach(function(f){aO('sawtooth',f,t,1,.05,{a:.03,hold:.65,lp:1500,to:f*.97,rev:true})})}
+/* v3 sounds (2026-11-04): the two features sound nothing alike now.
+   Free Spins = bright and magical (harp run, synth chord, sparkle) with a synth-pop bed under the spins.
+   Two-Minute Drill = game day (whistle, snare roll, stadium organ "Charge!", crowd) with a drumline bed. */
+function aOrgan(notes,t,dur,g,bus){notes.forEach(function(n){var f=nf(n);[[1,1],[2,.5],[3,.22],[4,.12]].forEach(function(h){aO('sine',f*h[0],t,dur,g*h[1],{a:.008,hold:dur*.7,bus:bus,rev:!bus})});aO('square',f,t,dur,g*.18,{a:.008,hold:dur*.7,lp:1800,bus:bus})})}
+function aSnare(t,g,bus){aN(t,.14,g,{f:2400,q:.7,bus:bus});aO('triangle',196,t,.07,g*.6,{to:160,bus:bus})}
+function aKick(t,g,bus){aO('sine',140,t,.32,g,{to:42,gl:.14,bus:bus})}
+function aHarp(n,t,g,bus){aO('triangle',nf(n),t,.55,g,{a:.002,bus:bus,rev:!bus});aO('sine',nf(n+12),t,.3,g*.35,{a:.002,bus:bus})}
+var GM={kind:null,iv:null,next:0,step:0,bus:null};
+function aMusic(kind){if(GM.kind===kind)return;GM.kind=kind;clearInterval(GM.iv);GM.iv=null;
+  if(GM.bus){var old=GM.bus;GM.bus=null;try{old.gain.setTargetAtTime(.0001,GGA.ctx.currentTime,.2);setTimeout(function(){try{old.disconnect()}catch(e){}},1500)}catch(e){}}
+  if(!kind)return;var c=aInit();if(!c)return;
+  var bus=c.createGain();bus.gain.setValueAtTime(.0001,c.currentTime);bus.gain.setTargetAtTime(.5,c.currentTime+.3,.4);bus.connect(GGA.out);GM.bus=bus;GM.step=0;GM.next=c.currentTime+.15;
+  var bpm=kind==='free'?122:104,six=60/bpm/4;
+  GM.iv=setInterval(function(){var cx=GGA.ctx;if(!cx||GM.bus!==bus)return;
+    while(GM.next<cx.currentTime+.3){try{(kind==='free'?mFree:mDrill)(GM.step,GM.next,six,bus)}catch(e){}GM.next+=six;GM.step++}},70)}
+// Free Spins bed: four-on-the-floor, offbeat hats, a pumping bass and a bell arpeggio over C – Am – F – G.
+function mFree(st,t,six,bus){var b=st%16,bar=Math.floor(st/16)%4,root=[48,45,41,43][bar],ch=bar===1?[0,3,7,12]:[0,4,7,12];
+  if(b%4===0)aKick(t,.42,bus);if(b===4||b===12)aN(t,.16,.11,{f:1500,q:.6,bus:bus});if(b%4===2)aN(t,.05,.05,{type:'highpass',f:8000,bus:bus});
+  if([0,3,6,8,11,14].indexOf(b)>=0)aO('sawtooth',nf(root-12+(b===6||b===14?12:0)),t,six*1.5,.07,{lp:520,lpTo:260,bus:bus});
+  if(b%2===0)aO('triangle',nf(root+24+ch[(b/2)%4]),t,.22,.032,{a:.002,bus:bus});
+  if(b===0&&bar===0)aN(t,1.4,.04,{type:'highpass',f:7000,a:.01,bus:bus})}
+// Two-Minute Drill bed: a drumline cadence with bass drums, tenor hits, a crash every 4 bars and organ stabs in D minor.
+function mDrill(st,t,six,bus){var b=st%16,bar=Math.floor(st/16)%4;
+  if([0,6,8,11].indexOf(b)>=0)aKick(t,.5,bus);
+  if(b===4||b===12)aSnare(t,.2,bus);else if(b===2||b===10||b===14||b===15)aSnare(t,.07,bus);
+  if(b===1||b===3||b===9)aO('sine',[262,220,175][[1,3,9].indexOf(b)],t,.13,.1,{to:[200,170,130][[1,3,9].indexOf(b)],bus:bus});
+  if(b===0&&st%64===0)aN(t,1.3,.07,{type:'highpass',f:6000,a:.005,bus:bus});
+  if(b===0)aOrgan([[62,65,69],[58,62,65],[60,64,67],[57,61,64]][bar],t,.28,.022,bus);
+  if(b===7&&bar===3)aOrgan([69,74],t,.18,.02,bus)}
 function aHum(on){var c=GGA.ctx;if(!c)return;
   if(on&&GGA.on&&GGA.vol>0&&!GGA.hum){try{var o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();o.type='sawtooth';o.frequency.value=58;f.type='lowpass';f.frequency.value=240;
     g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.045,c.currentTime+.15);o.connect(f);f.connect(g);g.connect(GGA.out);o.start();
     var tk=setInterval(function(){try{aN(c.currentTime,.025,.03,{type:'highpass',f:2600})}catch(e){}},72);GGA.hum={o:o,g:g,tk:tk}}catch(e){}}
   if(!on&&GGA.hum){var h=GGA.hum;GGA.hum=null;clearInterval(h.tk);try{h.g.gain.setTargetAtTime(.0001,c.currentTime,.05);h.o.stop(c.currentTime+.4)}catch(e){}}}
 function aPlay(k,x){var c=aInit();if(!c||!GGA.on||GGA.vol<=0)return;var t=c.currentTime+.01,i;try{switch(k){
-  case 'click':aO('square',1900,t,.035,.04,{lp:5000});aO('sine',900,t,.04,.05);break;
+  case 'click':aO('sine',1150,t,.07,.16,{to:880});aN(t,.04,.12,{type:'lowpass',f:2600});aO('square',2400,t,.018,.035,{lp:6000});break;
   case 'deny':aO('square',220,t,.12,.07,{lp:900});aO('square',165,t+.13,.22,.07,{lp:900});break;
   case 'open':[72,76,79,84].forEach(function(n,i){aBell(nf(n),t+i*.07,.1,.9)});aN(t,.7,.04,{type:'highpass',f:6000,a:.08,rev:true});break;
   case 'spin':aN(t,.26,.16,{f:500,to:2600,q:1.2,a:.02});aO('sawtooth',90,t,.3,.06,{to:180,lp:700});aO('square',2200,t,.03,.04,{lp:6000});break;
@@ -1829,15 +1858,21 @@ function aPlay(k,x){var c=aInit();if(!c||!GGA.on||GGA.vol<=0)return;var t=c.curr
   case 'coin':var f=3200+Math.random()*1400;aO('triangle',f,t,.09,.05,{a:.001});aO('sine',f*1.5,t,.07,.025,{a:.001});break;
   case 'big':aFanfare(t);break;
   case 'lvl':aFanfare(t,true);break;
-  case 'free':[60,64,67,72,76,79,84,88,91,96].forEach(function(n,i){aBell(nf(n),t+i*.06,.12,1)});aN(t,1.2,.06,{type:'highpass',f:5000,a:.4,rev:true});aFanfare(t+.65,true);break;
-  case 'drill':aWhistle(t);aCrowd(t+.3,2.8,.2);aHorn(t+.9);break;
+  case 'free':[72,74,76,79,81,84,86,88,91,93,96,98].forEach(function(n,i){aHarp(n,t+i*.04,.09)});
+    [60,64,67,71,74].forEach(function(n){[0,-7,7].forEach(function(d){aO('sawtooth',nf(n),t+.52,1.6,.032,{det:d,a:.06,hold:.9,lp:700,lpTo:5200,rev:true})})});
+    aO('sine',65,t+.5,1.2,.5,{to:40});aN(t+.45,1.8,.07,{type:'highpass',f:7500,a:.05,rev:true});
+    [96,91,88,84].forEach(function(n,i){aBell(nf(n),t+1.15+i*.09,.1,1)});aCrowd(t+.6,1.8,.07);break;
+  case 'drill':aWhistle(t);for(i=0;i<22;i++)aSnare(t+.7+i*Math.max(.028,.06-i*.0015),.03+i*.009);
+    [[67,0,.13],[72,.15,.13],[76,.3,.13],[79,.45,.26],[76,.75,.13],[79,.9,.7]].forEach(function(s){aOrgan([s[0],s[0]-12],t+1.75+s[1],s[2],.05)});
+    aKick(t+2.65,.7);aN(t+2.65,1.6,.1,{type:'highpass',f:6000,a:.005,rev:true});aCrowd(t+2.6,2.6,.26);break;
   case 'dspin':for(i=0;i<6;i++)aO('square',1200+i*90,t+i*.05,.03,.02,{lp:4000});break;
   case 'dblank':aO('sine',240,t,.07,.08,{to:170});break;
   case 'dcoin':aO('triangle',nf(88+(x||0)),t,.12,.08,{a:.001});aO('sine',nf(100+(x||0)),t,.1,.03,{a:.001});break;
   case 'djp':aBell(nf(88),t,.2,1.2);aBell(nf(95),t+.08,.15,1.2);break;
   case 'dextra':[72,79,84].forEach(function(n,i){aBell(nf(n),t+i*.06,.14,.8)});break;
   case 'drum':for(i=0;i<18;i++)aN(t+i*.045,.05,.04+i*.009,{type:'lowpass',f:700});break;
-  case 'td':aWhistle(t);aCrowd(t+.15,2.5,.28);aHorn(t+.45);break;
+  case 'td':aKick(t,.6);aN(t,1.2,.09,{type:'highpass',f:6000,a:.005,rev:true});aOrgan([62,66,69,74],t+.05,.5,.04);aCrowd(t+.1,2.5,.3);aHorn(t+.4);break;
+  case 'fdone':[60,64,67,72,76,79,84].forEach(function(n,i){aHarp(n,t+i*.05,.09)});[60,64,67,72].forEach(function(n){aBrass(n,t+.4,1.1,.035)});aO('sine',65,t+.4,1,.45,{to:40});aCrowd(t+.4,1.6,.08);break;
   case 'miss':aO('sine',120,t,.35,.35,{to:60});aN(t,.25,.12,{type:'lowpass',f:500});aCrowd(t+.05,1.2,.07,true);break;
   case 'collect':aBell(nf(84+[0,2,4,5,7,9,11,12,14][(x||0)%9]),t,.12,.5);break;
 }}catch(e){}}
@@ -1912,7 +1947,7 @@ function openSlot(){
     if(SL.state.bonus){SL.busy=true;ggSplash('drill',function(){SL.busy=false;drillStart(SL.state.bonus)})}
     else if(SL.state.free_left>0)ggMsg(SL.state.free_left+' free spins left · tap FREE');
     else ggMsg(SL.cred<SL.bet?'Not enough Bucks to spin':'Play '+((SL.pt&&SL.pt.lines.length)||20)+' lines · good luck')}).catch(function(e){ggMsg(e.message)})}
-function closeSlot(){if(SL.spinning||SL.busy||SL.roll)return;SL.open=false;SL.auto=0;ggStopCycle();aHum(false);var el=slotRoot();el.classList.remove('open');document.body.style.overflow='';bookLoad()}
+function closeSlot(){if(SL.spinning||SL.busy||SL.roll)return;SL.open=false;SL.auto=0;ggStopCycle();aHum(false);aMusic(null);var el=slotRoot();el.classList.remove('open');document.body.style.overflow='';bookLoad()}
 function slotRender(){
   var el=slotRoot(),st=SL.state,free=!!(st&&st.free_left>0);
   el.innerHTML='<div class="gg">'+
@@ -1923,18 +1958,21 @@ function slotRender(){
      '<p class="gg-pop-p">iPhone: the ring/silent switch doesn\'t mute the game. Use this.</p></div>'+
     '<div class="gg-pop" id="ggAutoPop" hidden><div class="gg-pop-h">Auto spin</div><div class="gg-autos">'+[10,25,50].map(function(n){return '<button type="button" data-slauton="'+n+'">'+n+'</button>'}).join('')+'</div>'+
      '<p class="gg-pop-p">Stops on any feature or a big win. Tap STOP anytime.</p></div></div>'+
-   '<div class="gg-cab'+(free?' free':'')+'" id="ggCab">'+
-    '<div class="gg-marq">'+bulbs(17)+'<div class="gg-logo"><span>GRIDIRON</span><b>GOLD</b></div><div class="gg-tag" id="ggTag"></div>'+bulbs(17)+'</div>'+
-    '<div class="gg-jps" id="ggJps">'+jpHtml(SL.bet)+'</div>'+
-    '<div class="gg-win">'+tabsHtml(0)+'<div class="gg-reels" id="ggReels">'+[0,1,2,3,4].map(function(i){return '<div class="gg-reel" data-reel="'+i+'"><div class="gg-strip"></div></div>'}).join('')+'<svg class="gg-lines" id="ggLines"></svg></div>'+tabsHtml(1)+'</div>'+
+   '<div class="gg-cab'+(free?' free':'')+'" id="ggCab"><i class="gg-ledbar l"></i><i class="gg-ledbar r"></i>'+
+    '<div class="gg-topper"><canvas id="ggTop"></canvas><div class="gg-tlogo"><span>GRIDIRON</span><b data-t="GOLD">GOLD</b></div><div class="gg-tag" id="ggTag"></div>'+
+     '<div class="gg-jps" id="ggJps">'+jpHtml(SL.bet)+'</div></div>'+
+    '<div class="gg-win">'+tabsHtml(0)+'<div class="gg-reels" id="ggReels">'+[0,1,2,3,4].map(function(i){return '<div class="gg-reel" data-reel="'+i+'"><div class="gg-strip"></div></div>'}).join('')+'<svg class="gg-lines" id="ggLines"></svg>'+
+     '<div class="gg-wb" id="ggWB" hidden><small>WIN</small><b class="num" id="ggWBn">0</b></div></div>'+tabsHtml(1)+'</div>'+
     '<div class="gg-led" id="ggMsg"></div>'+
     '<div class="gg-meters"><div><small>Credit</small><b class="num cr" id="ggCred"></b></div><div><small>Bet</small><b class="num bt" id="ggBet"></b></div><div><small id="ggWinL">Win</small><b class="num wn" id="ggWin"></b></div></div>'+
-    '<div class="gg-deck"><button type="button" class="gg-sm gg-i" data-slpt="1" aria-label="Paytable and rules">i</button><button type="button" class="gg-sm" data-slbet="-1" id="ggMinus" aria-label="Lower bet">−</button>'+
-     '<button type="button" class="gg-spin" data-slspin="1" id="ggSpin"><span id="ggSpinT">SPIN</span><small id="ggSpinS"></small></button>'+
-     '<button type="button" class="gg-sm" data-slbet="1" id="ggPlus" aria-label="Raise bet">+</button><button type="button" class="gg-sm gg-auto" data-slauto="1" id="ggAuto">AUTO</button></div>'+
+    '<div class="gg-deck"><button type="button" class="gg-db c-blue" data-slpt="1" aria-label="Paytable and rules"><small>PAYS</small><span>INFO</span></button>'+
+     '<button type="button" class="gg-db c-amber" data-slbet="-1" id="ggMinus" aria-label="Lower bet"><small>BET</small><span>−</span></button>'+
+     '<button type="button" class="gg-spin" data-slspin="1" id="ggSpin"><i class="gg-ring" aria-hidden="true"></i><span id="ggSpinT">SPIN</span><small id="ggSpinS"></small></button>'+
+     '<button type="button" class="gg-db c-amber" data-slbet="1" id="ggPlus" aria-label="Raise bet"><small>BET</small><span>+</span></button>'+
+     '<button type="button" class="gg-db c-purple" data-slauto="1" id="ggAuto"><small>PLAY</small><span>AUTO</span></button></div>'+
    '</div>'+
    '<div class="gg-foot">Play money · '+(SL.pt?SL.pt.rtp:'92.5%')+' theoretical payback, the Las Vegas Strip average · every spin is independent</div></div>';
-  ggBind();ggMeters();
+  ggBind();ggMeters();ggScreen(document.getElementById('ggTop'));
 }
 function ggBind(){var box=document.getElementById('ggReels');if(!box)return;var r0=box.querySelector('.gg-reel');var w=r0.clientWidth||60,h=Math.round(w*.98);
   box.parentNode.style.setProperty('--ch',h+'px');
@@ -1963,9 +2001,51 @@ function ggMeters(){var st=SL.state,free=!!(st&&st.free_left>0),$e=function(id){
   var sp=$e('ggSpin');sp.className='gg-spin'+(SL.spinning?' stop':free?' free':'');$e('ggSpinT').textContent=SL.spinning?'STOP':free?'FREE':'SPIN';$e('ggSpinS').textContent=free&&!SL.spinning?st.free_left+' left':'';
   var lock=SL.spinning||free||!!SL.roll,bets=(SL.pt&&SL.pt.bets)||[10,25,50],bi=bets.indexOf(SL.bet);
   $e('ggMinus').disabled=lock||bi<=0;$e('ggPlus').disabled=lock||bi>=bets.length-1;
-  var au=$e('ggAuto');au.textContent=SL.auto>0?'STOP '+SL.auto:'AUTO';au.classList.toggle('on',SL.auto>0);au.disabled=free&&!SL.auto;
+  var au=$e('ggAuto');au.innerHTML=SL.auto>0?'<small>STOP</small><span>'+SL.auto+'</span>':'<small>PLAY</small><span>AUTO</span>';au.classList.toggle('on',SL.auto>0);au.disabled=free&&!SL.auto;
+  if(cab)cab.classList.toggle('spinning',!!SL.spinning);
   [].forEach.call(document.querySelectorAll('#ggJps [data-jpx]'),function(b){var nv=gb(jpVal(b.dataset.jpn,+b.dataset.jpx,SL.bet));if(b.textContent!==nv){b.textContent=nv;b.classList.remove('tick');void b.offsetWidth;b.classList.add('tick')}})}
-function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getElementById('ggWin');if(c)c.textContent=gb(SL.cred);if(w)w.textContent=gb(SL.state&&SL.state.free_left>0&&SL.res&&SL.res.free?(SL.freeBase||0)+SL.winShown:SL.winShown)}
+function ggWB(v){var b=document.getElementById('ggWB'),n=document.getElementById('ggWBn');if(!b)return;clearTimeout(SL.wbT);if(v==null){b.hidden=true;b.classList.remove('out');return}b.classList.remove('out');if(b.hidden){b.hidden=false}n.textContent=gb(v)}
+function ggWBOut(){var b=document.getElementById('ggWB');if(!b||b.hidden)return;clearTimeout(SL.wbT);SL.wbT=setTimeout(function(){b.classList.add('out');SL.wbT=setTimeout(function(){b.hidden=true;b.classList.remove('out')},400)},1000)}
+function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getElementById('ggWin');if(c)c.textContent=gb(SL.cred);if(SL.roll&&!SL.roll.big)ggWB(SL.winShown);if(w)w.textContent=gb(SL.state&&SL.state.free_left>0&&SL.res&&SL.res.free?(SL.freeBase||0)+SL.winShown:SL.winShown)}
+
+/* ---------- top screen (v3): stadium lights sweeping, camera flashes in the stands, a field rolling
+   toward you and the odd spiral across the sky. Gold for the base game, green in free spins, blue in the drill;
+   it speeds up while the reels spin and goes wild on big wins (the cabinet's .party). ---------- */
+function ggScreen(cv,fixed){if(!cv||!cv.getContext)return;var ctx=cv.getContext('2d');if(!ctx)return;
+  var dpr=Math.min(2,window.devicePixelRatio||1),W=0,H=0,last=0,t0=performance.now(),fl=[],sp=[],ball=null,nextBall=2.5,stars=[],i;
+  var calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for(i=0;i<46;i++)stars.push([Math.random(),Math.random()*.42,Math.random()*6.3]);
+  var PAL={base:['#090420','#45102e','255,196,64'],free:['#03160b','#0f5c35','93,255,143'],drill:['#020a1e','#0d3a72','80,200,255']};
+  function size(){W=cv.clientWidth||340;H=cv.clientHeight||160;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+  function tower(x,y,s){ctx.fillStyle='#1a1d24';ctx.fillRect(x-1.5,y,3,H*.66-y);ctx.fillStyle='#2a2e38';ctx.fillRect(x-15,y-9,30,15);
+    for(var r=0;r<3;r++)for(var c=0;c<6;c++){ctx.fillStyle='rgba(255,252,230,'+(.75+.25*Math.sin(s*9+r+c))+')';ctx.fillRect(x-13+c*4.5,y-7+r*4.3,3,3)}}
+  function frame(t){if(!cv.isConnected||(!fixed&&!SL.open))return;requestAnimationFrame(frame);if(t-last<(calm?400:33))return;var dt=last?Math.min(.1,(t-last)/1000):.033;last=t;
+    if(cv.clientWidth&&Math.abs(cv.clientWidth-W)>1)size();if(!W)return;
+    var s=(t-t0)/1000,cab=cv.closest('.gg-cab'),mode=fixed||(cab&&cab.classList.contains('free')?'free':'base'),P=PAL[mode],
+      hot=cab&&cab.classList.contains('party')?1:(!fixed&&SL.spinning)?.5:0,hz=H*.36,sy=H*.62,fy=H*.74;
+    var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,P[0]);g.addColorStop(.7,P[1]);g.addColorStop(1,'#000');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff';stars.forEach(function(q){ctx.globalAlpha=.2+.3*(1+Math.sin(s*1.7+q[2]))/2;ctx.fillRect(q[0]*W,q[1]*H,1.3,1.3)});ctx.globalAlpha=1;
+    ctx.globalCompositeOperation='lighter';
+    [[.09,1],[.91,-1]].forEach(function(b,k){var x=b[0]*W,a=Math.PI/2-b[1]*(.62+.26*Math.sin(s*(.55+hot*2.6)+k*1.9)),len=H*1.5,gr=ctx.createRadialGradient(x,hz,2,x,hz,len);
+      gr.addColorStop(0,'rgba(255,248,220,'+(.34+hot*.3)+')');gr.addColorStop(1,'rgba(255,248,220,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(x,hz);ctx.arc(x,hz,len,a-.13,a+.13);ctx.closePath();ctx.fill()});
+    for(i=0;i<3;i++){var cx=W*(.3+.2*i),a2=-Math.PI/2+.5*Math.sin(s*(.8+hot*3)+i*2.1),gr2=ctx.createRadialGradient(cx,sy,2,cx,sy,H*.9);
+      gr2.addColorStop(0,'rgba('+P[2]+','+(.2+hot*.35)+')');gr2.addColorStop(1,'rgba('+P[2]+',0)');ctx.fillStyle=gr2;ctx.beginPath();ctx.moveTo(cx,sy);ctx.arc(cx,sy,H*.9,a2-.07,a2+.07);ctx.closePath();ctx.fill()}
+    ctx.globalCompositeOperation='source-over';
+    tower(W*.09,hz,s);tower(W*.91,hz,s+1);
+    ctx.fillStyle='#0a0610';ctx.beginPath();ctx.moveTo(0,sy+12);ctx.quadraticCurveTo(W/2,sy-16,W,sy+12);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba('+P[2]+',.55)';ctx.fillRect(0,sy+14,W,1.2);
+    var n=calm?0:(hot?7:2);for(i=0;i<n;i++)if(Math.random()<.6)fl.push({x:Math.random()*W,y:sy+4+Math.random()*(fy-sy-6),l:1});
+    fl=fl.filter(function(f){f.l-=dt*5;if(f.l<=0)return false;ctx.fillStyle='rgba(255,255,255,'+f.l.toFixed(2)+')';ctx.fillRect(f.x,f.y,1.8,1.8);return true});
+    var tw=W*.7,bw=W*1.6;ctx.fillStyle='#0d4a24';ctx.beginPath();ctx.moveTo((W-tw)/2,fy);ctx.lineTo((W+tw)/2,fy);ctx.lineTo((W+bw)/2,H);ctx.lineTo((W-bw)/2,H);ctx.closePath();ctx.fill();
+    var off=(s*(.35+hot*1.4))%1;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1;
+    for(i=0;i<7;i++){var v=(i+off)/7,y=fy+(H-fy)*Math.pow(v,1.7),wv=tw+(bw-tw)*Math.pow(v,1.7);ctx.globalAlpha=.25+.6*v;ctx.beginPath();ctx.moveTo((W-wv)/2,y);ctx.lineTo((W+wv)/2,y);ctx.stroke()}ctx.globalAlpha=1;
+    if(!calm&&!ball&&s>nextBall)ball={t:0,dir:Math.random()<.5?1:-1};
+    if(ball){ball.t+=dt/1.9;var bx=ball.dir>0?W*(-.05+1.1*ball.t):W*(1.05-1.1*ball.t),by=hz+H*.05-Math.sin(ball.t*Math.PI)*H*.3;
+      ctx.save();ctx.translate(bx,by);ctx.rotate(ball.dir*(ball.t*2-1)*.5);ctx.fillStyle='#7a3a12';ctx.beginPath();ctx.ellipse(0,0,6.5,3.8,0,0,6.3);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-2.5,0);ctx.lineTo(2.5,0);ctx.stroke();ctx.restore();
+      if(ball.t>=1){ball=null;nextBall=s+5+Math.random()*7}}
+    if(hot>=1||(mode!=='base'&&Math.random()<.3))for(i=0;i<(hot>=1?4:1);i++)sp.push({x:Math.random()*W,y:H*(.55+Math.random()*.3),vy:-(20+Math.random()*50),l:1});
+    sp=sp.filter(function(q){q.l-=dt*.8;q.y+=q.vy*dt;if(q.l<=0)return false;ctx.fillStyle='rgba('+P[2]+','+q.l.toFixed(2)+')';ctx.fillRect(q.x,q.y,2,2);return true})}
+  size();requestAnimationFrame(frame)}
 
 /* ---------- a spin ---------- */
 function slotSpin(){
@@ -1974,7 +2054,7 @@ function slotSpin(){
   if(SL.spinning){ggSlam();return}
   var free=SL.state.free_left>0;
   if(!free&&SL.cred<SL.bet){ggMsg(SL.cred<10?'Out of Bucks for the season':'Not enough Bucks for that bet','bad');SL.auto=0;ggMeters();aPlay('deny');return}
-  aInit();ggStopCycle();ggClearMarks();ggPops(true);
+  aInit();ggStopCycle();ggClearMarks();ggPops(true);ggWB(null);if(free)aMusic('free');
   if(SL.auto>0&&!free)SL.auto--;
   SL.spinning=true;SL.res=null;SL.slam=false;SL.landed=0;SL.freeBase=free?(SL.state.free_won||0):0;SL.winShown=0;
   if(!free)SL.cred=Math.round((SL.cred-SL.bet)*100)/100;
@@ -2030,11 +2110,11 @@ function ggRoll(amt,dur,cb){var base=SL.cred,t0=performance.now(),last=0;SL.roll
   function f(t){if(SL.roll!==me||me.done)return;var k=Math.min(1,(t-t0)/dur);SL.winShown=amt*k;SL.cred=base+amt*k;ggMetersFast();
     if(t-last>62&&k<1){last=t;aPlay('tick',k)}if(k>=1)ggRollEnd();else requestAnimationFrame(f)}
   requestAnimationFrame(f)}
-function ggRollEnd(){var R=SL.roll;if(!R||R.done)return;R.done=true;SL.winShown=R.amt;SL.cred=Math.round((R.base+R.amt)*100)/100;SL.roll=null;ggMetersFast();aPlay('rollend');ggMeters();if(R.cb)R.cb()}
+function ggRollEnd(){var R=SL.roll;if(!R||R.done)return;R.done=true;SL.winShown=R.amt;SL.cred=Math.round((R.base+R.amt)*100)/100;if(!R.big)ggWB(R.amt);SL.roll=null;ggMetersFast();aPlay('rollend');ggMeters();ggWBOut();if(R.cb)R.cb()}
 function ggAfter(r){
   if(r.free_awarded){SL.auto=0;ggSplash(r.free?'retrigger':'free',function(){if(r.bonus)ggBonusGo(r);else ggNextFree()},r.free_awarded);return}
   if(r.bonus){SL.auto=0;ggBonusGo(r);return}
-  if(r.free_done){ggSplash('freedone',function(){SL.state.free_won=0;ggMeters();ggMsg('Free spins paid '+gb(r.free_won),'hot');ggAutoNext()},r.free_won);return}
+  if(r.free_done){aMusic(null);ggSplash('freedone',function(){SL.state.free_won=0;ggMeters();ggMsg('Free spins paid '+gb(r.free_won),'hot');ggAutoNext()},r.free_won);return}
   if(r.free&&r.free_left>0){ggNextFree();return}
   ggAutoNext()}
 function ggNextFree(){ggMeters();setTimeout(function(){if(SL.open&&!SL.spinning&&!SL.busy&&SL.state.free_left>0)slotSpin()},SL.res&&SL.res.win>0?1700:800)}
@@ -2057,12 +2137,13 @@ function ggCoins(cv,n){var ctx=cv.getContext('2d'),dpr=Math.min(2,window.deviceP
 var GG_SPLASH={
   free:function(n){return {icon:'TICKET',k:'Feature',t:'FREE SPINS',n:n,s:'Every win pays ×'+fm()+'. Land 3 more tickets for '+((SL.pt&&SL.pt.free_spins)||8)+' more.',b:'Start'}},
   retrigger:function(n){return {icon:'TICKET',k:'Retrigger',t:'+'+n+' FREE SPINS',s:'More free spins added.',b:'Keep going'}},
-  drill:function(){return {icon:'DRAFT',k:'Bonus',t:'TWO-MINUTE DRILL',s:'Every drive the 9 squares spin. When the play reel lands TOUCHDOWN, you collect the whole board. '+((SL.pt&&SL.pt.drill&&SL.pt.drill.drives)||8)+' drives.',b:'Let\'s go'}},
+  drill:function(){return {icon:'DRAFT',clock:1,k:'Bonus',t:'TWO-MINUTE DRILL',s:'Every drive the 9 squares spin. When the play reel lands TOUCHDOWN, you collect the whole board. '+((SL.pt&&SL.pt.drill&&SL.pt.drill.drives)||8)+' drives.',b:'Let\'s go'}},
   freedone:function(n){return {icon:'TICKET',k:'Free spins complete',t:'YOU WON',n:gb(n),s:'Bucks',b:'Collect'}}};
 function ggSplash(kind,then,arg){var el=slotRoot(),d=document.createElement('div'),c=GG_SPLASH[kind](arg);d.className='gg-splash k-'+kind;
-  d.innerHTML='<canvas class="gg-coins"></canvas><div class="gg-sp-in"><div class="gg-sp-i">'+gc(c.icon)+'</div><div class="gg-sp-k">'+esc(c.k)+'</div><div class="gg-sp-t">'+esc(c.t)+'</div>'+(c.n!=null?'<div class="gg-sp-n num">'+esc(String(c.n))+'</div>':'')+'<div class="gg-sp-s">'+esc(c.s)+'</div><button type="button" class="gg-sp-b">'+esc(c.b)+'</button></div>';
-  el.appendChild(d);aPlay(kind==='drill'?'drill':kind==='freedone'?'win2':'free');ggCoins(d.querySelector('canvas'),kind==='freedone'?70:kind==='drill'?30:45);
+  d.innerHTML='<i class="gg-sp-fx"></i><canvas class="gg-coins"></canvas><div class="gg-sp-in">'+(c.clock?'<div class="gg-sp-clock num"><small>QTR 4</small><b id="ggClock">2:00</b></div>':'')+'<div class="gg-sp-i">'+gc(c.icon)+'</div><div class="gg-sp-k">'+esc(c.k)+'</div><div class="gg-sp-t">'+esc(c.t)+'</div>'+(c.n!=null?'<div class="gg-sp-n num">'+esc(String(c.n))+'</div>':'')+'<div class="gg-sp-s">'+esc(c.s)+'</div><button type="button" class="gg-sp-b">'+esc(c.b)+'</button></div>';
+  el.appendChild(d);if(kind==='drill'||kind==='freedone')aMusic(null);aPlay(kind==='drill'?'drill':kind==='freedone'?'fdone':'free');ggCoins(d.querySelector('canvas'),kind==='freedone'?70:kind==='drill'?30:45);
   var cab=document.getElementById('ggCab');if(cab)cab.classList.add('party');
+  if(c.clock){var sec=120,ck=setInterval(function(){var e=document.getElementById('ggClock');if(!e||d._g){clearInterval(ck);return}sec--;e.textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');aPlay('tick',.2)},1000)}
   var go=function(){if(d._g)return;d._g=1;aPlay('click');d.classList.add('out');if(cab)cab.classList.remove('party');setTimeout(function(){d.remove();if(then)then()},300)};
   d.querySelector('.gg-sp-b').addEventListener('click',function(e){e.stopPropagation();aInit();go()})}
 var GG_TIER=['','BIG WIN','MEGA WIN','EPIC WIN'];
@@ -2092,9 +2173,9 @@ function drillStart(b){var el=slotRoot(),ov=document.getElementById('slBonus');i
   DR={b:b,i:-1,collected:0,drives:d0,done:false,timers:[],iv:null};
   ov.innerHTML='<div class="gg dr">'+
    '<div class="gg-top"><span></span><div class="gg-ttl">Gridiron Gold · bonus</div><button type="button" class="gg-ib" data-slmute="1" aria-label="Mute" id="drSnd">'+sndIcon()+'</button></div>'+
-   '<div class="gg-cab free">'+
-    '<div class="gg-marq">'+bulbs(17)+'<div class="gg-logo sm"><span>TWO-MINUTE</span><b>DRILL</b></div><div class="gg-tag">Score a touchdown · collect the board</div>'+bulbs(17)+'</div>'+
-    '<div class="gg-jps">'+jpHtml(b.bet,drJp(b))+'</div>'+
+   '<div class="gg-cab drill" id="drCab"><i class="gg-ledbar l"></i><i class="gg-ledbar r"></i>'+
+    '<div class="gg-topper"><canvas id="drTop"></canvas><div class="gg-tlogo dr"><span>TWO-MINUTE</span><b data-t="DRILL">DRILL</b></div><div class="gg-tag">Score a touchdown · collect the board</div>'+
+     '<div class="gg-jps">'+jpHtml(b.bet,drJp(b))+'</div></div>'+
     '<div class="dr-sb"><div><small>Drive</small><b class="num" id="drDrive">1 / '+d0+'</b></div><div><small>Collected</small><b class="num wn" id="drCol">0</b></div></div>'+
     '<div class="dr-field" id="drField"><div class="dr-grid">'+[0,1,2,3,4,5,6,7,8].map(function(i){return '<div class="dr-slot" data-dc="'+i+'">'+drCell(null,b.bet)+'</div>'}).join('')+'</div>'+
      '<div class="dr-play"><small>Play</small><div class="dr-td" id="drTd"><div class="dr-tds" id="drTds">'+tdc(false,'READY')+tdc(false,'HUT!')+tdc(false,'')+'</div></div></div></div>'+
@@ -2103,6 +2184,7 @@ function drillStart(b){var el=slotRoot(),ov=document.getElementById('slBonus');i
    '</div></div>';
   var g=ov.querySelector('.dr-grid'),th=Math.round(g.clientHeight/3)||80;ov.querySelector('.dr-field').style.setProperty('--th',th+'px');
   var tds=document.getElementById('drTds');tds.style.transform='translate3d(0,0,0)';
+  ggScreen(document.getElementById('drTop'),'drill');aMusic('drill');
   DR.timers.push(setTimeout(drillNext,1100))}
 function drT(fn,ms){if(DR)DR.timers.push(setTimeout(fn,ms))}
 function drSet(id,v){var e=document.getElementById(id);if(e)e.textContent=v}
@@ -2128,13 +2210,13 @@ function drPlay(f){if(!DR)return;var tds=document.getElementById('drTds'),box=do
   tds.style.transform='translate3d(0,'+end+'px,0)';
   drT(function(){if(!DR)return;var b=DR.b;box.classList.add(f.td?'yes':'no');
     if(!f.td){aPlay('miss');drMsg('No score this drive','dim');drT(drillNext,1000);return}
-    aPlay('td');drMsg('TOUCHDOWN!','hot');
+    aPlay('td');drMsg('TOUCHDOWN!','hot');var dcab=document.getElementById('drCab');if(dcab){dcab.classList.add('party');drT(function(){dcab.classList.remove('party')},1800)}
     var slots=[].slice.call(document.querySelectorAll('.dr-slot')),hit=[];f.cells.forEach(function(c,i){if(c.v)hit.push(i)});
     if(!hit.length){drMsg('Touchdown! (empty board)','hot');drT(drillNext,1300);return}
     var j=0;function col(){if(!DR)return;if(j<hit.length){var i=hit[j],c=f.cells[i];slots[i].classList.add('got');DR.collected=Math.round((DR.collected+(c.amt!=null?c.amt:c.v*b.bet))*100)/100;if(c.t==='jp'&&(c.jp==='GRAND'||c.jp==='MAJOR')){drMsg(c.jp+' JACKPOT! +'+gb(c.amt!=null?c.amt:c.v*b.bet),'hot');aPlay('big');var pl=document.querySelector('#slBonus [data-jpn="'+c.jp+'"]');if(pl)pl.textContent=gb((c.jp==='GRAND'?250:50)*b.bet)}drSet('drCol',gb(DR.collected));aPlay('collect',j);j++;drT(col,130);return}
       drMsg('TOUCHDOWN! +'+gb(f.got_amt!=null?f.got_amt:f.got*b.bet),'hot');drT(drillNext,1500)}
     drT(col,600)},960)}
-function drillEnd(){if(!DR)return;var b=DR.b;DR.done=true;clearInterval(DR.iv);DR.collected=b.total;drSet('drCol',gb(b.total));
+function drillEnd(){if(!DR)return;var b=DR.b;DR.done=true;clearInterval(DR.iv);aMusic(null);DR.collected=b.total;drSet('drCol',gb(b.total));
   var tds=b.frames.filter(function(x){return x.td}).length;
   drMsg(b.total>0?'Drill over · '+tds+' touchdown'+(tds===1?'':'s'):'Drill over · no touchdowns',b.total>0?'hot':'dim');
   var c=document.getElementById('drCtl');if(c)c.innerHTML='<div class="dr-sum"><div><small>Drives</small><b class="num">'+b.frames.length+'</b></div><div><small>Touchdowns</small><b class="num">'+tds+'</b></div><div><small>Total</small><b class="num wn">'+gb(b.total)+'</b></div></div><button type="button" class="gg-sp-b" data-slcollect="1">Collect '+gb(b.total)+'</button>';
@@ -2144,7 +2226,7 @@ function drillSkip(){if(!DR||DR.done)return;DR.timers.forEach(clearTimeout);DR.t
     drSet('drDrive',f.drive+' / '+f.drives);var tds=document.getElementById('drTds'),box=document.getElementById('drTd');if(tds){tds.getAnimations&&tds.getAnimations().forEach(function(a){a.cancel()});tds.style.transform='translate3d(0,0,0)';tds.innerHTML=tdc(false,'')+tdc(f.td,'FINAL')+tdc(false,'')}
     if(box){box.classList.remove('yes','no');box.classList.add(f.td?'yes':'no')}}
   drillEnd()}
-function bonusClose(){if(DR){DR.timers.forEach(clearTimeout);clearInterval(DR.iv)}var ov=document.getElementById('slBonus');if(ov)ov.remove();var b=DR&&DR.b||SL.state&&SL.state.bonus;DR=null;
+function bonusClose(){if(DR){DR.timers.forEach(clearTimeout);clearInterval(DR.iv)}aMusic(null);var ov=document.getElementById('slBonus');if(ov)ov.remove();var b=DR&&DR.b||SL.state&&SL.state.bonus;DR=null;
   if(SL.state)SL.state.bonus=null;
   api('/slots/bonus-seen',{method:'POST'}).catch(function(){});
   var total=b?b.total:0;SL.items=null;ggStopCycle();ggClearMarks();
@@ -2206,7 +2288,7 @@ document.addEventListener('input',function(e){if(e.target&&e.target.id==='ggVol'
 document.addEventListener('change',function(e){if(e.target&&e.target.id==='ggVol')aPlay('win1')});
 document.addEventListener('keydown',function(e){if(!SL.open||e.code!=='Space'||document.getElementById('slBonus')||document.querySelector('.gg-pt,.gg-splash,.gg-big'))return;e.preventDefault();slotSpin()});
 window.addEventListener('resize',function(){if(SL.open&&!SL.spinning)ggBind()});
-if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash}; // local test hook only
+if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash,drill:drillStart}; // local test hook only
 
 /* ---------- ME / PROFILE ---------- */
 function profile(u,isMe){
