@@ -1951,7 +1951,7 @@ function slotRoot(){var el=document.getElementById('slot');if(!el){el=document.c
 function bulbs(n){var h='';for(var i=0;i<n;i++)h+='<i></i>';return '<div class="gg-bulbs">'+h+'</div>'}
 function jpVal(name,x,bet){var p=SL.state&&SL.state.pots&&SL.state.pots[bet];return p&&p[name]!=null?p[name]:x*bet}
 function jpHtml(bet,fixed){var v=function(j){return fixed?(fixed[j[0]]!=null?fixed[j[0]]:j[1]*bet):jpVal(j[0],j[1],bet)};
-  var row=function(j,cls,two){return '<div class="jb '+cls+'"><i class="jc">'+j[0]+'</i><b class="num" data-jpn="'+j[0]+'" data-jpx="'+j[1]+'">'+gb(v(j))+'</b>'+(two?'<i class="jc">'+j[0]+'</i>':'')+'</div>'};
+  var row=function(j,cls,two){return '<div class="jb '+cls+'"><i class="jc">'+j[0]+'</i><b class="num" data-jpn="'+j[0]+'" data-jpx="'+j[1]+'"><i>'+gb(v(j))+'</i></b>'+(two?'<i class="jc">'+j[0]+'</i>':'')+'</div>'};
   return row(GG_JP[0],'grand',1)+row(GG_JP[1],'major',1)+'<div class="jb2">'+row(GG_JP[2],'minor')+row(GG_JP[3],'mini')+'</div>'}
 function tabsHtml(side){return '<div class="gg-tabs"></div>'}
 var GR=[];
@@ -1986,13 +1986,13 @@ function slotRender(){
     '<div class="gg-win">'+tabsHtml(0)+'<div class="gg-reels" id="ggReels">'+[0,1,2,3,4].map(function(i){return '<div class="gg-reel" data-reel="'+i+'"><div class="gg-strip"></div></div>'}).join('')+'<svg class="gg-lines" id="ggLines"></svg>'+
      '<div class="gg-wb" id="ggWB" hidden><small>WIN</small><b class="num" id="ggWBn">0</b></div></div>'+tabsHtml(1)+'</div>'+
     '<div class="gg-led" id="ggMsg"></div>'+
-    '<div class="gg-mbar"><span class="gg-nl">'+((SL.pt&&SL.pt.lines.length)||20)+'<small>LINES</small></span><div><small>CREDIT</small><b class="num" id="ggCred"></b></div><div><small>BET</small><b class="num" id="ggBet"></b></div><div><small id="ggWinL">WIN</small><b class="num" id="ggWin"></b></div></div></div>'+
+    '<div class="gg-mbar"><span class="gg-nl">'+((SL.pt&&SL.pt.lines.length)||20)+'<small>LINES</small></span><div><small>CREDIT</small><b class="num lv"><i id="ggCred"></i></b></div><div><small>BET</small><b class="num lv"><i id="ggBet"></i></b></div><div><small id="ggWinL">WIN</small><b class="num lv"><i id="ggWin"></i></b></div></div></div>'+
     '<div class="gg-deck2"><div class="gg-keys">'+
      '<button type="button" class="gg-key k-blue" data-slpt="1" aria-label="Paytable and rules"><small>GAME</small><b>RULES</b></button>'+
      '<button type="button" class="gg-key k-blue" data-slmk="1" id="ggSndK"><small>SOUND</small><b>'+(GGA.on&&GGA.vol>0?'ON':'OFF')+'</b></button>'+
      '<button type="button" class="gg-key k-purple" data-slauto="1" id="ggAuto"><small>AUTO</small><b>PLAY</b></button>'+
      ((SL.pt&&SL.pt.bets)||[10,25,50]).map(function(v){return '<button type="button" class="gg-key k-red" data-slbetv="'+v+'" aria-label="Bet '+v+'"><small>BET</small><b>'+v+'</b><small>BUCKS</small></button>'}).join('')+
-     '</div><button type="button" class="gg-spin" data-slspin="1" id="ggSpin"><i class="gg-ring" aria-hidden="true"></i><span id="ggSpinT">SPIN</span><small id="ggSpinS"></small></button></div>'+
+     '</div><button type="button" class="gg-spin" data-slspin="1" id="ggSpin"><i class="gg-ring" aria-hidden="true"></i><span class="gg-spl"><span id="ggSpinT">SPIN</span><small id="ggSpinS"></small></span></button></div>'+
     '<div class="gg-ptp"><button type="button" class="gg-cash" data-slx="1">CASH<br>OUT</button><button type="button" class="gg-lcd" data-sllcd="1"><small>HELLO</small><b>'+esc(AUTH?team(AUTH.user_id):'Player')+'</b><small>MAHOMIE BUCKS · PLAY MONEY</small></button><button type="button" class="gg-bill" data-slbill="1">INSERT<br>BILL</button></div>'+
    '</div>'+
    '<div class="gg-foot">Play money · '+(SL.pt?SL.pt.rtp:'92.5%')+' theoretical payback, the Las Vegas Strip average · every spin is independent</div></div>';
@@ -2039,19 +2039,20 @@ function ggLoop(t){var dt=SL.lt?Math.min(.05,(t-SL.lt)/1000):.016;SL.lt=t;var an
   if(any)SL.raf=requestAnimationFrame(ggLoop);else{SL.raf=null;SL.lt=0}}
 function ggKick(){if(!SL.raf){SL.lt=0;SL.raf=requestAnimationFrame(ggLoop)}}
 function reelStop(r,idx,quick){var D=quick?2.2:3.4;r.to=idx;r.from=idx+D;r.p=r.from;r.base=null;r.t0=performance.now();r.dur=D*4.15/GG_V*1000;r.mode='stop';r.v=GG_V;if(r.el)r.el.classList.remove('antic');ggKick()}
-function ggMsg(t,cls){var m=document.getElementById('ggMsg');if(!m)return;m.textContent=t||'';m.className='gg-led'+(cls?' '+cls:'')}
+function ggMsg(t,cls){var m=document.getElementById('ggMsg');if(!m)return;var i=m.firstChild;if(!i||i.className!=='lvm'){m.innerHTML='<i class="lvm"></i>';i=m.firstChild}ggTx(i,t||'');var c='gg-led'+(cls?' '+cls:'');if(m.className!==c)m.className=c}
 function ggMeters(){var st=SL.state,free=!!(st&&st.free_left>0),$e=function(id){return document.getElementById(id)};
   if(!$e('ggCred'))return;
-  $e('ggCred').textContent=st?gb(SL.cred):'—';$e('ggBet').textContent=SL.bet+(free?' ×'+fm():'');
-  $e('ggWinL').textContent=free?'Free spin win':'Win';$e('ggWin').textContent=free?gb(st.free_won||0):SL.winShown?gb(SL.winShown):'0';
+  ggTx($e('ggCred'),st?gb(SL.cred):'—');ggTx($e('ggBet'),SL.bet+(free?' ×'+fm():''));
+  ggTx($e('ggWinL'),free?'Free spin win':'Win');ggTx($e('ggWin'),free?gb(st.free_won||0):SL.winShown?gb(SL.winShown):'0');
   var cab=$e('ggCab');if(cab)cab.classList.toggle('free',free);
-  var tg=$e('ggTag');if(free)tg.textContent='★ Free spins · '+st.free_left+' left · all wins ×'+fm()+' ★';else if(!tg.textContent||tg.textContent.indexOf('★')===0)tg.textContent=ggTags()[0];
-  var sp=$e('ggSpin');sp.className='gg-spin'+(SL.spinning?' stop':free?' free':'');$e('ggSpinT').textContent=SL.spinning?'STOP':free?'FREE':'SPIN';$e('ggSpinS').textContent=free&&!SL.spinning?st.free_left+' left':'';
+  var tg=$e('ggTag');if(free)ggTx(tg,'★ Free spins · '+st.free_left+' left · all wins ×'+fm()+' ★');else if(!tg.textContent||tg.textContent.indexOf('★')===0)ggTx(tg,ggTags()[0]);
+  var sp=$e('ggSpin'),spc='gg-spin'+(SL.spinning?' stop':free?' free':'');if(sp.className!==spc)sp.className=spc;ggTx($e('ggSpinT'),SL.spinning?'STOP':free?'FREE':'SPIN');ggTx($e('ggSpinS'),free&&!SL.spinning?st.free_left+' left':'');
   var lock=SL.spinning||free||!!SL.roll,bets=(SL.pt&&SL.pt.bets)||[10,25,50],bi=bets.indexOf(SL.bet);
-  [].forEach.call(document.querySelectorAll('#slot [data-slbetv]'),function(k){var v=+k.dataset.slbetv;k.classList.toggle('sel',v===SL.bet);k.disabled=lock&&v!==SL.bet});
-  var au=$e('ggAuto');au.innerHTML=SL.auto>0?'<small>STOP</small><b>'+SL.auto+'</b>':'<small>AUTO</small><b>PLAY</b>';au.classList.toggle('on',SL.auto>0);au.disabled=free&&!SL.auto;
+  [].forEach.call(document.querySelectorAll('#slot [data-slbetv]'),function(k){var v=+k.dataset.slbetv;k.classList.toggle('sel',v===SL.bet);var dis=lock&&v!==SL.bet;if(k.disabled!==dis)k.disabled=dis});
+  var au=$e('ggAuto'),ah=SL.auto>0?'<small>STOP</small><b>'+SL.auto+'</b>':'<small>AUTO</small><b>PLAY</b>';if(au._h!==ah){au._h=ah;au.innerHTML=ah}au.classList.toggle('on',SL.auto>0);var ad=free&&!SL.auto;if(au.disabled!==ad)au.disabled=ad;
   if(cab){cab.classList.toggle('spinning',!!SL.spinning);cab.classList.toggle('rolling',!!SL.roll)}
-  [].forEach.call(document.querySelectorAll('#ggJps [data-jpx]'),function(b){var nv=gb(jpVal(b.dataset.jpn,+b.dataset.jpx,SL.bet));if(b.textContent!==nv){b.textContent=nv;b.classList.remove('tick');void b.offsetWidth;b.classList.add('tick')}})}
+  [].forEach.call(document.querySelectorAll('#ggJps [data-jpx]'),function(b){var nv=gb(jpVal(b.dataset.jpn,+b.dataset.jpx,SL.bet)),i=b.firstElementChild||b;if(i.textContent!==nv){ggTx(i,nv);
+    if(b.animate)try{b.animate([{transform:'scale(1.18)'},{transform:'none'}],{duration:500,easing:'ease-out'})}catch(e){}}})}
 function ggTags(){var L=(SL.pt&&SL.pt.lines.length)||20;return [L+' lines · progressive jackpots','3+ tickets anywhere · free spins','3+ stopwatches · two-minute drill','Grand jackpot · '+gb(jpVal('GRAND',250,SL.bet))+' Bucks']}
 function ggTagGo(){clearInterval(SL.tagT);SL.tagI=0;SL.tagT=setInterval(function(){var e=document.getElementById('ggTag');if(!e||!SL.open){clearInterval(SL.tagT);return}if(SL.state&&SL.state.free_left>0)return;
   var m=ggTags();SL.tagI=(SL.tagI+1)%m.length;e.textContent=m[SL.tagI];e.classList.remove('tk');void e.offsetWidth;e.classList.add('tk')},3600)}
