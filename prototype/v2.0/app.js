@@ -1920,7 +1920,7 @@ function gc(s){return GGB.done?'<div class="gc" data-s="'+s+'"><i></i></div>':'<
    re-rendered every time the reels moved, which made spins stutter on phones. When the game opens, each symbol is
    drawn once into a bitmap, plus a vertically smeared copy for the spinning reels (real motion blur, no CSS filter).
    The reels then just slide pictures. Until the bitmaps are ready, the SVG version is used. */
-var GGB={done:false,busy:false,urls:[]};
+var GGB={done:false,busy:false,urls:[],c:{},cell:null};
 function ggDataUrl(u){return fetch(u).then(function(r){return r.blob()}).then(function(b){return new Promise(function(res){var f=new FileReader();f.onload=function(){res(f.result)};f.readAsDataURL(b)})})}
 function ggBake(){if(GGB.done||GGB.busy)return;var sp=document.querySelector('#ggSprite svg');if(!sp||!window.Promise||!window.URL)return;GGB.busy=true;
   var keys=['RING','TROPHY','STADIUM','PLAYBOOK','BALL','CAP','WILD','TICKET','DRAFT'],S=Math.round(118*Math.min(3,Math.max(1.5,window.devicePixelRatio||1)));
@@ -1932,14 +1932,14 @@ function ggBake(){if(GGB.done||GGB.busy)return;var sp=document.querySelector('#g
           var c=document.createElement('canvas');c.width=c.height=S;var x=c.getContext('2d');x.drawImage(img,0,0,S,S);
           var bl=document.createElement('canvas');bl.width=bl.height=S;var y=bl.getContext('2d');
           [[-.09,.1],[-.06,.14],[-.03,.18],[0,.2],[.03,.18],[.06,.14],[.09,.1]].forEach(function(q){y.globalAlpha=q[1]/.2*.32;y.drawImage(c,0,q[0]*S)});
-          var out={k:k};var n=0,fin=function(){if(++n===2)res(out)};
+          var out={k:k};GGB.c[k]={s:c,b:bl};var n=0,fin=function(){if(++n===2)res(out)};
           c.toBlob(function(b){out.sharp=URL.createObjectURL(b);fin()});bl.toBlob(function(b){out.blur=URL.createObjectURL(b);fin()});
         }catch(e){rej(e)}},60)};
       img.onerror=rej;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}))})
   .then(function(list){var css='';list.forEach(function(o){GGB.urls.push(o.sharp,o.blur);
       css+='.gc[data-s='+o.k+']>i{background-image:url('+o.sharp+')}.gg-reel.blur .gc[data-s='+o.k+']>i{background-image:url('+o.blur+')}'});
     var st=document.getElementById('ggBakeCss');if(!st){st=document.createElement('style');st.id='ggBakeCss';document.head.appendChild(st)}st.textContent=css;
-    GGB.done=true;GGB.busy=false;if(SL.open)GR.forEach(function(r){r.base=null;rDraw(r)})})
+    GGB.done=true;GGB.busy=false;if(SL.open){ggCellSprites();GR.forEach(function(r){r.base=null;rDraw(r)})}})
   .catch(function(){GGB.busy=false})}
 // Casino fonts are self-hosted in /fonts (SIL Open Font License), loaded only when the game opens.
 function ggFonts(){if(document.getElementById('ggFont'))return;var st=document.createElement('style');st.id='ggFont';
@@ -1965,7 +1965,7 @@ function openSlot(){
   ggReelsInit();slotRender();ggMsg('Loading…');
   Promise.all([api('/slots/state'),SL.pt?Promise.resolve(SL.pt):api('/slots/paytable')]).then(function(r){SL.state=r[0];SL.pt=r[1];
     SL.cred=SL.state.balance-(SL.state.bonus?SL.state.bonus.total:0);SL.winShown=0;if(SL.state.free_bet)SL.bet=SL.state.free_bet;
-    ggReelsInit();slotRender();aPlay('open');
+    ggReelsInit();slotRender();ggPerfUi();aPlay('open');
     if(SL.state.bonus){SL.busy=true;ggSplash('drill',function(){SL.busy=false;drillStart(SL.state.bonus)})}
     else if(SL.state.free_left>0)ggMsg(SL.state.free_left+' free spins left · tap FREE');
     else ggMsg(SL.cred<SL.bet?'Not enough Bucks to spin':'Play '+((SL.pt&&SL.pt.lines.length)||20)+' lines · good luck')}).catch(function(e){ggMsg(e.message)})}
@@ -1993,15 +1993,39 @@ function slotRender(){
      '<button type="button" class="gg-key k-purple" data-slauto="1" id="ggAuto"><small>AUTO</small><b>PLAY</b></button>'+
      ((SL.pt&&SL.pt.bets)||[10,25,50]).map(function(v){return '<button type="button" class="gg-key k-red" data-slbetv="'+v+'" aria-label="Bet '+v+'"><small>BET</small><b>'+v+'</b><small>BUCKS</small></button>'}).join('')+
      '</div><button type="button" class="gg-spin" data-slspin="1" id="ggSpin"><i class="gg-ring" aria-hidden="true"></i><span id="ggSpinT">SPIN</span><small id="ggSpinS"></small></button></div>'+
-    '<div class="gg-ptp"><button type="button" class="gg-cash" data-slx="1">CASH<br>OUT</button><div class="gg-lcd"><small>HELLO</small><b>'+esc(AUTH?team(AUTH.user_id):'Player')+'</b><small>MAHOMIE BUCKS · PLAY MONEY</small></div><button type="button" class="gg-bill" data-slbill="1">INSERT<br>BILL</button></div>'+
+    '<div class="gg-ptp"><button type="button" class="gg-cash" data-slx="1">CASH<br>OUT</button><button type="button" class="gg-lcd" data-sllcd="1"><small>HELLO</small><b>'+esc(AUTH?team(AUTH.user_id):'Player')+'</b><small>MAHOMIE BUCKS · PLAY MONEY</small></button><button type="button" class="gg-bill" data-slbill="1">INSERT<br>BILL</button></div>'+
    '</div>'+
    '<div class="gg-foot">Play money · '+(SL.pt?SL.pt.rtp:'92.5%')+' theoretical payback, the Las Vegas Strip average · every spin is independent</div></div>';
   ggBind();ggMeters();ggScreen(document.getElementById('ggTop'));ggTagGo();
 }
 function ggBind(){var box=document.getElementById('ggReels');if(!box)return;var r0=box.querySelector('.gg-reel');var w=r0.clientWidth||60,h=Math.round(w*.9);
   box.parentNode.style.setProperty('--ch',h+'px');
-  GR.forEach(function(r,i){r.el=box.querySelector('[data-reel="'+i+'"]');r.strip=r.el.firstChild;r.h=h;r.base=null;rDraw(r)})}
+  GR.forEach(function(r,i){r.el=box.querySelector('[data-reel="'+i+'"]');r.strip=r.el.firstChild;r.h=h;r.base=null;r.cv=null;r.cvOn=false;rDraw(r)});ggCellSprites()}
+/* Spinning reels (2026-11-04, second pass). While a reel moves it is drawn on its own small canvas from pre-painted
+   cells (symbol + its glow, sharp or motion-blurred): five pictures stamped per frame, nothing for the browser to
+   re-lay-out or repaint. When the reel stops, the normal cells take over at the same spot (win frames, pops, lines). */
+/* Frame meter (hidden; triple-tap the HELLO screen). Times every frame of a spin, a win count-up and a Big Win on the
+   phone itself and shows frames per second and the slowest frame, so a stutter can be measured, not guessed. */
+var GGP={on:false,ph:null,d:[],last:0,res:{}};try{GGP.on=localStorage.getItem('gg_fps')==='1'}catch(e){}
+function ggPerfStart(ph){if(!GGP.on)return;GGP.ph=ph;GGP.d=[];GGP.last=0;if(!GGP.raf){var f=function(t){if(!GGP.ph){GGP.raf=0;return}if(GGP.last)GGP.d.push(t-GGP.last);GGP.last=t;GGP.raf=requestAnimationFrame(f)};GGP.raf=requestAnimationFrame(f)}}
+function ggPerfEnd(ph){if(!GGP.ph||(ph&&GGP.ph!==ph))return;var d=GGP.d,n=d.length;if(n>3){var sum=d.reduce(function(a,b){return a+b},0);GGP.res[GGP.ph]={fps:Math.round(1000*n/sum),worst:Math.round(Math.max.apply(null,d)),slow:d.filter(function(x){return x>34}).length,n:n}}GGP.ph=null;ggPerfUi()}
+function ggPerfUi(){var root=slotRoot(),el=document.getElementById('ggFps');if(!GGP.on){if(el)el.remove();return}if(!el){el=document.createElement('div');el.id='ggFps';el.className='gg-fps';root.appendChild(el)}
+  el.innerHTML=['spin','count','big'].map(function(k){var r=GGP.res[k];return '<span><b>'+k.toUpperCase()+'</b> '+(r?r.fps+' fps · slowest '+r.worst+' ms · '+r.slow+' slow':'—')+'</span>'}).join('')+'<span>'+esc((navigator.userAgent.match(/(iPhone OS|Android) [\d_.]+/)||[''])[0].replace(/_/g,'.'))+' · '+(GGB.cell?'fast reels':'basic reels')+'</span>'}
+var GG_GLOW={RING:['255,70,110',.22,.62],TROPHY:['246,207,76',.22,.62],WILD:['255,95,214',.28,.66],TICKET:['59,209,255',.25,.66],DRAFT:['59,209,255',.25,.66]};
+function ggCellSprites(){var r0=GR[0];if(!GGB.done||!r0||!r0.el||!r0.h)return;var w=r0.el.clientWidth,h=r0.h,dpr=Math.min(2,window.devicePixelRatio||1),key=w+'x'+h+'@'+dpr;
+  if(!w||(GGB.cell&&GGB.cell.key===key))return;var W=Math.round(w*dpr),H=Math.round(h*dpr),sp={};
+  Object.keys(GGB.c).forEach(function(k){sp[k]={};['s','b'].forEach(function(v){var c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d'),g=GG_GLOW[k];
+    if(g){var R=Math.sqrt(W*W+H*H)/2,gr=x.createRadialGradient(W/2,H/2,0,W/2,H/2,R);gr.addColorStop(0,'rgba('+g[0]+','+g[1]+')');gr.addColorStop(g[2],'rgba('+g[0]+',0)');x.fillStyle=gr;x.fillRect(0,0,W,H)}
+    var z=Math.min(W,H)*.88;x.drawImage(GGB.c[k][v],(W-z)/2,H*.06,z,z);sp[k][v]=c})});
+  GGB.cell={key:key,w:w,h:h,dpr:dpr,W:W,H:H,sp:sp};
+  GR.forEach(function(r){if(r.cv){r.cv.width=W;r.cv.height=H*3}})}
+function rCanvas(r){var C=GGB.cell;if(!r.cv){r.cv=document.createElement('canvas');r.cv.className='gg-rc';r.cv.width=C.W;r.cv.height=C.H*3;r.el.insertBefore(r.cv,r.strip.nextSibling)}
+  if(!r.cvOn){r.cvOn=true;r.cv.style.visibility='visible';r.strip.style.visibility='hidden'}
+  var x=r.cv.getContext('2d'),len=r.s.length,bl=r.el.classList.contains('blur')?'b':'s',f=Math.floor(r.p);x.clearRect(0,0,r.cv.width,r.cv.height);
+  for(var k=f-1;k<=f+3;k++){var c=C.sp[r.s[((k%len)+len)%len]];if(c)x.drawImage(c[bl],0,Math.round((k-r.p)*C.H))}}
 function rDraw(r){if(!r.strip)return;var len=r.s.length;
+  if(r.mode&&r.mode!=='idle'&&GGB.cell){rCanvas(r);return}
+  if(r.cvOn){r.cvOn=false;r.cv.style.visibility='hidden';r.strip.style.visibility=''}
   if(r.base==null||r.p<r.base||r.p>=r.base+16){r.base=Math.floor(r.p)-14;var h='';for(var k=r.base-1;k<=r.base+19;k++)h+=gc(r.s[((k%len)+len)%len]);r.strip.innerHTML=h}
   r.strip.style.transform='translate3d(0,'+(-(r.p-(r.base-1))*r.h).toFixed(2)+'px,0)'}
 function cellEl(reel,row){var r=GR[reel];if(!r||!r.strip)return null;return r.strip.children[Math.round(r.p)+row-(r.base-1)]}
@@ -2026,24 +2050,29 @@ function ggMeters(){var st=SL.state,free=!!(st&&st.free_left>0),$e=function(id){
   var lock=SL.spinning||free||!!SL.roll,bets=(SL.pt&&SL.pt.bets)||[10,25,50],bi=bets.indexOf(SL.bet);
   [].forEach.call(document.querySelectorAll('#slot [data-slbetv]'),function(k){var v=+k.dataset.slbetv;k.classList.toggle('sel',v===SL.bet);k.disabled=lock&&v!==SL.bet});
   var au=$e('ggAuto');au.innerHTML=SL.auto>0?'<small>STOP</small><b>'+SL.auto+'</b>':'<small>AUTO</small><b>PLAY</b>';au.classList.toggle('on',SL.auto>0);au.disabled=free&&!SL.auto;
-  if(cab)cab.classList.toggle('spinning',!!SL.spinning);
+  if(cab){cab.classList.toggle('spinning',!!SL.spinning);cab.classList.toggle('rolling',!!SL.roll)}
   [].forEach.call(document.querySelectorAll('#ggJps [data-jpx]'),function(b){var nv=gb(jpVal(b.dataset.jpn,+b.dataset.jpx,SL.bet));if(b.textContent!==nv){b.textContent=nv;b.classList.remove('tick');void b.offsetWidth;b.classList.add('tick')}})}
 function ggTags(){var L=(SL.pt&&SL.pt.lines.length)||20;return [L+' lines · progressive jackpots','3+ tickets anywhere · free spins','3+ stopwatches · two-minute drill','Grand jackpot · '+gb(jpVal('GRAND',250,SL.bet))+' Bucks']}
 function ggTagGo(){clearInterval(SL.tagT);SL.tagI=0;SL.tagT=setInterval(function(){var e=document.getElementById('ggTag');if(!e||!SL.open){clearInterval(SL.tagT);return}if(SL.state&&SL.state.free_left>0)return;
   var m=ggTags();SL.tagI=(SL.tagI+1)%m.length;e.textContent=m[SL.tagI];e.classList.remove('tk');void e.offsetWidth;e.classList.add('tk')},3600)}
-function ggWB(v){var b=document.getElementById('ggWB'),n=document.getElementById('ggWBn');if(!b)return;clearTimeout(SL.wbT);if(v==null){b.hidden=true;b.classList.remove('out');return}b.classList.remove('out');if(b.hidden){b.hidden=false}n.textContent=gb(v)}
+function ggTx(el,v){if(!el)return;var f=el.firstChild;if(f&&f.nodeType===3&&!f.nextSibling){if(f.nodeValue!==v)f.nodeValue=v}else el.textContent=v}
+function ggWB(v){var b=document.getElementById('ggWB'),n=document.getElementById('ggWBn');if(!b)return;clearTimeout(SL.wbT);if(v==null){b.hidden=true;b.classList.remove('out');return}if(b.classList.contains('out'))b.classList.remove('out');if(b.hidden){b.hidden=false}ggTx(n,gb(v))}
 function ggWBOut(){var b=document.getElementById('ggWB');if(!b||b.hidden)return;clearTimeout(SL.wbT);SL.wbT=setTimeout(function(){b.classList.add('out');SL.wbT=setTimeout(function(){b.hidden=true;b.classList.remove('out')},400)},1000)}
-function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getElementById('ggWin');if(c)c.textContent=gb(SL.cred);if(SL.roll&&!SL.roll.big)ggWB(SL.winShown);if(w)w.textContent=gb(SL.state&&SL.state.free_left>0&&SL.res&&SL.res.free?(SL.freeBase||0)+SL.winShown:SL.winShown)}
+function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getElementById('ggWin');ggTx(c,gb(SL.cred));if(SL.roll&&!SL.roll.big)ggWB(SL.winShown);ggTx(w,gb(SL.state&&SL.state.free_left>0&&SL.res&&SL.res.free?(SL.freeBase||0)+SL.winShown:SL.winShown))}
 
 /* ---------- top screen (v3): stadium lights sweeping, camera flashes in the stands, a field rolling
    toward you and the odd spiral across the sky. Gold for the base game, green in free spins, blue in the drill;
    it speeds up while the reels spin and goes wild on big wins (the cabinet's .party). ---------- */
 function ggScreen(cv,fixed){if(!cv||!cv.getContext)return;var ctx=cv.getContext('2d');if(!ctx)return;
-  var dpr=Math.min(1.5,window.devicePixelRatio||1),W=0,H=0,last=0,bg=null,bgKey='',t0=performance.now(),fl=[],sp=[],ball=null,nextBall=2.5,stars=[],i;
+  var dpr=Math.min(1.5,window.devicePixelRatio||1),W=0,H=0,last=0,bg=null,bgKey='',bmA=null,bmB=null,t0=performance.now(),fl=[],sp=[],ball=null,nextBall=2.5,stars=[],i;
   var calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   for(i=0;i<46;i++)stars.push([Math.random(),Math.random()*.42,Math.random()*6.3]);
   var PAL={base:['#090420','#45102e','255,196,64'],free:['#03160b','#0f5c35','93,255,143'],drill:['#020a1e','#0d3a72','80,200,255']};
   function size(){W=cv.clientWidth||340;H=cv.clientHeight||160;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+  function beam(len,ha,rgb){var hh=len*Math.sin(ha)+2,c=document.createElement('canvas');c.width=Math.ceil(len*dpr);c.height=Math.ceil(hh*2*dpr);var x=c.getContext('2d');x.scale(dpr,dpr);
+    var g=x.createRadialGradient(0,hh,2,0,hh,len);g.addColorStop(0,'rgba('+rgb+',1)');g.addColorStop(1,'rgba('+rgb+',0)');x.fillStyle=g;x.beginPath();x.moveTo(0,hh);x.arc(0,hh,len,-ha,ha);x.closePath();x.fill();
+    return {c:c,len:len,hh:hh}}
+  function stamp(b,x,y,a,al){if(!b)return;ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.globalAlpha=Math.min(1,al);ctx.drawImage(b.c,0,-b.hh,b.len,b.hh*2);ctx.restore()}
   function tower(x,y,s){ctx.fillStyle='#1a1d24';ctx.fillRect(x-1.5,y,3,H*.66-y);ctx.fillStyle='#2a2e38';ctx.fillRect(x-15,y-9,30,15);
     for(var r=0;r<3;r++)for(var c=0;c<6;c++){ctx.fillStyle='rgba(255,252,230,'+(.75+.25*Math.sin(s*9+r+c))+')';ctx.fillRect(x-13+c*4.5,y-7+r*4.3,3,3)}}
   function frame(t){if(!cv.isConnected||(!fixed&&!SL.open))return;requestAnimationFrame(frame);if(t-last<(calm?400:(!fixed&&SL.spinning)?50:40))return;
@@ -2052,15 +2081,14 @@ function ggScreen(cv,fixed){if(!cv||!cv.getContext)return;var ctx=cv.getContext(
     var s=(t-t0)/1000,cab=cv.closest('.gg-cab'),mode=fixed||(cab&&cab.classList.contains('free')?'free':'base'),P=PAL[mode],
       hot=cab&&cab.classList.contains('party')?1:(!fixed&&SL.spinning)?.5:0,hz=H*.36,sy=H*.62,fy=H*.74;
     var key=mode+W+'x'+H;if(bgKey!==key){bgKey=key;bg=document.createElement('canvas');bg.width=cv.width;bg.height=cv.height;var b2=bg.getContext('2d');b2.setTransform(dpr,0,0,dpr,0,0);
-      var g=b2.createLinearGradient(0,0,0,H);g.addColorStop(0,P[0]);g.addColorStop(.7,P[1]);g.addColorStop(1,'#000');b2.fillStyle=g;b2.fillRect(0,0,W,H)}
+      var g=b2.createLinearGradient(0,0,0,H);g.addColorStop(0,P[0]);g.addColorStop(.7,P[1]);g.addColorStop(1,'#000');b2.fillStyle=g;b2.fillRect(0,0,W,H);
+      bmA=beam(H*1.5,.13,'255,248,220');bmB=beam(H*.9,.07,P[2])}
     ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(bg,0,0);ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.fillStyle='#fff';stars.forEach(function(q){ctx.globalAlpha=.2+.3*(1+Math.sin(s*1.7+q[2]))/2;ctx.fillRect(q[0]*W,q[1]*H,1.3,1.3)});ctx.globalAlpha=1;
     ctx.globalCompositeOperation='lighter';
-    [[.09,1],[.91,-1]].forEach(function(b,k){var x=b[0]*W,a=Math.PI/2-b[1]*(.62+.26*Math.sin(s*(.55+hot*2.6)+k*1.9)),len=H*1.5,gr=ctx.createRadialGradient(x,hz,2,x,hz,len);
-      gr.addColorStop(0,'rgba(255,248,220,'+(.34+hot*.3)+')');gr.addColorStop(1,'rgba(255,248,220,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(x,hz);ctx.arc(x,hz,len,a-.13,a+.13);ctx.closePath();ctx.fill()});
-    for(i=0;i<3;i++){var cx=W*(.3+.2*i),a2=-Math.PI/2+.5*Math.sin(s*(.8+hot*3)+i*2.1),gr2=ctx.createRadialGradient(cx,sy,2,cx,sy,H*.9);
-      gr2.addColorStop(0,'rgba('+P[2]+','+(.2+hot*.35)+')');gr2.addColorStop(1,'rgba('+P[2]+',0)');ctx.fillStyle=gr2;ctx.beginPath();ctx.moveTo(cx,sy);ctx.arc(cx,sy,H*.9,a2-.07,a2+.07);ctx.closePath();ctx.fill()}
-    ctx.globalCompositeOperation='source-over';
+    [[.09,1],[.91,-1]].forEach(function(b,k){stamp(bmA,b[0]*W,hz,Math.PI/2-b[1]*(.62+.26*Math.sin(s*(.55+hot*2.6)+k*1.9)),.34+hot*.3)});
+    for(i=0;i<3;i++)stamp(bmB,W*(.3+.2*i),sy,-Math.PI/2+.5*Math.sin(s*(.8+hot*3)+i*2.1),.2+hot*.35);
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
     tower(W*.09,hz,s);tower(W*.91,hz,s+1);
     ctx.fillStyle='#0a0610';ctx.beginPath();ctx.moveTo(0,sy+12);ctx.quadraticCurveTo(W/2,sy-16,W,sy+12);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
     ctx.fillStyle='rgba('+P[2]+',.55)';ctx.fillRect(0,sy+14,W,1.2);
@@ -2089,11 +2117,11 @@ function slotSpin(){
   SL.spinning=true;SL.res=null;SL.slam=false;SL.landed=0;SL.freeBase=free?(SL.state.free_won||0):0;SL.winShown=0;
   if(!free)SL.cred=Math.round((SL.cred-SL.bet)*100)/100;
   ggMeters();ggMsg(free?'Free spin · wins ×'+fm():'Good luck');
-  aPlay('spin');aHum(true);
+  aPlay('spin');aHum(true);ggPerfStart('spin');
   var t=performance.now();GR.forEach(function(r,i){r.mode='spin';r.st=t+i*45;r.v=0});ggKick();
   var t0=Date.now();
   api('/slots/spin',{body:{bet:SL.bet}}).then(function(r){SL.res=r;var wait=SL.slam?0:Math.max(0,560-(Date.now()-t0));setTimeout(function(){ggSchedule(r)},wait)})
-   .catch(function(e){GR.forEach(function(r){r.mode='idle';r.v=0;r.p=Math.round(r.p);if(r.el)r.el.classList.remove('blur')});aHum(false);SL.spinning=false;SL.auto=0;
+   .catch(function(e){GR.forEach(function(r){r.mode='idle';r.v=0;r.p=Math.round(r.p);if(r.el)r.el.classList.remove('blur');rDraw(r)});aHum(false);SL.spinning=false;SL.auto=0;
      api('/slots/state').then(function(s){SL.state=s;SL.cred=s.balance;ggMeters()}).catch(function(){ggMeters()});ggMeters();ggMsg(e.message,'bad');aPlay('deny')})}
 function ggAntic(g){var a=[false,false,false,false,false],tk=0,dr=0;
   for(var i=0;i<5;i++){if(i>=2&&(tk>=2||dr>=2))a[i]=true;tk+=g[i].filter(function(s){return s==='TICKET'}).length;dr+=g[i].filter(function(s){return s==='DRAFT'}).length}
@@ -2108,7 +2136,7 @@ function reelLanded(r){var res=SL.res;if(!res)return;var col=res.grid[r.i],sp=co
   aPlay('stop',r.i);if(sp){SL.scat=(SL.scat||0);aPlay('scat',r.i)}
   try{if(navigator.vibrate)navigator.vibrate(sp?18:7)}catch(e){}
   if(sp)col.forEach(function(s,row){if(s==='TICKET'||s==='DRAFT'){var c=cellEl(r.i,row);if(c)c.classList.add('pop')}});
-  SL.landed++;if(SL.landed===5){aHum(false);setTimeout(ggDone,140)}}
+  SL.landed++;if(SL.landed===5){aHum(false);ggPerfEnd('spin');setTimeout(ggDone,140)}}
 function ggPops(off){[].forEach.call(document.querySelectorAll('#ggReels .gc.pop'),function(c){c.classList.remove('pop')})}
 function ggClearMarks(){[].forEach.call(document.querySelectorAll('#ggReels .gc.win,#ggReels .gc.dim'),function(c){c.classList.remove('win','dim')});var sv=document.getElementById('ggLines');if(sv)sv.innerHTML=''}
 function ggMark(cells){var on={};cells.forEach(function(c){on[c[0]+'-'+c[1]]=1});
@@ -2136,11 +2164,11 @@ function ggDone(){var r=SL.res;SL.spinning=false;var st=SL.state;if(r.pots)st.po
     else{aPlay(x>=3?'win2':'win1');ggRoll(r.win,x<1?700:x<3?1300:2200,next)}}
   else if(items.length){ggShowAll(items);next()}
   else{ggMsg(r.free?r.free_left+' free spins left':'');st.free_won=r.free_won;ggMeters();ggAfter(r)}}
-function ggRoll(amt,dur,cb){var base=SL.cred,t0=performance.now(),last=0;SL.roll={amt:amt,base:base,cb:cb,done:false};var me=SL.roll;ggMeters();
-  function f(t){if(SL.roll!==me||me.done)return;var k=Math.min(1,(t-t0)/dur);SL.winShown=amt*k;SL.cred=base+amt*k;ggMetersFast();
+function ggRoll(amt,dur,cb){var base=SL.cred,t0=performance.now(),last=0;SL.roll={amt:amt,base:base,cb:cb,done:false};var me=SL.roll;ggMeters();ggPerfStart('count');
+  var shown=0;function f(t){if(SL.roll!==me||me.done)return;var k=Math.min(1,(t-t0)/dur);if(t-shown>=30||k>=1){shown=t;SL.winShown=amt*k;SL.cred=base+amt*k;ggMetersFast()}
     if(t-last>62&&k<1){last=t;aPlay('tick',k)}if(k>=1)ggRollEnd();else requestAnimationFrame(f)}
   requestAnimationFrame(f)}
-function ggRollEnd(){var R=SL.roll;if(!R||R.done)return;R.done=true;SL.winShown=R.amt;SL.cred=Math.round((R.base+R.amt)*100)/100;if(!R.big)ggWB(R.amt);SL.roll=null;ggMetersFast();aPlay('rollend');ggMeters();ggWBOut();if(R.cb)R.cb()}
+function ggRollEnd(){var R=SL.roll;if(!R||R.done)return;R.done=true;ggPerfEnd('count');SL.winShown=R.amt;SL.cred=Math.round((R.base+R.amt)*100)/100;if(!R.big)ggWB(R.amt);SL.roll=null;ggMetersFast();aPlay('rollend');ggMeters();ggWBOut();if(R.cb)R.cb()}
 function ggAfter(r){
   if(r.free_awarded){SL.auto=0;ggSplash(r.free?'retrigger':'free',function(){if(r.bonus)ggBonusGo(r);else ggNextFree()},r.free_awarded);return}
   if(r.bonus){SL.auto=0;ggBonusGo(r);return}
@@ -2185,11 +2213,11 @@ var GG_TIER=['','BIG WIN','MEGA WIN','EPIC WIN'];
 function ggBig(amt,bet,cb,opt){opt=opt||{};SL.auto=0;var el=slotRoot(),d=document.createElement('div');d.className='gg-big';
   d.innerHTML='<div class="gg-rays"></div><canvas class="gg-coins"></canvas><div class="gg-big-in"><div class="gg-big-t" id="ggBigT">'+GG_TIER[1]+'</div><div class="gg-big-n num" id="ggBigN">0</div><div class="gg-big-s" id="ggBigS">Tap to skip</div></div>';
   el.appendChild(d);var x=amt/bet,dur=x>=50?8000:x>=25?6200:4200,stopCoins=ggCoins(d.querySelector('canvas'),99999),cab=document.getElementById('ggCab');if(cab)cab.classList.add('party','under');
-  aPlay('big');var t0=performance.now(),base=SL.cred,lvl=1,done=false,last=0,auto=null;if(!opt.noCred)SL.roll={amt:amt,base:base,done:false,big:true};
-  function show(v){var n=document.getElementById('ggBigN');if(n)n.textContent=gb(v);if(!opt.noCred){SL.winShown=v;SL.cred=base+v;ggMetersFast()}
+  aPlay('big');ggPerfStart('big');var t0=performance.now(),base=SL.cred,lvl=1,done=false,last=0,auto=null;if(!opt.noCred)SL.roll={amt:amt,base:base,done:false,big:true};
+  function show(v){ggTx(document.getElementById('ggBigN'),gb(v));if(!opt.noCred){SL.winShown=v;SL.cred=base+v;ggMetersFast()}
     var cur=v/bet>=50?3:v/bet>=25?2:1;if(cur>lvl){lvl=cur;var tt=document.getElementById('ggBigT');if(tt){tt.textContent=GG_TIER[cur];tt.classList.remove('punch');void tt.offsetWidth;tt.classList.add('punch')}aPlay('lvl')}}
   function f(t){if(done)return;var k=Math.min(1,(t-t0)/dur);show(amt*(1-Math.pow(1-k,1.6)));if(t-last>75){last=t;aPlay('coin')}if(k>=1)finish();else requestAnimationFrame(f)}
-  function finish(){if(done)return;done=true;show(amt);if(!opt.noCred){SL.cred=Math.round((base+amt)*100)/100;SL.winShown=amt;SL.roll=null;ggMetersFast()}aPlay('rollend');
+  function finish(){if(done)return;done=true;ggPerfEnd('big');show(amt);if(!opt.noCred){SL.cred=Math.round((base+amt)*100)/100;SL.winShown=amt;SL.roll=null;ggMetersFast()}aPlay('rollend');
     var s=document.getElementById('ggBigS');if(s)s.textContent='Tap to continue';auto=setTimeout(close,3200)}
   function close(){if(d._c)return;d._c=1;clearTimeout(auto);stopCoins();d.classList.add('out');if(cab)cab.classList.remove('party','under');setTimeout(function(){d.remove();ggMeters();if(cb)cb()},300)}
   d.addEventListener('click',function(e){e.stopPropagation();if(!done)finish();else close()});requestAnimationFrame(f)}
@@ -2314,6 +2342,7 @@ document.addEventListener('click',function(e){
   if(d.slbetv){var bv=+d.slbetv;if(!SL.spinning&&!SL.roll&&!(SL.state&&SL.state.free_left>0)&&bv!==SL.bet){SL.bet=bv;aPlay('click');ggMeters()}return}
   if(d.slmk){aInit();GGA.on=!(GGA.on&&GGA.vol>0);if(GGA.on&&GGA.vol<=0)GGA.vol=.7;aSet();ggSndUi();if(GGA.on)aPlay('click');return}
   if(d.slbill){aPlay('deny');toast('Play money only. Your Bucks come from the Book.');return}
+  if(d.sllcd){var nw=Date.now();GGP.taps=(nw-(GGP.tapT||0)<600?(GGP.taps||0):0)+1;GGP.tapT=nw;if(GGP.taps>=3){GGP.taps=0;GGP.on=!GGP.on;try{localStorage.setItem('gg_fps',GGP.on?'1':'0')}catch(e){}ggPerfUi();toast(GGP.on?'Frame meter on: spin, then send a screenshot':'Frame meter off')}return}
   if(d.slmute){aInit();GGA.on=!(GGA.on&&GGA.vol>0);if(GGA.on&&GGA.vol<=0)GGA.vol=.7;aSet();ggSndUi();if(GGA.on)aPlay('click');return}
   if(d.slauto){if(SL.auto>0){SL.auto=0;ggMeters();return}ggPop('ggAutoPop');return}
   if(d.slauton){ggPop(null,false);SL.auto=+d.slauton;aPlay('click');ggMeters();if(!SL.spinning&&!SL.roll)slotSpin();return}
@@ -2327,7 +2356,7 @@ document.addEventListener('input',function(e){if(e.target&&e.target.id==='ggVol'
 document.addEventListener('change',function(e){if(e.target&&e.target.id==='ggVol')aPlay('win1')});
 document.addEventListener('keydown',function(e){if(!SL.open||e.code!=='Space'||document.getElementById('slBonus')||document.querySelector('.gg-pt,.gg-splash,.gg-big'))return;e.preventDefault();slotSpin()});
 window.addEventListener('resize',function(){if(SL.open&&!SL.spinning)ggBind()});
-if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash,drill:drillStart}; // local test hook only
+if(location.port==='3999')window.__GG={SL:SL,big:ggBig,splash:ggSplash,drill:drillStart,P:GGP,B:GGB}; // local test hook only
 
 /* ---------- ME / PROFILE ---------- */
 function profile(u,isMe){

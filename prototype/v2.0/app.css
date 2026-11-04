@@ -773,7 +773,7 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .gg-jp.prog{animation:ggprog 2.4s ease-in-out infinite}
 @keyframes ggprog{50%{box-shadow:inset 0 0 0 1px var(--c),0 0 16px -2px var(--c)}}
 .gg-jp b.tick{animation:ggtick .5s ease-out}
-@keyframes ggtick{0%{transform:scale(1.18);color:#fff3b0}100%{transform:none}}
+@keyframes ggtick{0%{transform:scale(1.18)}100%{transform:none}}
 .gg-pp span small{font:600 10px var(--mono);color:rgba(243,230,192,.55);text-shadow:none}
 /* Live Game Center (v2.1) — gc- prefix */
 .gc-sb{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:start;margin:4px 0 10px}
@@ -1661,7 +1661,7 @@ body.other .plk{text-decoration:none;cursor:default}
 .jb.mini .jc{background:radial-gradient(circle at 40% 28%,#fff3de,#ffab3b 42%,#9a5200);color:#3a1a00;box-shadow:inset 0 0 0 1.5px #7a4000,0 1px 3px rgba(0,0,0,.7)}
 .jb.grand{animation:ggjpg 2.4s ease-in-out infinite}
 @keyframes ggjpg{50%{box-shadow:inset 0 0 0 1.5px #fff3b0,inset 0 0 0 3px #3d2800,0 0 16px rgba(255,58,43,.6)}}
-.jb b.tick{animation:ggtick .5s ease-out}
+.jb b.tick{animation:ggtick .5s ease-out;will-change:transform}
 /* reels sit in a gold frame on the screen */
 .gg-scr .gg-win{padding:4px 3px;background:linear-gradient(180deg,#fff3b0,#d9a91c 18%,#6b4a00 50%,#d9a91c 82%,#fff3b0);box-shadow:0 0 0 1.5px #2a1a00,0 4px 12px rgba(0,0,0,.7)}
 .gg-scr .gg-led{min-height:20px;padding:0 6px;background:transparent;box-shadow:none;font-size:10px}
@@ -1741,3 +1741,22 @@ body.other .plk{text-decoration:none;cursor:default}
 /* while the reels spin, the decorations that still need repainting hold still */
 .gg-cab.spinning .gg-tlogo b,.gg-cab.spinning .gg-tlogo b::after,.gg-cab.spinning .jb.grand::after,.gg-cab.spinning .gg-db.on{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.gg-ledbar::before,.gg-spin::after,.jb.grand::after,.gc.win>i,.gc.win::before{animation:none}}
+
+/* Smooth animation, second pass (2026-11-04). The reels draw on a canvas while they move (see rCanvas in app.js);
+   numbers that change every frame have no blurred glow of their own (the glow sits behind them and never changes);
+   no filters on cells or win lines, which would have to be recalculated whenever the count-up touched them. */
+.gg-rc{position:absolute;left:0;top:0;width:100%;height:calc(var(--ch)*3);z-index:1;visibility:hidden;pointer-events:none}
+.gc.dim{filter:none;opacity:.3}
+.gg-lines{filter:none}
+.gg-wb{will-change:transform}
+.gg-wb b{text-shadow:0 2px 0 #6b4a00;position:relative;contain:layout}
+.gg-wb b::before{content:"";position:absolute;inset:-8px -14px;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,rgba(246,207,76,.5),rgba(246,207,76,0));pointer-events:none}
+.gg-mbar b{text-shadow:none;contain:layout paint}
+.gg-mbar #ggWin{text-shadow:none}
+.gg-cab.rolling .gg-tlogo b,.gg-cab.rolling .gg-tlogo b::after,.gg-cab.rolling .jb.grand::after{animation-play-state:paused}
+.gg-key.on{animation:none;position:relative}
+.gg-key.on::after{content:"";position:absolute;inset:0;border-radius:inherit;background:rgba(255,255,255,.28);pointer-events:none;opacity:0;will-change:opacity;animation:ggglow .6s ease-in-out infinite alternate}
+.gg-lcd{border:0;text-align:left;font:inherit;cursor:default;-webkit-tap-highlight-color:transparent}
+.gg-fps{position:fixed;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);z-index:120;display:grid;gap:1px;padding:6px 9px;border-radius:9px;
+  background:rgba(0,0,0,.82);color:#d7ffe2;font:600 10.5px/1.35 var(--code);pointer-events:none;box-shadow:0 0 0 1px rgba(93,255,143,.5)}
+.gg-fps b{color:#5dff8f;font-weight:700;display:inline-block;min-width:44px}
