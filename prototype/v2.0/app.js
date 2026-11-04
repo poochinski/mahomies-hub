@@ -1915,7 +1915,32 @@ function ggSprite(){if(document.getElementById('ggSprite'))return;var d=document
      '<path d="M2 70h96l-5.5 9 5.5 9H2l5.5-9z" fill="url(#ggBlue)" stroke="#fff" stroke-width="1.6"/><text x="50" y="85" text-anchor="middle" '+F+' font-size="15" fill="#fff" letter-spacing="1.5">BONUS</text></g>')+
    '</svg>';
   document.body.appendChild(d)}
-function gc(s){return '<div class="gc" data-s="'+s+'"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#gg-'+s+'"/></svg></div>'}
+function gc(s){return GGB.done?'<div class="gc" data-s="'+s+'"><i></i></div>':'<div class="gc" data-s="'+s+'"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#gg-'+s+'"/></svg></div>'}
+/* Performance (2026-11-04): the vector symbols (gradients, clip paths, the leather texture, drop shadows) were being
+   re-rendered every time the reels moved, which made spins stutter on phones. When the game opens, each symbol is
+   drawn once into a bitmap, plus a vertically smeared copy for the spinning reels (real motion blur, no CSS filter).
+   The reels then just slide pictures. Until the bitmaps are ready, the SVG version is used. */
+var GGB={done:false,busy:false,urls:[]};
+function ggDataUrl(u){return fetch(u).then(function(r){return r.blob()}).then(function(b){return new Promise(function(res){var f=new FileReader();f.onload=function(){res(f.result)};f.readAsDataURL(b)})})}
+function ggBake(){if(GGB.done||GGB.busy)return;var sp=document.querySelector('#ggSprite svg');if(!sp||!window.Promise||!window.URL)return;GGB.busy=true;
+  var keys=['RING','TROPHY','STADIUM','PLAYBOOK','BALL','CAP','WILD','TICKET','DRAFT'],S=Math.round(118*Math.min(3,Math.max(1.5,window.devicePixelRatio||1)));
+  Promise.all([ggDataUrl('/brand-96.png'),ggDataUrl('/fonts/bungee-latin-400-normal.woff2')]).then(function(r){
+    var defs=sp.innerHTML.split('/brand-96.png').join(r[0]),font='<style>@font-face{font-family:Bungee;src:url('+r[1]+') format("woff2")}</style>';
+    return Promise.all(keys.map(function(k){return new Promise(function(res,rej){
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+S+'" height="'+S+'" viewBox="0 0 100 100">'+font+defs+'<use href="#gg-'+k+'" xlink:href="#gg-'+k+'"/></svg>';
+      var img=new Image();img.onload=function(){setTimeout(function(){try{
+          var c=document.createElement('canvas');c.width=c.height=S;var x=c.getContext('2d');x.drawImage(img,0,0,S,S);
+          var bl=document.createElement('canvas');bl.width=bl.height=S;var y=bl.getContext('2d');
+          [[-.09,.1],[-.06,.14],[-.03,.18],[0,.2],[.03,.18],[.06,.14],[.09,.1]].forEach(function(q){y.globalAlpha=q[1]/.2*.32;y.drawImage(c,0,q[0]*S)});
+          var out={k:k};var n=0,fin=function(){if(++n===2)res(out)};
+          c.toBlob(function(b){out.sharp=URL.createObjectURL(b);fin()});bl.toBlob(function(b){out.blur=URL.createObjectURL(b);fin()});
+        }catch(e){rej(e)}},60)};
+      img.onerror=rej;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}))})
+  .then(function(list){var css='';list.forEach(function(o){GGB.urls.push(o.sharp,o.blur);
+      css+='.gc[data-s='+o.k+']>i{background-image:url('+o.sharp+')}.gg-reel.blur .gc[data-s='+o.k+']>i{background-image:url('+o.blur+')}'});
+    var st=document.getElementById('ggBakeCss');if(!st){st=document.createElement('style');st.id='ggBakeCss';document.head.appendChild(st)}st.textContent=css;
+    GGB.done=true;GGB.busy=false;if(SL.open)GR.forEach(function(r){r.base=null;rDraw(r)})})
+  .catch(function(){GGB.busy=false})}
 // Casino fonts are self-hosted in /fonts (SIL Open Font License), loaded only when the game opens.
 function ggFonts(){if(document.getElementById('ggFont'))return;var st=document.createElement('style');st.id='ggFont';
   st.textContent=[['Bungee',400,'bungee-latin-400-normal'],['Orbitron',700,'orbitron-latin-700-normal'],['Orbitron',900,'orbitron-latin-900-normal']].map(function(f){return "@font-face{font-family:'"+f[0]+"';font-weight:"+f[1]+";font-style:normal;font-display:swap;src:url(/fonts/"+f[2]+".woff2) format('woff2')}"}).join('');
@@ -1935,7 +1960,7 @@ function ggReelsInit(){for(var i=0;i<5;i++){if(!GR[i])GR[i]={i:i,p:Math.floor(Ma
 function openSlot(){
   if(!LIVE){toast('Nice find. It only works in the live app.');return}
   if(!AUTH){toast('Log in to the Sportsbook to play');openLogin();return}
-  ggFonts();ggSprite();aInit();
+  ggFonts();ggSprite();aInit();setTimeout(ggBake,30);
   SL.open=true;SL.auto=0;var el=slotRoot();el.classList.add('open');document.body.style.overflow='hidden';
   ggReelsInit();slotRender();ggMsg('Loading…');
   Promise.all([api('/slots/state'),SL.pt?Promise.resolve(SL.pt):api('/slots/paytable')]).then(function(r){SL.state=r[0];SL.pt=r[1];
@@ -1977,7 +2002,7 @@ function ggBind(){var box=document.getElementById('ggReels');if(!box)return;var 
   box.parentNode.style.setProperty('--ch',h+'px');
   GR.forEach(function(r,i){r.el=box.querySelector('[data-reel="'+i+'"]');r.strip=r.el.firstChild;r.h=h;r.base=null;rDraw(r)})}
 function rDraw(r){if(!r.strip)return;var len=r.s.length;
-  if(r.base==null||r.p<r.base||r.p>=r.base+8){r.base=Math.floor(r.p)-6;var h='';for(var k=r.base-1;k<=r.base+11;k++)h+=gc(r.s[((k%len)+len)%len]);r.strip.innerHTML=h}
+  if(r.base==null||r.p<r.base||r.p>=r.base+16){r.base=Math.floor(r.p)-14;var h='';for(var k=r.base-1;k<=r.base+19;k++)h+=gc(r.s[((k%len)+len)%len]);r.strip.innerHTML=h}
   r.strip.style.transform='translate3d(0,'+(-(r.p-(r.base-1))*r.h).toFixed(2)+'px,0)'}
 function cellEl(reel,row){var r=GR[reel];if(!r||!r.strip)return null;return r.strip.children[Math.round(r.p)+row-(r.base-1)]}
 function eob(x){var c1=1.15,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)}
@@ -2014,18 +2039,21 @@ function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getEl
    toward you and the odd spiral across the sky. Gold for the base game, green in free spins, blue in the drill;
    it speeds up while the reels spin and goes wild on big wins (the cabinet's .party). ---------- */
 function ggScreen(cv,fixed){if(!cv||!cv.getContext)return;var ctx=cv.getContext('2d');if(!ctx)return;
-  var dpr=Math.min(2,window.devicePixelRatio||1),W=0,H=0,last=0,t0=performance.now(),fl=[],sp=[],ball=null,nextBall=2.5,stars=[],i;
+  var dpr=Math.min(1.5,window.devicePixelRatio||1),W=0,H=0,last=0,bg=null,bgKey='',t0=performance.now(),fl=[],sp=[],ball=null,nextBall=2.5,stars=[],i;
   var calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   for(i=0;i<46;i++)stars.push([Math.random(),Math.random()*.42,Math.random()*6.3]);
   var PAL={base:['#090420','#45102e','255,196,64'],free:['#03160b','#0f5c35','93,255,143'],drill:['#020a1e','#0d3a72','80,200,255']};
   function size(){W=cv.clientWidth||340;H=cv.clientHeight||160;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
   function tower(x,y,s){ctx.fillStyle='#1a1d24';ctx.fillRect(x-1.5,y,3,H*.66-y);ctx.fillStyle='#2a2e38';ctx.fillRect(x-15,y-9,30,15);
     for(var r=0;r<3;r++)for(var c=0;c<6;c++){ctx.fillStyle='rgba(255,252,230,'+(.75+.25*Math.sin(s*9+r+c))+')';ctx.fillRect(x-13+c*4.5,y-7+r*4.3,3,3)}}
-  function frame(t){if(!cv.isConnected||(!fixed&&!SL.open))return;requestAnimationFrame(frame);if(t-last<(calm?400:33))return;var dt=last?Math.min(.1,(t-last)/1000):.033;last=t;
+  function frame(t){if(!cv.isConnected||(!fixed&&!SL.open))return;requestAnimationFrame(frame);if(t-last<(calm?400:(!fixed&&SL.spinning)?50:40))return;
+    if(!fixed&&document.querySelector('.gg-big,.gg-splash,.gg-drill')){last=t;return}var dt=last?Math.min(.1,(t-last)/1000):.033;last=t;
     if(cv.clientWidth&&Math.abs(cv.clientWidth-W)>1)size();if(!W)return;
     var s=(t-t0)/1000,cab=cv.closest('.gg-cab'),mode=fixed||(cab&&cab.classList.contains('free')?'free':'base'),P=PAL[mode],
       hot=cab&&cab.classList.contains('party')?1:(!fixed&&SL.spinning)?.5:0,hz=H*.36,sy=H*.62,fy=H*.74;
-    var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,P[0]);g.addColorStop(.7,P[1]);g.addColorStop(1,'#000');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    var key=mode+W+'x'+H;if(bgKey!==key){bgKey=key;bg=document.createElement('canvas');bg.width=cv.width;bg.height=cv.height;var b2=bg.getContext('2d');b2.setTransform(dpr,0,0,dpr,0,0);
+      var g=b2.createLinearGradient(0,0,0,H);g.addColorStop(0,P[0]);g.addColorStop(.7,P[1]);g.addColorStop(1,'#000');b2.fillStyle=g;b2.fillRect(0,0,W,H)}
+    ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(bg,0,0);ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.fillStyle='#fff';stars.forEach(function(q){ctx.globalAlpha=.2+.3*(1+Math.sin(s*1.7+q[2]))/2;ctx.fillRect(q[0]*W,q[1]*H,1.3,1.3)});ctx.globalAlpha=1;
     ctx.globalCompositeOperation='lighter';
     [[.09,1],[.91,-1]].forEach(function(b,k){var x=b[0]*W,a=Math.PI/2-b[1]*(.62+.26*Math.sin(s*(.55+hot*2.6)+k*1.9)),len=H*1.5,gr=ctx.createRadialGradient(x,hz,2,x,hz,len);
@@ -2124,18 +2152,23 @@ function ggAutoNext(){ggMeters();if(SL.auto>0)setTimeout(function(){if(SL.open&&
 function ggBonusGo(r){SL.busy=true;ggMeters();setTimeout(function(){ggSplash('drill',function(){SL.busy=false;drillStart(r.bonus)})},500)}
 
 /* ---------- celebrations ---------- */
-function ggCoins(cv,n){var ctx=cv.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth||360,H=cv.clientHeight||700,P=[],spawned=0,last=0;
+function ggCoins(cv,n){var ctx=cv.getContext('2d'),dpr=Math.min(1.5,window.devicePixelRatio||1),W=cv.clientWidth||360,H=cv.clientHeight||700,P=[],spawned=0,last=0;
   cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  /* one coin is painted once, then stamped (gradients per coin per frame were the slow part) */
+  var R=15,cs=ggCoinSprite(R*dpr);
   function add(){P.push({x:W*(.25+Math.random()*.5),y:H+20,vx:(Math.random()-.5)*W*.9,vy:-(H*1.05+Math.random()*H*.55),r:8+Math.random()*7,a:Math.random()*6,va:5+Math.random()*9})}
   function f(t){if(!cv.isConnected)return;var dt=last?Math.min(.04,(t-last)/1000):.016;last=t;
-    for(var j=0;j<4&&spawned<n&&P.length<130;j++){add();spawned++}
-    ctx.clearRect(0,0,W,H);
+    for(var j=0;j<4&&spawned<n&&P.length<90;j++){add();spawned++}
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
     for(var i=P.length-1;i>=0;i--){var p=P[i];p.vy+=H*1.5*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.a+=p.va*dt;if(p.y>H+40&&p.vy>0){P.splice(i,1);continue}
-      var sx=Math.max(.1,Math.abs(Math.cos(p.a)));ctx.save();ctx.translate(p.x,p.y);ctx.scale(sx,1);
-      var g=ctx.createRadialGradient(-p.r*.35,-p.r*.35,1,0,0,p.r);g.addColorStop(0,'#fff6c9');g.addColorStop(.5,'#f6cf4c');g.addColorStop(1,'#9a6c05');
-      ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,p.r,0,6.3);ctx.fill();ctx.lineWidth=1.4;ctx.strokeStyle='#7a5300';ctx.stroke();ctx.beginPath();ctx.arc(0,0,p.r*.6,0,6.3);ctx.strokeStyle='rgba(122,83,0,.55)';ctx.stroke();ctx.restore()}
+      var k=p.r/R*dpr,sx=Math.max(.1,Math.abs(Math.cos(p.a)))*k;ctx.setTransform(sx,0,0,k,p.x*dpr,p.y*dpr);ctx.drawImage(cs,-R*dpr-2,-R*dpr-2)}
     if(spawned>=n&&!P.length)return;requestAnimationFrame(f)}
   requestAnimationFrame(f);return function(){n=spawned}}
+var GG_COIN={};
+function ggCoinSprite(r){r=Math.round(r);if(GG_COIN[r])return GG_COIN[r];var c=document.createElement('canvas');c.width=c.height=r*2+4;var x=c.getContext('2d');x.translate(r+2,r+2);
+  var g=x.createRadialGradient(-r*.35,-r*.35,1,0,0,r);g.addColorStop(0,'#fff6c9');g.addColorStop(.5,'#f6cf4c');g.addColorStop(1,'#9a6c05');
+  x.fillStyle=g;x.beginPath();x.arc(0,0,r,0,6.3);x.fill();x.lineWidth=r/11;x.strokeStyle='#7a5300';x.stroke();x.beginPath();x.arc(0,0,r*.6,0,6.3);x.strokeStyle='rgba(122,83,0,.55)';x.stroke();
+  return GG_COIN[r]=c}
 var GG_SPLASH={
   free:function(n){return {icon:'TICKET',k:'Feature',t:'FREE SPINS',n:n,s:'Every win pays ×'+fm()+'. Land 3 more tickets for '+((SL.pt&&SL.pt.free_spins)||8)+' more.',b:'Start'}},
   retrigger:function(n){return {icon:'TICKET',k:'Retrigger',t:'+'+n+' FREE SPINS',s:'More free spins added.',b:'Keep going'}},
@@ -2144,21 +2177,21 @@ var GG_SPLASH={
 function ggSplash(kind,then,arg){var el=slotRoot(),d=document.createElement('div'),c=GG_SPLASH[kind](arg);d.className='gg-splash k-'+kind;
   d.innerHTML='<i class="gg-sp-fx"></i><canvas class="gg-coins"></canvas><div class="gg-sp-in">'+(c.clock?'<div class="gg-sp-clock num"><small>QTR 4</small><b id="ggClock">2:00</b></div>':'')+'<div class="gg-sp-i">'+gc(c.icon)+'</div><div class="gg-sp-k">'+esc(c.k)+'</div><div class="gg-sp-t">'+esc(c.t)+'</div>'+(c.n!=null?'<div class="gg-sp-n num">'+esc(String(c.n))+'</div>':'')+'<div class="gg-sp-s">'+esc(c.s)+'</div><button type="button" class="gg-sp-b">'+esc(c.b)+'</button></div>';
   el.appendChild(d);if(kind==='drill'||kind==='freedone')aMusic(null);aPlay(kind==='drill'?'drill':kind==='freedone'?'fdone':'free');ggCoins(d.querySelector('canvas'),kind==='freedone'?70:kind==='drill'?30:45);
-  var cab=document.getElementById('ggCab');if(cab)cab.classList.add('party');
+  var cab=document.getElementById('ggCab');if(cab)cab.classList.add('party','under');
   if(c.clock){var sec=120,ck=setInterval(function(){var e=document.getElementById('ggClock');if(!e||d._g){clearInterval(ck);return}sec--;e.textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');aPlay('tick',.2)},1000)}
-  var go=function(){if(d._g)return;d._g=1;aPlay('click');d.classList.add('out');if(cab)cab.classList.remove('party');setTimeout(function(){d.remove();if(then)then()},300)};
+  var go=function(){if(d._g)return;d._g=1;aPlay('click');d.classList.add('out');if(cab)cab.classList.remove('party','under');setTimeout(function(){d.remove();if(then)then()},300)};
   d.querySelector('.gg-sp-b').addEventListener('click',function(e){e.stopPropagation();aInit();go()})}
 var GG_TIER=['','BIG WIN','MEGA WIN','EPIC WIN'];
 function ggBig(amt,bet,cb,opt){opt=opt||{};SL.auto=0;var el=slotRoot(),d=document.createElement('div');d.className='gg-big';
   d.innerHTML='<div class="gg-rays"></div><canvas class="gg-coins"></canvas><div class="gg-big-in"><div class="gg-big-t" id="ggBigT">'+GG_TIER[1]+'</div><div class="gg-big-n num" id="ggBigN">0</div><div class="gg-big-s" id="ggBigS">Tap to skip</div></div>';
-  el.appendChild(d);var x=amt/bet,dur=x>=50?8000:x>=25?6200:4200,stopCoins=ggCoins(d.querySelector('canvas'),99999),cab=document.getElementById('ggCab');if(cab)cab.classList.add('party');
+  el.appendChild(d);var x=amt/bet,dur=x>=50?8000:x>=25?6200:4200,stopCoins=ggCoins(d.querySelector('canvas'),99999),cab=document.getElementById('ggCab');if(cab)cab.classList.add('party','under');
   aPlay('big');var t0=performance.now(),base=SL.cred,lvl=1,done=false,last=0,auto=null;if(!opt.noCred)SL.roll={amt:amt,base:base,done:false,big:true};
   function show(v){var n=document.getElementById('ggBigN');if(n)n.textContent=gb(v);if(!opt.noCred){SL.winShown=v;SL.cred=base+v;ggMetersFast()}
     var cur=v/bet>=50?3:v/bet>=25?2:1;if(cur>lvl){lvl=cur;var tt=document.getElementById('ggBigT');if(tt){tt.textContent=GG_TIER[cur];tt.classList.remove('punch');void tt.offsetWidth;tt.classList.add('punch')}aPlay('lvl')}}
   function f(t){if(done)return;var k=Math.min(1,(t-t0)/dur);show(amt*(1-Math.pow(1-k,1.6)));if(t-last>75){last=t;aPlay('coin')}if(k>=1)finish();else requestAnimationFrame(f)}
   function finish(){if(done)return;done=true;show(amt);if(!opt.noCred){SL.cred=Math.round((base+amt)*100)/100;SL.winShown=amt;SL.roll=null;ggMetersFast()}aPlay('rollend');
     var s=document.getElementById('ggBigS');if(s)s.textContent='Tap to continue';auto=setTimeout(close,3200)}
-  function close(){if(d._c)return;d._c=1;clearTimeout(auto);stopCoins();d.classList.add('out');if(cab)cab.classList.remove('party');setTimeout(function(){d.remove();ggMeters();if(cb)cb()},300)}
+  function close(){if(d._c)return;d._c=1;clearTimeout(auto);stopCoins();d.classList.add('out');if(cab)cab.classList.remove('party','under');setTimeout(function(){d.remove();ggMeters();if(cb)cb()},300)}
   d.addEventListener('click',function(e){e.stopPropagation();if(!done)finish();else close()});requestAnimationFrame(f)}
 
 /* ---------- Two-Minute Drill (hold-and-spin bonus) ---------- */

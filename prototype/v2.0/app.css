@@ -646,7 +646,6 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .gg-reel.antic::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:inset 0 0 0 3px #ffd23b,inset 0 0 24px rgba(255,210,59,.9);animation:ggant .28s ease-in-out infinite alternate}
 @keyframes ggant{from{opacity:.55}to{opacity:1}}
 .gg-strip{will-change:transform}
-.gg-reel.blur .gg-strip{filter:blur(1.3px)}
 .gc{height:var(--ch);display:grid;place-items:center;position:relative}
 .gc svg{width:88%;height:88%;overflow:visible}
 .gc[data-s=RING]{background:radial-gradient(circle,rgba(255,70,110,.22),transparent 62%)}.gc[data-s=TROPHY]{background:radial-gradient(circle,rgba(246,207,76,.22),transparent 62%)}
@@ -702,7 +701,7 @@ table.mx{border-collapse:separate;border-spacing:3px;width:auto}
 .gg-sp-s{font:500 14px/1.45 var(--body);color:#f3e6c0;max-width:300px}
 .gg-sp-b{margin-top:12px;min-width:210px;min-height:56px;border-radius:999px;border:0;padding:0 26px;background:linear-gradient(#fff3b0,#f6cf4c 48%,#c08e10);color:#2a1d00;font:400 19px Bungee,var(--display);box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 5px 0 #6b4a00,0 0 26px rgba(246,207,76,.55)}
 .gg-sp-b:active{transform:translateY(3px);box-shadow:0 2px 0 #6b4a00}
-.gg-rays{position:absolute;inset:-60%;background:repeating-conic-gradient(from 0deg,rgba(246,207,76,.13) 0 9deg,transparent 9deg 18deg);animation:ggrot 14s linear infinite;z-index:0}
+.gg-rays{position:absolute;inset:-60%;will-change:transform;background:repeating-conic-gradient(from 0deg,rgba(246,207,76,.13) 0 9deg,transparent 9deg 18deg);animation:ggrot 14s linear infinite;z-index:0}
 @keyframes ggrot{to{transform:rotate(360deg)}}
 .gg-big-in{position:relative;z-index:3;display:grid;gap:8px;justify-items:center}
 .gg-big-t{font-size:50px;animation:ggzoom .6s cubic-bezier(.2,1.5,.4,1)}.gg-big-t.punch{animation:ggpunch .55s cubic-bezier(.2,1.6,.4,1)}
@@ -1528,12 +1527,10 @@ body.other .plk{text-decoration:none;cursor:default}
 .gg-cab.free{--led:#5dff8f}.gg-cab.drill{--led:#3bd1ff}.gg-cab.party{--led:#ff5fd6}
 .gg-ledbar{position:absolute;top:22px;bottom:22px;width:4px;border-radius:4px;z-index:1;pointer-events:none;
   background:linear-gradient(180deg,transparent 0%,var(--led) 18%,#fff 25%,var(--led) 32%,transparent 50%,var(--led) 68%,#fff 75%,var(--led) 82%,transparent 100%) 0 0/100% 200%;
-  box-shadow:0 0 8px var(--led),0 0 18px color-mix(in srgb,var(--led) 55%,transparent);animation:ggled 2.6s linear infinite}
-.gg-ledbar.l{left:-2px}.gg-ledbar.r{right:-2px;animation-direction:reverse}
-@keyframes ggled{to{background-position:0 200%}}
+  box-shadow:0 0 8px var(--led),0 0 18px color-mix(in srgb,var(--led) 55%,transparent)}
+.gg-ledbar.l{left:-2px}.gg-ledbar.r{right:-2px}
 .gg-cab.spinning .gg-ledbar{animation-duration:.7s}
-.gg-cab.party .gg-ledbar{animation:ggled .35s linear infinite,gghue 1.4s linear infinite}
-@keyframes gghue{to{filter:hue-rotate(360deg)}}
+.gg-cab.party .gg-ledbar{animation-duration:.35s}
 /* the top screen */
 .gg-topper{position:relative;height:172px;border-radius:16px;overflow:hidden;background:#000;isolation:isolate;
   box-shadow:0 0 0 2px #000,0 0 0 4px #4a505c,0 0 0 5px #0d0f13,0 0 22px -4px color-mix(in srgb,var(--led) 60%,transparent)}
@@ -1620,7 +1617,7 @@ body.other .plk{text-decoration:none;cursor:default}
 /* feature intros look as different as they sound */
 .gg-sp-fx{position:absolute;inset:0;z-index:0;pointer-events:none}
 .gg-splash.k-free,.gg-splash.k-retrigger{background:radial-gradient(circle at 50% 42%,rgba(120,24,92,.94),rgba(30,4,30,.97) 60%,rgba(4,1,6,.98) 80%)}
-.gg-splash.k-free .gg-sp-fx,.gg-splash.k-retrigger .gg-sp-fx{inset:-60%;background:repeating-conic-gradient(from 0deg,rgba(255,214,90,.16) 0 8deg,transparent 8deg 20deg);animation:ggrot 10s linear infinite}
+.gg-splash.k-free .gg-sp-fx,.gg-splash.k-retrigger .gg-sp-fx{inset:-60%;will-change:transform;background:repeating-conic-gradient(from 0deg,rgba(255,214,90,.16) 0 8deg,transparent 8deg 20deg);animation:ggrot 10s linear infinite}
 .gg-splash.k-free .gg-sp-t,.gg-splash.k-retrigger .gg-sp-t{font-size:40px}
 .gg-splash.k-drill{background:radial-gradient(circle at 50% 40%,rgba(14,58,114,.95),rgba(2,10,30,.98) 70%)}
 .gg-splash.k-drill .gg-sp-fx{background:repeating-linear-gradient(0deg,transparent 0 46px,rgba(255,255,255,.07) 46px 48px),radial-gradient(ellipse 80% 40% at 50% 100%,rgba(30,140,70,.45),transparent 70%)}
@@ -1711,3 +1708,36 @@ body.other .plk{text-decoration:none;cursor:default}
   box-shadow:inset 0 0 0 1px #0a1a3a,inset 0 2px 6px rgba(0,0,0,.35),0 0 0 2px #2b2f38}
 .gg-lcd small{font:700 6.5px/1.3 Orbitron,var(--mono);letter-spacing:.12em}
 .gg-lcd b{font:700 12px/1.25 var(--code);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Smooth animation (2026-11-04). Everything that moves on the cabinet now moves with transform or opacity, which the
+   phone's graphics chip handles on its own. Glows that used to grow (box-shadow), lights that used to scroll
+   (background-position) and colour cycling (filter) forced a full repaint every frame and made the reels stutter. */
+.gc>i{position:absolute;inset:6%;background:center/contain no-repeat;pointer-events:none}
+.gc.win>i{animation:ggwinpulse .8s ease-in-out infinite;filter:drop-shadow(0 0 8px rgba(255,220,120,.9));will-change:transform}
+.gc.pop>i{animation:ggpop .5s ease-out}
+.gc.win::before{animation:ggwinglow .8s ease-in-out infinite alternate;will-change:opacity}
+@keyframes ggwinglow{from{opacity:.55}to{opacity:1}}
+.gg-ledbar{background:none;overflow:hidden;animation:none}
+.gg-ledbar::before{content:"";position:absolute;left:0;right:0;top:0;height:200%;will-change:transform;
+  background:linear-gradient(180deg,transparent 0%,var(--led) 18%,#fff 25%,var(--led) 32%,transparent 50%,var(--led) 68%,#fff 75%,var(--led) 82%,transparent 100%);
+  animation:ggled2 2.6s linear infinite;animation-duration:inherit}
+.gg-ledbar{animation-duration:2.6s}
+.gg-ledbar.r::before{animation-direction:reverse}
+@keyframes ggled2{from{transform:translate3d(0,-50%,0)}to{transform:translate3d(0,0,0)}}
+.gg-spin,.gg-spin.free{animation:none}
+.gg-spin::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:0;box-shadow:0 0 54px rgba(93,255,143,.9);opacity:0;will-change:opacity;animation:ggglow 2.2s ease-in-out infinite}
+.gg-spin.free::after{box-shadow:0 0 50px rgba(255,216,74,.95);animation-duration:1.4s}
+.gg-spin.stop::after{display:none}
+@keyframes ggglow{50%{opacity:1}}
+.jb.grand{animation:none;position:relative}
+.jb.grand::after{content:"";position:absolute;inset:0;border-radius:10px;pointer-events:none;box-shadow:inset 0 0 0 1.5px #fff3b0,0 0 16px rgba(255,58,43,.6);opacity:0;will-change:opacity;animation:ggglow 2.4s ease-in-out infinite}
+.gg-tlogo b{will-change:transform}
+.gg-tlogo b::after{animation-duration:7s}
+@keyframes ggshine{0%,80%{background-position:-160% 0}100%{background-position:160% 0}}
+/* the turning light rays only need to cover the screen's diagonal, not 2.2× the screen */
+.gg-rays,.gg-splash.k-free .gg-sp-fx,.gg-splash.k-retrigger .gg-sp-fx{inset:auto;left:50%;top:50%;width:120vmax;height:120vmax;margin:-60vmax 0 0 -60vmax}
+/* behind a full-screen celebration the cabinet holds still: it is barely visible and its lights would cost frames */
+.gg-cab.under,.gg-cab.under *,.gg-cab.under *::before,.gg-cab.under *::after{animation-play-state:paused!important}
+/* while the reels spin, the decorations that still need repainting hold still */
+.gg-cab.spinning .gg-tlogo b,.gg-cab.spinning .gg-tlogo b::after,.gg-cab.spinning .jb.grand::after,.gg-cab.spinning .gg-db.on{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.gg-ledbar::before,.gg-spin::after,.jb.grand::after,.gc.win>i,.gc.win::before{animation:none}}
