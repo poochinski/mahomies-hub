@@ -1892,6 +1892,7 @@ function ggSprite(){if(document.getElementById('ggSprite'))return;var d=document
    rg('ggRuby',[[0,'#ffc2cc'],[.45,'#e0163f'],[1,'#5c0016']])+lg('ggRed',[[0,'#ff8a7a'],[.5,'#d42020'],[1,'#6b0909']],1)+
    rg('ggBrown',[[0,'#d08a48'],[.6,'#7a3a12'],[1,'#3d1a05']])+lg('ggBlue',[[0,'#e2f4ff'],[.5,'#3fa0ff'],[1,'#163f9e']],1)+
    lg('ggPurp',[[0,'#f6e3ff'],[.5,'#b14dff'],[1,'#4f1088']],1)+lg('ggSilver',[[0,'#ffffff'],[.5,'#c4c9d4'],[1,'#5f6675']],1)+
+   '<radialGradient id="ggLeather" cx=".42" cy=".34" r=".72"><stop offset="0" stop-color="#d9894a"/><stop offset=".45" stop-color="#9c4e1c"/><stop offset=".85" stop-color="#5e2508"/><stop offset="1" stop-color="#3d1604"/></radialGradient><pattern id="ggPebble" width="3.2" height="3.2" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".55" fill="#2a0e02" opacity=".5"/><circle cx="2.6" cy="2.4" r=".45" fill="#ffd2a8" opacity=".25"/></pattern><linearGradient id="ggShine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="ggHelm" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#ff7b6b"/><stop offset=".35" stop-color="#e3201c"/><stop offset=".75" stop-color="#9c0c0c"/><stop offset="1" stop-color="#560404"/></linearGradient><linearGradient id="ggGoldStripe" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffe58a"/><stop offset=".5" stop-color="#f2b81c"/><stop offset="1" stop-color="#ffe58a"/></linearGradient><linearGradient id="ggMask" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#c9ced6"/><stop offset="1" stop-color="#8d939d"/></linearGradient>'+
    '<filter id="ggSh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.5" stdDeviation="1.8" flood-color="#000" flood-opacity=".6"/></filter></defs>'+
    sym('RING','<g filter="url(#ggSh)"><circle cx="50" cy="50" r="41" fill="url(#ggGold)" stroke="#5a3d00" stroke-width="2"/><circle cx="50" cy="50" r="31" fill="url(#ggGoldD)"/>'+dots+
      '<rect x="34" y="34" width="32" height="32" rx="4" transform="rotate(45 50 50)" fill="url(#ggRuby)" stroke="#ffe08a" stroke-width="2.5"/><path d="M50 31 V69 M31 50 H69" stroke="#fff" stroke-opacity=".25" stroke-width="1.5"/><path d="M42 41 50 33 58 41Z" fill="#fff" opacity=".6"/></g>'+
@@ -1900,14 +1901,8 @@ function ggSprite(){if(document.getElementById('ggSprite'))return;var d=document
      '<path d="M27 13h46v15c0 18-10 30-23 32-13-2-23-14-23-32z" fill="url(#ggGold)" stroke="#6b4a00" stroke-width="1.5"/><rect x="44" y="59" width="12" height="13" fill="url(#ggGoldD)"/>'+
      '<path d="M33 72h34l5 10H28z" fill="url(#ggGold)" stroke="#6b4a00" stroke-width="1.5"/><rect x="23" y="82" width="54" height="9" rx="2" fill="#3d1f08" stroke="#c99a2a" stroke-width="1.5"/>'+
      '<path d="M50 22l3.5 7.1 7.8 1.1-5.6 5.5 1.3 7.8-7-3.7-7 3.7 1.3-7.8-5.6-5.5 7.8-1.1z" fill="#fff8d6" opacity=".95"/><path d="M33 18c0 14 4 24 10 30" stroke="#fff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/></g>')+
-   sym('STADIUM','<g filter="url(#ggSh)"><path d="M13 60C9 32 31 11 56 12c22 1 37 18 36 40v6l-20 2-4 12c-8 6-24 8-36 6-10-2-17-8-19-18z" fill="url(#ggRed)" stroke="#3a0505" stroke-width="2"/>'+
-     '<path d="M19 33C33 17 60 13 82 26" stroke="#fff" stroke-width="6" fill="none"/><path d="M19 33C33 17 60 13 82 26" stroke="#1a1a1a" stroke-width="1.5" fill="none" opacity=".35"/>'+
-     '<circle cx="49" cy="53" r="6.5" fill="#2a0303"/><circle cx="49" cy="53" r="3" fill="#000"/>'+
-     '<path d="M71 45h25M73 58h23M88 41v33M96 43v28M71 45c-2 10-2 21 3 29h16" stroke="url(#ggSilver)" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
-     '<path d="M24 46c2-12 12-21 25-24" stroke="#fff" stroke-opacity=".45" stroke-width="4" fill="none" stroke-linecap="round"/></g>')+
-   sym('PLAYBOOK','<g filter="url(#ggSh)" transform="rotate(-35 50 50)"><path d="M6 50C19 25 81 25 94 50 81 75 19 75 6 50z" fill="url(#ggBrown)" stroke="#2a1003" stroke-width="2"/>'+
-     '<path d="M23 36c-3 8-3 20 0 28M77 36c3 8 3 20 0 28" stroke="#fff" stroke-width="4" fill="none"/><path d="M35 50h30" stroke="#fff" stroke-width="3.2"/><path d="M39 44.5v11M44.5 44.5v11M50 44.5v11M55.5 44.5v11M61 44.5v11" stroke="#fff" stroke-width="2.6"/>'+
-     '<path d="M19 43c12-10 32-12 48-10" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none" stroke-linecap="round"/></g>')+
+   sym('STADIUM','<g filter="url(#ggSh)"><defs><clipPath id="ggHelmClip"><path d="M18 74C10 56 12 30 34 18C52 8 78 12 88 30C92 37 93 43 91 48L78 48C72 50 70 56 71 62C72 70 76 76 78 80C70 86 56 86 48 82C40 79 32 79 26 80C22 80 20 78 18 74Z"/></clipPath></defs><path d="M78 48L92 49C95 60 94 72 80 80C76 74 71 66 71 60C71 54 74 50 78 48Z" fill="#1c0808"/><path d="M18 74C10 56 12 30 34 18C52 8 78 12 88 30C92 37 93 43 91 48L78 48C72 50 70 56 71 62C72 70 76 76 78 80C70 86 56 86 48 82C40 79 32 79 26 80C22 80 20 78 18 74Z" fill="url(#ggHelm)"/><g clip-path="url(#ggHelmClip)"><path d="M95 41C81 16 47 10 15 46" fill="none" stroke="#fff" stroke-width="9"/><path d="M95 41C81 16 47 10 15 46" fill="none" stroke="url(#ggGoldStripe)" stroke-width="5.5"/><path d="M10 92C30 70 60 70 90 92" fill="#000" opacity=".25"/><path d="M71 62C72 70 76 76 78 80" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="4"/></g><path d="M18 74C10 56 12 30 34 18C52 8 78 12 88 30C92 37 93 43 91 48L78 48C72 50 70 56 71 62C72 70 76 76 78 80C70 86 56 86 48 82C40 79 32 79 26 80C22 80 20 78 18 74Z" fill="none" stroke="#2a0303" stroke-width="2"/><path d="M24 58C21 40 31 25 50 18" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="4" stroke-linecap="round"/><ellipse cx="64" cy="19" rx="8" ry="2.6" fill="#fff" opacity=".5" transform="rotate(10 64 19)"/><circle cx="45" cy="62" r="5.5" fill="#3a0505" stroke="#ff8a7a" stroke-opacity=".45" stroke-width="1.2"/><circle cx="45" cy="62" r="2.6" fill="#0d0101"/><path d="M52 33l3.4 6.9 7.6 1.1-5.5 5.4 1.3 7.6-6.8-3.6-6.8 3.6 1.3-7.6-5.5-5.4 7.6-1.1z" fill="url(#ggGold)" stroke="#5a3d00" stroke-width="1.1"/><g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="#2e333b" stroke-width="5.4"><path d="M78 50C88 49 95 51 97 56C99 64 98 72 93 78C88 82 80 82 74 79"/><path d="M73 60C84 59 92 60 98 62M73 69C84 69 92 70 97 71"/><path d="M88 50C90 60 90 70 87 81"/></g><g stroke="url(#ggMask)" stroke-width="3.4"><path d="M78 50C88 49 95 51 97 56C99 64 98 72 93 78C88 82 80 82 74 79"/><path d="M73 60C84 59 92 60 98 62M73 69C84 69 92 70 97 71"/><path d="M88 50C90 60 90 70 87 81"/></g></g><rect x="76" y="47.5" width="5" height="4" rx="1" fill="#9aa0aa"/><rect x="72" y="77" width="5" height="4" rx="1" fill="#9aa0aa"/><path d="M76 80C80 86 86 88 92 85" fill="none" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><rect x="84" y="83" width="10" height="6" rx="3" fill="#f4f4f4" stroke="#555" stroke-width="1"/></g>')+
+   sym('PLAYBOOK','<g filter="url(#ggSh)" transform="rotate(-30 50 50)"><defs><clipPath id="ggBallClip"><path d="M5 50C14 27 34 21 50 21S86 27 95 50C86 73 66 79 50 79S14 73 5 50Z"/></clipPath></defs><path d="M5 50C14 27 34 21 50 21S86 27 95 50C86 73 66 79 50 79S14 73 5 50Z" fill="url(#ggLeather)"/><g clip-path="url(#ggBallClip)"><rect x="0" y="0" width="100" height="100" fill="url(#ggPebble)" opacity=".55"/><path d="M5 50C14 27 34 21 50 21S86 27 95 50" fill="none" stroke="#3a1606" stroke-opacity=".55" stroke-width="1.1"/><path d="M19 30C14 40 14 60 19 70" fill="none" stroke="#fff" stroke-width="5.5"/><path d="M81 30C86 40 86 60 81 70" fill="none" stroke="#fff" stroke-width="5.5"/><path d="M19 30C14 40 14 60 19 70M81 30C86 40 86 60 81 70" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="5.5" transform="translate(1.2 1.2)"/><ellipse cx="50" cy="70" rx="46" ry="14" fill="#000" opacity=".22"/><ellipse cx="44" cy="32" rx="30" ry="6.5" fill="url(#ggShine)"/></g><path d="M5 50C14 27 34 21 50 21S86 27 95 50C86 73 66 79 50 79S14 73 5 50Z" fill="none" stroke="#2a0e02" stroke-width="2"/><path d="M33 44.5H67" stroke="#000" stroke-opacity=".35" stroke-width="3.4" stroke-linecap="round" transform="translate(.6 1)"/><path d="M33 44.5H67" stroke="#fffaf0" stroke-width="2.8" stroke-linecap="round"/><g stroke-linecap="round"><g stroke="#000" stroke-opacity=".35" stroke-width="2.8" transform="translate(.6 1)"><path d="M37 40.5v8M41.5 40v9M46 39.8v9.4M50.5 39.7v9.6M55 39.8v9.4M59.5 40v9M64 40.5v8"/></g><g stroke="#fffaf0" stroke-width="2.4"><path d="M37 40.5v8M41.5 40v9M46 39.8v9.4M50.5 39.7v9.6M55 39.8v9.4M59.5 40v9M64 40.5v8"/></g></g></g>')+
    sym('BALL','<text x="50" y="81" text-anchor="middle" '+F+' font-size="76" fill="url(#ggBlue)" stroke="#0a1f4d" stroke-width="3.5" paint-order="stroke" filter="url(#ggSh)">A</text>')+
    sym('CAP','<text x="50" y="81" text-anchor="middle" '+F+' font-size="76" fill="url(#ggPurp)" stroke="#2a0650" stroke-width="3.5" paint-order="stroke" filter="url(#ggSh)">K</text>')+
    sym('WILD','<g filter="url(#ggSh)"><rect x="5" y="4" width="90" height="90" rx="14" fill="#140a22" stroke="url(#ggGold)" stroke-width="4"/><image href="/brand-96.png" x="15" y="6" width="70" height="70"/>'+
@@ -1930,7 +1925,9 @@ function ggFonts(){if(document.getElementById('ggFont'))return;var st=document.c
 function slotRoot(){var el=document.getElementById('slot');if(!el){el=document.createElement('div');el.id='slot';el.className='ggslot';document.body.appendChild(el)}return el}
 function bulbs(n){var h='';for(var i=0;i<n;i++)h+='<i></i>';return '<div class="gg-bulbs">'+h+'</div>'}
 function jpVal(name,x,bet){var p=SL.state&&SL.state.pots&&SL.state.pots[bet];return p&&p[name]!=null?p[name]:x*bet}
-function jpHtml(bet,fixed){return GG_JP.map(function(j){var prog=j[0]==='GRAND'||j[0]==='MAJOR',v=fixed?(fixed[j[0]]!=null?fixed[j[0]]:j[1]*bet):jpVal(j[0],j[1],bet);return '<div class="gg-jp'+(prog?' prog':'')+'" style="--c:'+j[2]+'"><small>'+j[0]+'</small><b class="num" data-jpn="'+j[0]+'" data-jpx="'+j[1]+'">'+gb(v)+'</b></div>'}).join('')}
+function jpHtml(bet,fixed){var v=function(j){return fixed?(fixed[j[0]]!=null?fixed[j[0]]:j[1]*bet):jpVal(j[0],j[1],bet)};
+  var row=function(j,cls,two){return '<div class="jb '+cls+'"><i class="jc">'+j[0]+'</i><b class="num" data-jpn="'+j[0]+'" data-jpx="'+j[1]+'">'+gb(v(j))+'</b>'+(two?'<i class="jc">'+j[0]+'</i>':'')+'</div>'};
+  return row(GG_JP[0],'grand',1)+row(GG_JP[1],'major',1)+'<div class="jb2">'+row(GG_JP[2],'minor')+row(GG_JP[3],'mini')+'</div>'}
 function tabsHtml(side){return '<div class="gg-tabs"></div>'}
 var GR=[];
 function ggStripOf(i){return SL.pt&&SL.pt.strips&&SL.pt.strips[i]?SL.pt.strips[i]:GG_SEQ}
@@ -1958,23 +1955,25 @@ function slotRender(){
      '<p class="gg-pop-p">iPhone: the ring/silent switch doesn\'t mute the game. Use this.</p></div>'+
     '<div class="gg-pop" id="ggAutoPop" hidden><div class="gg-pop-h">Auto spin</div><div class="gg-autos">'+[10,25,50].map(function(n){return '<button type="button" data-slauton="'+n+'">'+n+'</button>'}).join('')+'</div>'+
      '<p class="gg-pop-p">Stops on any feature or a big win. Tap STOP anytime.</p></div></div>'+
-   '<div class="gg-cab'+(free?' free':'')+'" id="ggCab"><i class="gg-ledbar l"></i><i class="gg-ledbar r"></i>'+
-    '<div class="gg-topper"><canvas id="ggTop"></canvas><div class="gg-tlogo"><span>GRIDIRON</span><b data-t="GOLD">GOLD</b></div><div class="gg-tag" id="ggTag"></div>'+
-     '<div class="gg-jps" id="ggJps">'+jpHtml(SL.bet)+'</div></div>'+
+   '<div class="gg-cab v4'+(free?' free':'')+'" id="ggCab"><i class="gg-ledbar l"></i><i class="gg-ledbar r"></i>'+
+    '<div class="gg-topper"><canvas id="ggTop"></canvas><div class="gg-tlogo"><span>GRIDIRON</span><b data-t="GOLD">GOLD</b></div><div class="gg-tag" id="ggTag"></div></div>'+
+    '<div class="gg-scr"><div class="gg-jpb" id="ggJps">'+jpHtml(SL.bet)+'</div>'+
     '<div class="gg-win">'+tabsHtml(0)+'<div class="gg-reels" id="ggReels">'+[0,1,2,3,4].map(function(i){return '<div class="gg-reel" data-reel="'+i+'"><div class="gg-strip"></div></div>'}).join('')+'<svg class="gg-lines" id="ggLines"></svg>'+
      '<div class="gg-wb" id="ggWB" hidden><small>WIN</small><b class="num" id="ggWBn">0</b></div></div>'+tabsHtml(1)+'</div>'+
     '<div class="gg-led" id="ggMsg"></div>'+
-    '<div class="gg-meters"><div><small>Credit</small><b class="num cr" id="ggCred"></b></div><div><small>Bet</small><b class="num bt" id="ggBet"></b></div><div><small id="ggWinL">Win</small><b class="num wn" id="ggWin"></b></div></div>'+
-    '<div class="gg-deck"><button type="button" class="gg-db c-blue" data-slpt="1" aria-label="Paytable and rules"><small>PAYS</small><span>INFO</span></button>'+
-     '<button type="button" class="gg-db c-amber" data-slbet="-1" id="ggMinus" aria-label="Lower bet"><small>BET</small><span>−</span></button>'+
-     '<button type="button" class="gg-spin" data-slspin="1" id="ggSpin"><i class="gg-ring" aria-hidden="true"></i><span id="ggSpinT">SPIN</span><small id="ggSpinS"></small></button>'+
-     '<button type="button" class="gg-db c-amber" data-slbet="1" id="ggPlus" aria-label="Raise bet"><small>BET</small><span>+</span></button>'+
-     '<button type="button" class="gg-db c-purple" data-slauto="1" id="ggAuto"><small>PLAY</small><span>AUTO</span></button></div>'+
+    '<div class="gg-mbar"><span class="gg-nl">'+((SL.pt&&SL.pt.lines.length)||20)+'<small>LINES</small></span><div><small>CREDIT</small><b class="num" id="ggCred"></b></div><div><small>BET</small><b class="num" id="ggBet"></b></div><div><small id="ggWinL">WIN</small><b class="num" id="ggWin"></b></div></div></div>'+
+    '<div class="gg-deck2"><div class="gg-keys">'+
+     '<button type="button" class="gg-key k-blue" data-slpt="1" aria-label="Paytable and rules"><small>GAME</small><b>RULES</b></button>'+
+     '<button type="button" class="gg-key k-blue" data-slmk="1" id="ggSndK"><small>SOUND</small><b>'+(GGA.on&&GGA.vol>0?'ON':'OFF')+'</b></button>'+
+     '<button type="button" class="gg-key k-purple" data-slauto="1" id="ggAuto"><small>AUTO</small><b>PLAY</b></button>'+
+     ((SL.pt&&SL.pt.bets)||[10,25,50]).map(function(v){return '<button type="button" class="gg-key k-red" data-slbetv="'+v+'" aria-label="Bet '+v+'"><small>BET</small><b>'+v+'</b><small>BUCKS</small></button>'}).join('')+
+     '</div><button type="button" class="gg-spin" data-slspin="1" id="ggSpin"><i class="gg-ring" aria-hidden="true"></i><span id="ggSpinT">SPIN</span><small id="ggSpinS"></small></button></div>'+
+    '<div class="gg-ptp"><button type="button" class="gg-cash" data-slx="1">CASH<br>OUT</button><div class="gg-lcd"><small>HELLO</small><b>'+esc(AUTH?team(AUTH.user_id):'Player')+'</b><small>MAHOMIE BUCKS · PLAY MONEY</small></div><button type="button" class="gg-bill" data-slbill="1">INSERT<br>BILL</button></div>'+
    '</div>'+
    '<div class="gg-foot">Play money · '+(SL.pt?SL.pt.rtp:'92.5%')+' theoretical payback, the Las Vegas Strip average · every spin is independent</div></div>';
-  ggBind();ggMeters();ggScreen(document.getElementById('ggTop'));
+  ggBind();ggMeters();ggScreen(document.getElementById('ggTop'));ggTagGo();
 }
-function ggBind(){var box=document.getElementById('ggReels');if(!box)return;var r0=box.querySelector('.gg-reel');var w=r0.clientWidth||60,h=Math.round(w*.98);
+function ggBind(){var box=document.getElementById('ggReels');if(!box)return;var r0=box.querySelector('.gg-reel');var w=r0.clientWidth||60,h=Math.round(w*.9);
   box.parentNode.style.setProperty('--ch',h+'px');
   GR.forEach(function(r,i){r.el=box.querySelector('[data-reel="'+i+'"]');r.strip=r.el.firstChild;r.h=h;r.base=null;rDraw(r)})}
 function rDraw(r){if(!r.strip)return;var len=r.s.length;
@@ -1997,13 +1996,16 @@ function ggMeters(){var st=SL.state,free=!!(st&&st.free_left>0),$e=function(id){
   $e('ggCred').textContent=st?gb(SL.cred):'—';$e('ggBet').textContent=SL.bet+(free?' ×'+fm():'');
   $e('ggWinL').textContent=free?'Free spin win':'Win';$e('ggWin').textContent=free?gb(st.free_won||0):SL.winShown?gb(SL.winShown):'0';
   var cab=$e('ggCab');if(cab)cab.classList.toggle('free',free);
-  $e('ggTag').textContent=free?'★ Free spins · '+st.free_left+' left · all wins ×'+fm()+' ★':((SL.pt&&SL.pt.lines.length)||20)+' lines · progressive jackpots';
+  var tg=$e('ggTag');if(free)tg.textContent='★ Free spins · '+st.free_left+' left · all wins ×'+fm()+' ★';else if(!tg.textContent||tg.textContent.indexOf('★')===0)tg.textContent=ggTags()[0];
   var sp=$e('ggSpin');sp.className='gg-spin'+(SL.spinning?' stop':free?' free':'');$e('ggSpinT').textContent=SL.spinning?'STOP':free?'FREE':'SPIN';$e('ggSpinS').textContent=free&&!SL.spinning?st.free_left+' left':'';
   var lock=SL.spinning||free||!!SL.roll,bets=(SL.pt&&SL.pt.bets)||[10,25,50],bi=bets.indexOf(SL.bet);
-  $e('ggMinus').disabled=lock||bi<=0;$e('ggPlus').disabled=lock||bi>=bets.length-1;
-  var au=$e('ggAuto');au.innerHTML=SL.auto>0?'<small>STOP</small><span>'+SL.auto+'</span>':'<small>PLAY</small><span>AUTO</span>';au.classList.toggle('on',SL.auto>0);au.disabled=free&&!SL.auto;
+  [].forEach.call(document.querySelectorAll('#slot [data-slbetv]'),function(k){var v=+k.dataset.slbetv;k.classList.toggle('sel',v===SL.bet);k.disabled=lock&&v!==SL.bet});
+  var au=$e('ggAuto');au.innerHTML=SL.auto>0?'<small>STOP</small><b>'+SL.auto+'</b>':'<small>AUTO</small><b>PLAY</b>';au.classList.toggle('on',SL.auto>0);au.disabled=free&&!SL.auto;
   if(cab)cab.classList.toggle('spinning',!!SL.spinning);
   [].forEach.call(document.querySelectorAll('#ggJps [data-jpx]'),function(b){var nv=gb(jpVal(b.dataset.jpn,+b.dataset.jpx,SL.bet));if(b.textContent!==nv){b.textContent=nv;b.classList.remove('tick');void b.offsetWidth;b.classList.add('tick')}})}
+function ggTags(){var L=(SL.pt&&SL.pt.lines.length)||20;return [L+' lines · progressive jackpots','3+ tickets anywhere · free spins','3+ stopwatches · two-minute drill','Grand jackpot · '+gb(jpVal('GRAND',250,SL.bet))+' Bucks']}
+function ggTagGo(){clearInterval(SL.tagT);SL.tagI=0;SL.tagT=setInterval(function(){var e=document.getElementById('ggTag');if(!e||!SL.open){clearInterval(SL.tagT);return}if(SL.state&&SL.state.free_left>0)return;
+  var m=ggTags();SL.tagI=(SL.tagI+1)%m.length;e.textContent=m[SL.tagI];e.classList.remove('tk');void e.offsetWidth;e.classList.add('tk')},3600)}
 function ggWB(v){var b=document.getElementById('ggWB'),n=document.getElementById('ggWBn');if(!b)return;clearTimeout(SL.wbT);if(v==null){b.hidden=true;b.classList.remove('out');return}b.classList.remove('out');if(b.hidden){b.hidden=false}n.textContent=gb(v)}
 function ggWBOut(){var b=document.getElementById('ggWB');if(!b||b.hidden)return;clearTimeout(SL.wbT);SL.wbT=setTimeout(function(){b.classList.add('out');SL.wbT=setTimeout(function(){b.hidden=true;b.classList.remove('out')},400)},1000)}
 function ggMetersFast(){var c=document.getElementById('ggCred'),w=document.getElementById('ggWin');if(c)c.textContent=gb(SL.cred);if(SL.roll&&!SL.roll.big)ggWB(SL.winShown);if(w)w.textContent=gb(SL.state&&SL.state.free_left>0&&SL.res&&SL.res.free?(SL.freeBase||0)+SL.winShown:SL.winShown)}
@@ -2173,13 +2175,13 @@ function drillStart(b){var el=slotRoot(),ov=document.getElementById('slBonus');i
   DR={b:b,i:-1,collected:0,drives:d0,done:false,timers:[],iv:null};
   ov.innerHTML='<div class="gg dr">'+
    '<div class="gg-top"><span></span><div class="gg-ttl">Gridiron Gold · bonus</div><button type="button" class="gg-ib" data-slmute="1" aria-label="Mute" id="drSnd">'+sndIcon()+'</button></div>'+
-   '<div class="gg-cab drill" id="drCab"><i class="gg-ledbar l"></i><i class="gg-ledbar r"></i>'+
-    '<div class="gg-topper"><canvas id="drTop"></canvas><div class="gg-tlogo dr"><span>TWO-MINUTE</span><b data-t="DRILL">DRILL</b></div><div class="gg-tag">Score a touchdown · collect the board</div>'+
-     '<div class="gg-jps">'+jpHtml(b.bet,drJp(b))+'</div></div>'+
+   '<div class="gg-cab v4 drill" id="drCab"><i class="gg-ledbar l"></i><i class="gg-ledbar r"></i>'+
+    '<div class="gg-topper"><canvas id="drTop"></canvas><div class="gg-tlogo dr"><span>TWO-MINUTE</span><b data-t="DRILL">DRILL</b></div><div class="gg-tag">Score a touchdown · collect the board</div></div>'+
+    '<div class="gg-scr"><div class="gg-jpb">'+jpHtml(b.bet,drJp(b))+'</div>'+
     '<div class="dr-sb"><div><small>Drive</small><b class="num" id="drDrive">1 / '+d0+'</b></div><div><small>Collected</small><b class="num wn" id="drCol">0</b></div></div>'+
     '<div class="dr-field" id="drField"><div class="dr-grid">'+[0,1,2,3,4,5,6,7,8].map(function(i){return '<div class="dr-slot" data-dc="'+i+'">'+drCell(null,b.bet)+'</div>'}).join('')+'</div>'+
      '<div class="dr-play"><small>Play</small><div class="dr-td" id="drTd"><div class="dr-tds" id="drTds">'+tdc(false,'READY')+tdc(false,'HUT!')+tdc(false,'')+'</div></div></div></div>'+
-    '<div class="gg-led" id="drMsg">First drive coming up</div>'+
+    '<div class="gg-led" id="drMsg">First drive coming up</div></div>'+
     '<div class="dr-ctl" id="drCtl"><button type="button" class="gg-txt" data-drskip="1">Skip to the result</button></div>'+
    '</div></div>';
   var g=ov.querySelector('.dr-grid'),th=Math.round(g.clientHeight/3)||80;ov.querySelector('.dr-field').style.setProperty('--th',th+'px');
@@ -2275,6 +2277,9 @@ document.addEventListener('click',function(e){
   if(d.slbet){var bets=(SL.pt&&SL.pt.bets)||[10,25,50],i=bets.indexOf(SL.bet)+(+d.slbet);if(i>=0&&i<bets.length&&!SL.spinning&&!(SL.state&&SL.state.free_left>0)){SL.bet=bets[i];aPlay('click');ggMeters()}return}
   if(d.slspin){slotSpin();return}
   if(d.slsnd){aInit();ggPop('ggSnd');return}
+  if(d.slbetv){var bv=+d.slbetv;if(!SL.spinning&&!SL.roll&&!(SL.state&&SL.state.free_left>0)&&bv!==SL.bet){SL.bet=bv;aPlay('click');ggMeters()}return}
+  if(d.slmk){aInit();GGA.on=!(GGA.on&&GGA.vol>0);if(GGA.on&&GGA.vol<=0)GGA.vol=.7;aSet();ggSndUi();if(GGA.on)aPlay('click');return}
+  if(d.slbill){aPlay('deny');toast('Play money only. Your Bucks come from the Book.');return}
   if(d.slmute){aInit();GGA.on=!(GGA.on&&GGA.vol>0);if(GGA.on&&GGA.vol<=0)GGA.vol=.7;aSet();ggSndUi();if(GGA.on)aPlay('click');return}
   if(d.slauto){if(SL.auto>0){SL.auto=0;ggMeters();return}ggPop('ggAutoPop');return}
   if(d.slauton){ggPop(null,false);SL.auto=+d.slauton;aPlay('click');ggMeters();if(!SL.spinning&&!SL.roll)slotSpin();return}
@@ -2283,7 +2288,7 @@ document.addEventListener('click',function(e){
   if(d.slpt){paytableSheet();return}
   if(d.slptx){var p=document.querySelector('.gg-pt');if(p)p.remove();aPlay('click');return}
 });
-function ggSndUi(){var v=Math.round((GGA.on?GGA.vol:0)*100);[].forEach.call(document.querySelectorAll('#ggSndBtn,[data-slmute]'),function(x){x.innerHTML=sndIcon()});var r=document.getElementById('ggVol'),n=document.getElementById('ggVolN');if(r)r.value=v;if(n)n.textContent=v}
+function ggSndUi(){var v=Math.round((GGA.on?GGA.vol:0)*100),sk=document.querySelector('#ggSndK b');if(sk)sk.textContent=v>0?'ON':'OFF';[].forEach.call(document.querySelectorAll('#ggSndBtn,[data-slmute]'),function(x){x.innerHTML=sndIcon()});var r=document.getElementById('ggVol'),n=document.getElementById('ggVolN');if(r)r.value=v;if(n)n.textContent=v}
 document.addEventListener('input',function(e){if(e.target&&e.target.id==='ggVol'){GGA.vol=(+e.target.value)/100;GGA.on=GGA.vol>0;aSet();var n=document.getElementById('ggVolN');if(n)n.textContent=e.target.value;[].forEach.call(document.querySelectorAll('#ggSndBtn,[data-slmute]'),function(x){x.innerHTML=sndIcon()})}});
 document.addEventListener('change',function(e){if(e.target&&e.target.id==='ggVol')aPlay('win1')});
 document.addEventListener('keydown',function(e){if(!SL.open||e.code!=='Space'||document.getElementById('slBonus')||document.querySelector('.gg-pt,.gg-splash,.gg-big'))return;e.preventDefault();slotSpin()});
