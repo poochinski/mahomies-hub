@@ -52,9 +52,12 @@ export const LINES = [
 // When the side reel lands TOUCHDOWN, everything on the grid is collected.
 // Values are × TOTAL bet. Start with 6 drives; EXTRA DRIVE squares add one (max 20).
 export const DRILL = {
-  drives: 6, maxDrives: 20, td: 0.23,
-  cell: [['blank', 54], ['val', 37], ['jp', 6], ['extra', 3]],
-  values: [0.2, 0.3, 0.5, 0.5, 1, 1, 1.5, 2, 3, 5],
+  // Jayson, 2026-11-04: "it needs to be more frequent, it's a bonus game after all". TD chance 23% → 40% a drive
+  // (3.3 touchdowns a drill instead of 1.9; drills with no touchdown 13% → 2%). Paid for with smaller coins and
+  // slightly fewer jackpot coins, so the drill still averages 24× bet and GRAND/MAJOR come up as often as before.
+  drives: 6, maxDrives: 20, td: 0.40,
+  cell: [['blank', 557], ['val', 378], ['jp', 35], ['extra', 30]],
+  values: [0.2, 0.2, 0.3, 0.3, 0.5, 0.5, 0.75, 1, 1.5, 3],
   jackpots: [['MINI', 5, 62], ['MINOR', 15, 28], ['MAJOR', 50, 9], ['GRAND', 250, 1]]
 };
 // Progressive jackpots (Jayson, 2026-10-10): MAJOR and GRAND grow by a slice of every paid spin

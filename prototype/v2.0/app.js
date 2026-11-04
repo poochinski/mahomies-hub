@@ -2238,7 +2238,7 @@ function drCell(c,bet){if(!c||c.t==='blank')return '<div class="dc blank"><svg v
   if(c.t==='jp')return '<div class="dc coin jp jp-'+c.jp.toLowerCase()+'"><small>'+c.jp+'</small><b>'+gb(c.amt!=null?c.amt:c.v*bet)+'</b></div>';
   return '<div class="dc coin xd"><b>+1</b><small>DRIVE</small></div>'}
 function drJp(b){var o={};(b.jackpots||[]).forEach(function(x){if(x.amt!=null)o[x.name]=x.amt});return o}
-function drFake(){var r=Math.random();return r<.5?{t:'blank'}:r<.86?{t:'val',v:[0.5,1,2,3,5][Math.floor(Math.random()*5)]}:r<.95?{t:'jp',jp:['MINI','MINOR','MAJOR'][Math.floor(Math.random()*3)],v:[5,15,50][Math.floor(Math.random()*3)]}:{t:'extra'}}
+function drFake(){var r=Math.random(),vs=(SL.pt&&SL.pt.drill&&SL.pt.drill.values)||[0.5,1,2,3,5];return r<.5?{t:'blank'}:r<.86?{t:'val',v:vs[Math.floor(Math.random()*vs.length)]}:r<.95?{t:'jp',jp:['MINI','MINOR','MAJOR'][Math.floor(Math.random()*3)],v:[5,15,50][Math.floor(Math.random()*3)]}:{t:'extra'}}
 function tdc(td,lbl){return td?'<div class="tdc td"><b>TOUCH<br>DOWN!</b></div>':'<div class="tdc"><b>'+lbl+'</b></div>'}
 function drillStart(b){var el=slotRoot(),ov=document.getElementById('slBonus');if(!ov){ov=document.createElement('div');ov.id='slBonus';ov.className='gg-drill';el.appendChild(ov)}
   var d0=(SL.pt&&SL.pt.drill&&SL.pt.drill.drives)||8;
