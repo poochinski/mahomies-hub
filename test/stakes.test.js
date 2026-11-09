@@ -39,10 +39,11 @@ async function stakesFor({ median }) {
     return response({});
   };
   w.eval(await fs.readFile(new URL('app.js', base), 'utf8'));
-  for (let n = 0; n < 300 && !doc.querySelector('[data-desk="stakes"]'); n++) await new Promise((r) => setTimeout(r, 10));
-  doc.querySelector('[data-desk="stakes"]').click();
-  const cells = [...doc.querySelectorAll('.mh-fact[data-mh="seed"]')].map((c) => c.textContent);
-  doc.querySelector('.mh-fact[data-mh="seed"]').click();
+  // The matchup card shows Stakes as a row (no tabs since 2026-11-09).
+  for (let n = 0; n < 300 && !doc.querySelector('.mx-row[data-mh="seed"]'); n++) await new Promise((r) => setTimeout(r, 10));
+  const row = doc.querySelector('.mx-row[data-mh="seed"]');
+  const cells = [...row.querySelectorAll('.mx-pair > span')].map((c) => c.textContent);
+  row.click();
   for (let n = 0; n < 100 && !doc.querySelector('#sheetBody').textContent.includes('Where this game leaves you'); n++) await new Promise((r) => setTimeout(r, 10));
   const sheet = doc.querySelector('#sheetBody').textContent;
   w.close();
@@ -54,8 +55,8 @@ test('Stakes counts every game this week and breaks record ties on points', asyn
   assert.deepEqual(errors, []);
   assert.equal(cells.length, 2);
   // Old answer was 3rd: it ignored that C, D and B also get to six wins with more points.
-  assert.match(cells[0], /^If you win5th/);
-  assert.match(cells[1], /^If you lose5th/);
+  assert.equal(cells[0], 'Win 5th');
+  assert.equal(cells[1], 'Lose 5th');
   assert.match(sheet, /then total points/);
   assert.match(sheet, /If you win · 5th/);
 });
@@ -63,5 +64,5 @@ test('Stakes counts every game this week and breaks record ties on points', asyn
 test('Stakes plays the median game too', async () => {
   const { cells, errors } = await stakesFor({ median: true });
   assert.deepEqual(errors, []);
-  assert.match(cells[0], /^If you win5th/);
+  assert.equal(cells[0], 'Win 5th');
 });

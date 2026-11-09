@@ -105,16 +105,18 @@ function slateGame(uid){var gs=pulseForWeek()&&PULSE.games;if(!gs)return null;fo
 function slateSide(g,uid){var k=g.a===uid?'a':'b';return {pts:g['pts_'+k],proj:g['proj_'+k],now:g['now_'+k],left:g['left_'+k],on:g['on_'+k],fin:g['fin_'+k],warn:g['warn_'+k]||[],empty:g['empty_'+k]||0}}
 /* Home part 3 (v2.0): median game, lineup warning, standings strip. Fantasy only, no betting numbers. */
 function finalOf(s){return s.fin?s.pts:(s.proj!=null?s.proj:s.pts)}
-function medianLine(me){
-  if(!D.league.median||!pulseForWeek()||!PULSE.games||!PULSE.games.length)return '';
+function medianLine(me){var m=medianInfo(me);if(!m)return '';
+  return '<button type="button" class="mh-fact" data-info="median"><small>Median</small><b>'+ord(m.rk)+'</b><span>of '+m.n+' · '+m.sub+'</span></button>'}
+function medianInfo(me){
+  if(!D.league.median||!pulseForWeek()||!PULSE.games||!PULSE.games.length)return null;
   var all=[];PULSE.games.forEach(function(g){[g.a,g.b].forEach(function(u){var s=slateSide(g,u);all.push({u:u,v:finalOf(s),fin:s.fin,on:s.on})})});
-  if(all.length<4||!all.some(function(x){return x.u===me}))return '';
+  if(all.length<4||!all.some(function(x){return x.u===me}))return null;
   all.sort(function(a,b){return b.v-a.v});var n=all.length,half=n/2,rk=0;all.forEach(function(x,i){if(x.u===me)rk=i+1});
   var cut=(all[half-1].v+all[half].v)/2,mine=all[rk-1].v,done=all.every(function(x){return x.fin});
   var top=rk<=half,sub;
   if(done)sub=top?'extra win':'extra loss';
   else sub=top?'on track':f1(Math.max(.1,cut-mine))+' short';
-  return '<button type="button" class="mh-fact" data-info="median"><small>Median</small><b>'+ord(rk)+'</b><span>of '+n+' · '+sub+'</span></button>'}
+  return {rk:rk,n:n,half:half,top:top,done:done,sub:sub}}
 function warnLine(s){if(!s)return '';var bits=s.warn.map(function(w){return esc(w.name)+(w.pos?' ('+esc(w.pos)+')':'')+' '+(w.why==='bye'?'is on bye':w.why==='no team'?'has no NFL team':'is '+esc(String(w.why).toUpperCase()))});
   if(s.empty)bits.push(s.empty+' empty starting slot'+(s.empty>1?'s':''));
   return bits.length?'<div class="yg-warn">⚠️ Lineup check: '+bits.join(' · ')+' <span>Fix it in Sleeper.</span></div>':''}
@@ -564,6 +566,27 @@ function formBlock(me,opp){
   }
   return '<div class="mh-form"><div class="yg-k">Last '+(weeks.length>1?weeks.length+' weeks':'week')+'</div>'+row(me,true)+row(opp,false)+'<p class="mh-fkey">Score, who they played, and how it landed against the pregame projection. Tap a week for the game.</p></div>';
 }
+function mxRow(attr,label,body){return '<button type="button" class="mx-row" '+attr+'><small>'+label+'</small><span class="mx-v">'+body+'</span>'+CHEV+'</button>'}
+function mxRows(me,opp,sMe,sOpp){
+  var rows=[],o=seedOutlook(me,opp,sMe,sOpp),m=medianInfo(me),end=D.league.last_scored||0;
+  if(o){var rg=function(x){return x.lo!==x.hi?ord(x.lo)+'–'+ord(x.hi):ord(x.seed)};
+    rows.push(mxRow('data-mh="seed"','Stakes','<span class="mx-pair"><span>Win <b class="w">'+ord(o.win.seed)+'</b></span><span>Lose <b class="l">'+ord(o.lose.seed)+'</b></span></span>'+
+      '<i>You\'re '+ord(o.cur)+' now'+(o.win.lo!==o.win.hi||o.lose.lo!==o.lose.hi?' · could end '+rg(o.win)+' with a win, '+rg(o.lose)+' with a loss':'')+'</i>'))}
+  if(m)rows.push(mxRow('data-info="median"','Median','<span class="mx-pair"><span><b class="'+(m.top?'w':'l')+'">'+ord(m.rk)+'</b> of '+m.n+'</span><span class="mx-sub">'+esc(m.sub)+'</span></span>'+
+      '<i>'+(m.done?(m.top?'Top half this week: an extra win':'Bottom half this week: an extra loss'):'Top '+m.half+' scores this week get an extra win')+'</i>'));
+  if(end>=1){var start=Math.max(1,end-3),weeks=[];for(var w=start;w<=end;w++)weeks.push(w);
+    if(isHomeLg())loadProjHist(weeks);
+    var line=function(u,who){var won=0,pl=0,pills=weeks.map(function(w){var g=gi(CUR(),w,u);if(g<0)return '<i class="n" title="Week '+w+'">–</i>';pl++;var x=D.games[g].win===u;if(x)won++;return '<i class="'+(x?'w':'l')+'" title="Week '+w+'">'+(x?'W':'L')+'</i>'}).join('');
+      return '<span class="mx-fl"><em>'+who+'</em><span class="mx-pills">'+pills+'</span><b>'+won+'–'+(pl-won)+'</b></span>'};
+    rows.push(mxRow('data-mh="form"','Form',line(me,'You')+line(opp,esc(team(opp)))+'<i>Weeks '+start+(end>start?'–'+end:'')+'</i>'))}
+  var r=D.h2h&&D.h2h[me+'|'+opp];
+  if(r&&r.games&&r.games.length){var last=r.games[r.games.length-1],won=last.m>last.o;
+    rows.push(mxRow('data-mh="series"','Series','<span class="mx-pair"><span><b class="'+(r.w>r.l?'w':r.w<r.l?'l':'')+'">'+(r.w===r.l?'Tied ':r.w>r.l?'You lead ':'You trail ')+Math.max(r.w,r.l)+'–'+Math.min(r.w,r.l)+'</b></span></span>'+
+      '<i>Last time: '+(won?'won':'lost')+' '+Math.round(last.m)+'–'+Math.round(last.o)+' · '+esc(String(last.s))+' Wk '+last.w+'</i>'))}
+  else rows.push(mxRow('data-mh="series"','Series','<span class="mx-pair"><span><b>First meeting</b></span></span>'));
+  return '<div class="mx-rows">'+rows.join('')+'</div>';
+}
+function formSheet(me,opp){return '<div class="ph" style="margin:0 0 8px"><div><div class="kicker">'+esc(team(me))+' vs '+esc(team(opp))+'</div><h2>Form</h2></div></div>'+formBlock(me,opp)}
 function seriesBlock(me,opp){
   var r=D.h2h&&D.h2h[me+'|'+opp];
   if(!r||!r.games||!r.games.length)return '<button type="button" class="mh-series" data-mh="series"><span><small>Series</small><b>First meeting</b></span></button>';
@@ -2802,16 +2825,10 @@ function matchupCard(my){
     h+='<div class="mx-tug" aria-hidden="true"><i style="width:'+pc+'%"></i></div><div class="mx-tugl"><span>'+f1(a)+'</span><em>'+(sMe.fin&&sOpp.fin?'Final':sMe.proj==null?'Score now':'Projected finish')+'</em><span>'+f1(b)+'</span></div>'}
   if(savedTeam()){
     h+=warnLine(sg?sMe:null)+needLine(my.id,opp,sg?sMe:null,sg?sOpp:null);
-    var desk=myDesk(),stakes=stakeBlock(me,opp,sg?sMe:null,sg?sOpp:null),tabs=[];
-    var scored=desk&&desk.mine.concat(desk.his).some(function(p){return slotPts(p)>0});
-    if(desk&&desk.mine.length)tabs.push(['lineup','Lineup']);
-    if((D.league.last_scored||0)>=1)tabs.push(['form','Form']);
-    if(stakes)tabs.push(['stakes','Stakes']);
-    tabs.push(['series','Series']);
-    var cur=S.desk&&tabs.some(function(t){return t[0]===S.desk})?S.desk:(scored?'lineup':tabs[0][0]);
-    if(cur==='lineup'&&!scored&&!S.desk&&tabs.some(function(t){return t[0]==='form'}))cur='form';
-    var body=cur==='lineup'?slotBlock(desk):cur==='form'?formBlock(me,opp):cur==='stakes'?stakes:seriesBlock(me,opp);
-    h+='<div class="dk"><div class="dk-tabs" role="tablist">'+tabs.map(function(t){return '<button type="button" role="tab" class="'+(t[0]===cur?'on':'')+'" data-desk="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div><div class="dk-body">'+body+'</div></div>';
+    /* Jayson, 2026-11-09: Lineup / Form / Stakes / Series were four tabs you had to tap through. Now it's all on the card:
+       the lineup chart once anyone has scored, then one row each for Stakes, Median, Form and Series. Each row opens its detail. */
+    var desk=myDesk(),scored=desk&&desk.mine.concat(desk.his).some(function(p){return slotPts(p)>0});
+    h+='<div class="dk">'+(scored&&desk.mine.length?'<div class="dk-body">'+slotBlock(desk)+'</div>':'')+mxRows(me,opp,sg?sMe:null,sg?sOpp:null)+'</div>';
   }
   return h+'</section>';
 }
@@ -3036,7 +3053,7 @@ document.addEventListener('click',function(e){
   if(d.rec){closeSheetQuiet();S.rec=d.rec;S.recMore=false;render();centerChip('[data-rec="'+S.rec+'"]');return}
   if(d.pair){var pp=d.pair.split('|');S.h2a=pp[0];S.h2b=pp[1];render();var el=document.getElementById('rivalTop');if(el)el.scrollIntoView({block:'start'});return}
   if(d.plw){var pw=d.plw;nav(function(){pwOpen(pw)});return}
-  if(d.mh){var kind=d.mh;nav(function(){var desk=myDesk();if(!desk){openSheet('<p class="muted">Pick your team first.</p>'+CLOSE);return}if(kind==='series')openSheet(seriesSheet(desk.me,desk.opp)+CLOSE);else if(kind==='slots')openSheet(slotSheet()+CLOSE);else if(kind==='seed')openSheet(seedSheet()+CLOSE)});return}
+  if(d.mh){var kind=d.mh;nav(function(){var desk=myDesk();if(!desk){openSheet('<p class="muted">Pick your team first.</p>'+CLOSE);return}if(kind==='series')openSheet(seriesSheet(desk.me,desk.opp)+CLOSE);else if(kind==='slots')openSheet(slotSheet()+CLOSE);else if(kind==='seed')openSheet(seedSheet()+CLOSE);else if(kind==='form')openSheet(formSheet(desk.me,desk.opp)+CLOSE)});return}
   if(d.prev){nav(function(){if(S.tab!=='book'&&LIVE&&isHomeLg()&&/^w\d+m\d+$/.test(d.prev)){gcOpen(d.prev);return}openSheet(previewSheet(d.prev,S.tab==='book')+CLOSE)});return}
   if(d.gcprev){nav(function(){openSheet(previewSheet(d.gcprev,false)+CLOSE)});return}
   if(d.season){S.ss=d.season;S.sw=null;nav(function(){openSheet(seasonSheet(d.season)+CLOSE)});return}

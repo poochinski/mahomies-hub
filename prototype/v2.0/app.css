@@ -1795,3 +1795,24 @@ body.other .plk{text-decoration:none;cursor:default}
 .us-t tbody tr:last-child td{border-bottom:0}
 .us-box em{display:block;font:10px var(--mono);font-style:normal;color:var(--faint);margin-top:2px}
 #plc,#pw{min-width:0}
+
+/* Matchup card without tabs (2026-11-09): lineup chart, then a row each for Stakes, Median, Form, Series */
+.mx-rows{display:grid;border-top:1px solid var(--line)}
+.dk>.mx-rows:first-child{border-top:0}
+.mx-row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:11px 2px;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;text-align:left;font:inherit}
+.mx-row:last-child{border-bottom:0}
+.mx-row>small{font:650 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);align-self:start;padding-top:4px}
+.mx-v{display:grid;gap:3px;min-width:0}
+.mx-v>i{font:11.5px/1.3 var(--body);font-style:normal;color:var(--muted)}
+.mx-pair{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline;font:600 14px var(--body);color:var(--muted)}
+.mx-pair b{font:750 18px/1.15 var(--body);color:var(--ink);font-variant-numeric:tabular-nums}
+.mx-pair b.w{color:var(--win)}.mx-pair b.l{color:var(--loss)}
+.mx-sub{font-size:13px}
+.mx-fl{display:grid;grid-template-columns:minmax(0,1fr) auto 34px;align-items:center;gap:8px}
+.mx-fl em{font:600 13px var(--body);font-style:normal;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx-fl b{font:700 13px var(--body);text-align:right;font-variant-numeric:tabular-nums}
+.mx-pills{display:flex;gap:3px}
+.mx-pills i{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;font:700 10.5px var(--body);font-style:normal}
+.mx-pills i.w{background:color-mix(in srgb,var(--win) 18%,transparent);color:var(--win)}
+.mx-pills i.l{background:color-mix(in srgb,var(--loss) 16%,transparent);color:var(--loss)}
+.mx-pills i.n{background:var(--ground-2);color:var(--faint)}
