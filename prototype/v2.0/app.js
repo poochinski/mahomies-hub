@@ -372,6 +372,7 @@ function plHtml(pid,d){
      '<p class="pl-line">'+plStatLine(b.pos,cur.totals)+'</p><div class="pl-bars">'+cur.weeks.map(function(x){var m=mine[x.w],c=m?(m.started?'pl-s':'pl-b'):'';
        return '<div class="pl-bar '+c+'"><span class="num">'+f1(x.pts)+'</span><i style="height:'+Math.max(4,Math.round(x.pts/mx*64))+'px"></i><small>W'+x.w+'</small><small>'+esc(x.opp||'')+'</small></div>'}).join('')+'</div>'+
      '<p class="pl-key"><i class="pl-s"></i>started in our league <i class="pl-b"></i>on a bench <i></i>not rostered / other</p></section>'}
+  if(d.usage&&d.usage.rows&&d.usage.rows.length)h+=usHtml(d.usage,b.pos);
   var past=(d.nfl||[]).filter(function(x){return x.season!==d.cur_season});
   if(past.length)h+='<section class="pl-sec"><div class="kicker">Earlier NFL seasons</div><div class="rows">'+past.map(function(x){return '<div class="row" style="grid-template-columns:52px minmax(0,1fr) auto"><span class="yr">'+x.season+'</span><span class="muted" style="font-size:12px">'+x.gp+' games · '+plStatLine(b.pos,x.totals)+'</span><span class="val" style="font-size:14px">'+f1(x.pts)+'<small>'+f1(x.ppg)+'/g</small></span></div>'}).join('')+'</div></section>';
   var L=d.league||{},ss=L.seasons||[];
@@ -393,6 +394,31 @@ function plHtml(pid,d){
        return '<button type="button" class="pl-wr"'+(g>=0?' data-game="'+g+'"':'')+'><span>Wk '+x.w+(x.playoff?' · playoffs':'')+'</span><span class="muted">'+esc(x.uid?tnS(s.season,x.uid):'')+'</span><span class="'+(x.started?'pl-s':'muted')+'">'+(x.started?'started':'bench')+'</span><b class="num">'+f1(x.pts)+'</b></button>'}).join('')+'</details>':'')+'</div>'});
   h+='</section><p class="gc-up">League points use our league\'s scoring. NFL stats from Sleeper.</p>'+CLOSE+'</div>';
   return h}
+/* Usage (Jayson, 2026-11-09): snaps, snap share, targets and target share, carries, red-zone chances and air yards,
+   week by week, with notes the app writes from those numbers. Shares are of his NFL team's totals that week. */
+function usPct(v){return v==null?'–':v+'%'}
+function usNotes(notes,label){return notes&&notes.length?'<div class="us-notes">'+(label?'<b>'+esc(label)+'</b>':'')+'<ul>'+notes.map(function(n){return '<li>'+esc(n)+'</li>'}).join('')+'</ul></div>':''}
+function usHtml(u,pos){
+  var rows=u.rows,rb=pos==='RB',h='<section class="pl-sec us"><div class="kicker">How he\'s being used · '+esc(u.season)+'</div>';
+  h+=usNotes(u.notes,'Week '+u.week);
+  h+='<div class="us-k">Snap share by week</div><div class="pl-bars us-bars">'+rows.map(function(r){
+    return '<div class="pl-bar"><span class="num">'+usPct(r.snap_pct)+'</span><i style="height:'+Math.max(3,Math.round((r.snap_pct||0)*.6))+'px"></i><small>W'+r.w+'</small><small>'+esc(r.opp||'')+'</small></div>'}).join('')+'</div>';
+  var cols=[['Snaps',function(r){return r.snaps}],['Snap %',function(r){return usPct(r.snap_pct)}],['Tgt',function(r){return r.tgt}],['Tgt share',function(r){return usPct(r.tgt_share)}]];
+  if(rb)cols.push(['Car',function(r){return r.att}],['Car share',function(r){return usPct(r.att_share)}]);
+  cols.push(['Red zone',function(r){return r.rz_tgt+r.rz_att}]);
+  if(!rb)cols.push(['Air yds',function(r){return r.air}]);
+  h+='<div class="us-tw"><table class="us-t"><thead><tr><th scope="col">Week</th>'+cols.map(function(c){return '<th scope="col">'+c[0]+'</th>'}).join('')+'</tr></thead><tbody>'+
+    rows.slice().reverse().map(function(r){return '<tr><td>W'+r.w+(r.opp?' <span class="muted">'+esc(r.opp)+'</span>':'')+'</td>'+cols.map(function(c){return '<td>'+c[1](r)+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>';
+  h+='<p class="gc-up">Shares are of his NFL team\'s totals that week. Red zone counts targets and carries inside the 20. Routes run aren\'t in Sleeper\'s data, so they aren\'t shown.</p></section>';
+  return h}
+function pwUsage(u,pos){
+  var t=[],rb=pos==='RB';
+  if(u.tgt||!rb)t.push(['Target share',usPct(u.tgt_share),u.tgt+(u.tm_tgt!=null?' of '+u.tm_tgt+' team targets':' targets')]);
+  if(rb||u.att)t.push(['Carry share',usPct(u.att_share),u.att+(u.tm_att!=null?' of '+u.tm_att+' team carries':' carries')]);
+  t.push(['Red zone',String(u.rz_tgt+u.rz_att),!(u.rz_tgt+u.rz_att)?'inside the 20':rb?u.rz_att+' car · '+u.rz_tgt+' tgt':u.rz_tgt+' tgt'+(u.rz_att?' · '+u.rz_att+' car':'')]);
+  if(!rb)t.push(['Air yards',String(u.air),u.air_share!=null?u.air_share+'% of team':'']);
+  return '<div class="yg-k" style="margin-top:14px">How he\'s being used</div><div class="pw-box us-box">'+t.map(function(x){return '<div><small>'+esc(x[0])+'</small><b>'+esc(x[1])+'</b>'+(x[2]?'<em>'+esc(x[2])+'</em>':'')+'</div>'}).join('')+'</div>'+usNotes(u.notes,'');
+}
 /* ---------- Book math ---------- */
 function line(id){return D.lines.find(function(l){return l.id===id})}
 /* ---------- HOME ---------- */
@@ -606,6 +632,7 @@ function pwHtml(){
   if(d.big)h+='<p class="pw-big">'+esc(d.big)+'</p>';
   if(d.box&&d.box.length)h+='<div class="pw-box">'+d.box.map(function(t){return '<div><small>'+esc(t.k)+'</small><b>'+esc(t.v)+'</b></div>'}).join('')+'</div>';
   else if(d.state==='pre')h+='<p class="muted">Hasn\'t played yet. Kicks off '+esc(d.status)+(d.game?' '+esc(d.game.opp):'')+'.</p>';
+  if(d.usage)h+=pwUsage(d.usage,d.pos);
   h+='<div class="yg-k" style="margin-top:14px">Play by play</div>'+pbpHtml(d);
   h+='<button type="button" class="ghost pw-card" data-pl="'+esc(d.pid)+'">Full player card ›</button>';
   h+='<p class="gc-up" id="pwErr">Updated '+hms(d.updated)+' · '+paceTxt()+'</p></div>';

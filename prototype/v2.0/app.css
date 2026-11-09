@@ -1779,3 +1779,19 @@ body.other .plk{text-decoration:none;cursor:default}
 /* fourth pass: win frames and winning symbols without filters (Safari paints filters on the CPU) */
 .gc.win::before{filter:none}
 .gc.win>i{filter:none}
+
+/* Usage on the player card and the week sheet (2026-11-09) */
+.us-notes{border:1px solid var(--line);border-radius:14px;background:var(--ground-2);padding:10px 12px;margin:6px 0 10px}
+.us-notes b{display:block;font:650 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--gold)}
+.us-notes ul{margin:4px 0 0;padding-left:17px;display:grid;gap:4px;font-size:13px;line-height:1.45;color:var(--ink)}
+.us-notes b+ul{margin-top:6px}
+.us-k{font:650 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
+.us-bars .pl-bar i{background:var(--cyan);opacity:.8}
+.us-tw{overflow-x:auto;margin-top:10px;border:1px solid var(--line);border-radius:12px}
+.us-t{width:100%;border-collapse:collapse;font:12px var(--mono);font-variant-numeric:tabular-nums}
+.us-t th,.us-t td{padding:6px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+.us-t th{font-weight:650;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.us-t th:first-child,.us-t td:first-child{text-align:left}
+.us-t tbody tr:last-child td{border-bottom:0}
+.us-box em{display:block;font:10px var(--mono);font-style:normal;color:var(--faint);margin-top:2px}
+#plc,#pw{min-width:0}

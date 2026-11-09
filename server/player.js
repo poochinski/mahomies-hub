@@ -3,6 +3,7 @@
 // GET /api/player/:pid
 import { sleeper, leagueChain, getPlayers } from './sleeper/client.js';
 import { LEAGUE_ID } from './config.js';
+import { teamWeek, usageRow, usageNotes, USAGE_POS } from './stats/usage.js';
 
 const HOUR = 60 * 60 * 1000;
 const STATS = (process.env.SLEEPER_PROJ_BASE || 'https://api.sleeper.app').replace(/\/$/, '');
@@ -58,6 +59,7 @@ export async function leagueIndex() {
 
 // ---------- NFL stats, scored with this league's settings ----------
 const statCache = new Map();
+const USE_KEYS = ['off_snp', 'tm_off_snp', 'rec_tgt', 'rush_att', 'rec_rz_tgt', 'rush_rz_att', 'rec_air_yd', 'rec', 'rec_yd', 'rush_yd', 'rec_td', 'rush_td'];
 async function nflSeason(pid, season, scoring, current) {
   const key = `${pid}|${season}`, hit = statCache.get(key), maxAge = current ? 30 * 60 * 1000 : 7 * 24 * HOUR;
   if (hit && Date.now() - hit.at < maxAge) return hit.data;
@@ -79,6 +81,7 @@ async function nflSeason(pid, season, scoring, current) {
   const data = {
     season: String(season), gp: weeks.length, pts: r1(weeks.reduce((a, x) => a + x.pts, 0)),
     weeks: weeks.map(({ w, pts, opp, team }) => ({ w, pts, opp, team })),
+    use: weeks.map(({ w, opp, team, st }) => ({ w, opp, team, st: Object.fromEntries(USE_KEYS.filter((k) => st[k] != null).map((k) => [k, st[k]])) })),
     totals: {
       pass_yd: sum('pass_yd'), pass_td: sum('pass_td'), pass_int: sum('pass_int'), rush_att: sum('rush_att'), rush_yd: sum('rush_yd'), rush_td: sum('rush_td'),
       rec_tgt: sum('rec_tgt'), rec: sum('rec'), rec_yd: sum('rec_yd'), rec_td: sum('rec_td'), fgm: sum('fgm'), fga: sum('fga'), xpm: sum('xpm'),
@@ -141,5 +144,19 @@ export async function playerProfile(pid) {
     nfl = (await Promise.all(yrs.map((y) => nflSeason(pid, y, scoring, String(y) === idx.curSeason).catch(() => null)))).filter((x) => x && x.gp);
   } catch { nfl = []; }
 
-  return { bio, on_now: onNow, nfl, league: { seasons, best }, cur_season: idx.curSeason };
+  // Usage this season (RB/WR/TE): snaps, shares, red zone, air yards, and notes on his latest game.
+  let usage = null;
+  const curNfl = nfl.find((x) => x.season === idx.curSeason);
+  if (USAGE_POS.has(bio.pos) && curNfl && curNfl.use?.length) {
+    try {
+      const live = (w) => w >= idx.nflWeek;
+      const totals = await Promise.all(curNfl.use.map((u) => teamWeek(idx.curSeason, u.w, { live: live(u.w) })));
+      const rows = curNfl.use.map((u, i) => usageRow(pid, u.st, totals[i]?.[u.team], { w: u.w, opp: u.opp, team: u.team }));
+      const last = rows[rows.length - 1];
+      usage = { season: idx.curSeason, rows, week: last.w, notes: usageNotes(bio.pos, last, rows.slice(0, -1)) };
+    } catch (err) { console.error('usage failed', err.message); }
+  }
+  for (const x of nfl) delete x.use;
+
+  return { bio, on_now: onNow, nfl, usage, league: { seasons, best }, cur_season: idx.curSeason };
 }

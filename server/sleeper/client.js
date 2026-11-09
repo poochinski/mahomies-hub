@@ -5,6 +5,16 @@ const BASE = process.env.SLEEPER_BASE || 'https://api.sleeper.app/v1'; // overri
 const cache = new Map(); // path -> { at, data }
 export const clearSleeperCache = () => cache.clear(); // tests only
 
+// One-off read that isn't kept in the cache (big league-wide files for past weeks; the caller keeps
+// only the small thing it boils them down to).
+export async function sleeperOnce(path) {
+  const get = (url) => fetch(url, { headers: { accept: 'application/json', 'user-agent': 'MahomiesHub/1.5' }, signal: AbortSignal.timeout(20000) });
+  let res = await get(BASE + path);
+  if (res.status === 404 || res.status >= 500) res = await get(BASE + path + (path.includes('?') ? '&' : '?') + 'cb=' + Date.now());
+  if (!res.ok) throw new Error(`Sleeper ${path} → ${res.status}`);
+  return res.json();
+}
+
 // Game day: a dozen phones polling every few seconds share one request per path, so
 // Sleeper sees at most one call per path per cache window no matter how many people are on.
 const inflight = new Map(); // path -> Promise

@@ -6,6 +6,7 @@ import { kickoffs, kickShort, liveAge } from '../book/kickoffs.js';
 import { weekStats, statLine, bigPlay } from './weekly.js';
 import { getPlayers } from '../sleeper/client.js';
 import { gamePlays, playerGameLog, shortName } from './plays.js';
+import { teamWeek, usageRow, usageNotes, USAGE_POS } from './usage.js';
 
 const num = (s, k) => Number(s?.[k]) || 0;
 const r1 = (x) => Math.round(Number(x) * 10) / 10;
@@ -85,8 +86,15 @@ export async function playerWeek(pid, week) {
       log = playerGameLog(plays, { espn: players[pid]?.e || '', abbr: shortName(players[pid]?.n || ''), pos, nfl }, g, L.scoring);
     } catch (err) { logErr = 'Play-by-play isn\'t reachable right now.'; console.error('plays', err.message); }
   }
+  // Usage this week: shares of his team's targets and carries, red zone, air yards, and a few notes.
+  let usage = null;
+  if (USAGE_POS.has(pos) && s && (num(s, 'off_snp') || num(s, 'rec_tgt') || num(s, 'rush_att'))) {
+    const T = (await teamWeek(L.season, w, { live }))[nfl];
+    const row = usageRow(pid, s, T, { w, opp, team: nfl });
+    usage = { ...row, notes: usageNotes(pos, row, []) };
+  }
   return {
-    pid, week: w, name: players[pid]?.n || pid, pos, nfl, inj: players[pid]?.i || null,
+    pid, week: w, name: players[pid]?.n || pid, pos, nfl, inj: players[pid]?.i || null, usage,
     team: m ? (L.teams[L.owner[m.roster_id]]?.team || '') : '', uid: m ? L.owner[m.roster_id] : null,
     slot: si >= 0 ? (L.slots[si] || 'FLEX') : m ? 'BN' : '',
     state: g ? g.state : 'bye', status,

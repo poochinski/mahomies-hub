@@ -86,6 +86,8 @@ One look for everything tappable; nothing that isn't tappable looks tappable. **
 ## Data not used yet
 Own score snapshots during games (game flow, comebacks) · past weeks re-simulated (odds/power over time) · ESPN NFL spreads/totals (game environment) · NFL rest-of-season schedule and byes · rest-of-season projections for every rostered player · Sleeper trending adds/drops · traded future picks and keeper settings · weekly stat lines for raw-stat records · Yahoo 2021–2022.
 
+**Usage (added 2026-11-09):** player cards and the matchup week sheet show snaps, snap %, targets and target share, carries and carry share, red-zone chances, air yards, and app-written notes. Routes run need a source: Sleeper doesn't publish them; FTN's free participation data (via nflverse) arrives after the playoffs, which would let us add 2026 routes in the offseason and earlier seasons now; in-season routes only come from paid charting services (Jayson to decide).
+
 ## What nobody else shows (lean in)
 Grading decisions by starting-lineup points · one history across Yahoo + Sleeper tied to people · "as good as your record?" (all-play, luck, median, schedule) · a rating built only from our league's games · game flow and comeback records from our own snapshots · record watch while it happens · fantasy points play by play · the Book · a Home that knows what day it is. Common elsewhere (don't compete): live scores, AI recaps (LeagueBeat, League Rewind), basic record books (Yahoo added one Aug 2026), Sleeper's per-season history (top 3 + standings, not tied to users).
 
