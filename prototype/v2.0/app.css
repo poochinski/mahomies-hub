@@ -1816,3 +1816,26 @@ body.other .plk{text-decoration:none;cursor:default}
 .mx-pills i.w{background:color-mix(in srgb,var(--win) 18%,transparent);color:var(--win)}
 .mx-pills i.l{background:color-mix(in srgb,var(--loss) 16%,transparent);color:var(--loss)}
 .mx-pills i.n{background:var(--ground-2);color:var(--faint)}
+
+/* Fifth pass (2026-11-09): fewer layers kept alive. Jayson's meter showed 1-second freezes and part of the screen
+   not drawn; the page behind the slot is now hidden while it's open, and the cabinet keeps far fewer animated layers. */
+html.ggon .topbar,html.ggon #view,html.ggon .tabbar{display:none}
+html.ggon .toast{z-index:120}
+.gg-rc{display:none;visibility:visible}
+.gg-strip{will-change:auto}
+.ggslot:not(.baked) .gg-strip{will-change:transform}
+.gc.win>i,.gc.win::before{animation:none;will-change:auto}
+.gg-wb{will-change:auto}
+.gg-lines.on{animation:gglinepulse .9s ease-in-out infinite alternate}
+@keyframes gglinepulse{from{opacity:.55}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.gg-lines.on{animation:none}}
+
+/* Keep each animated part from pulling its neighbours into extra layers (an animated piece makes everything drawn over
+   it a layer too). Sections are sealed; the side lights sit on top; the logo stops pulsing (its shine stays). */
+.scrim{visibility:hidden;transition:opacity .22s,visibility 0s .22s}
+.scrim.open{visibility:visible;transition:opacity .22s}
+.gg-ledbar{z-index:30}
+.gg-topper,.gg-scr,.gg-reels,.gg-jpb{isolation:isolate;contain:paint}
+.gg-tlogo b{will-change:auto;animation:none}
+.gg-cab.party .gg-tlogo b{animation:none}
+html.ggon,html.ggon body{background:#05030a}

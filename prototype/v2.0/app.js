@@ -2013,6 +2013,7 @@ function openSlot(){
   if(!AUTH){toast('Log in to the Sportsbook to play');openLogin();return}
   ggFonts();ggSprite();aInit();setTimeout(ggBake,30);
   SL.open=true;SL.auto=0;var el=slotRoot();el.classList.add('open');document.body.style.overflow='hidden';
+  SL.scrollY=window.scrollY||0;clearTimeout(SL.hideT);SL.hideT=setTimeout(function(){if(SL.open)document.documentElement.classList.add('ggon')},320);
   ggReelsInit();slotRender();ggMsg('Loading…');
   Promise.all([api('/slots/state'),SL.pt?Promise.resolve(SL.pt):api('/slots/paytable')]).then(function(r){SL.state=r[0];SL.pt=r[1];
     SL.cred=SL.state.balance-(SL.state.bonus?SL.state.bonus.total:0);SL.winShown=0;if(SL.state.free_bet)SL.bet=SL.state.free_bet;
@@ -2020,7 +2021,9 @@ function openSlot(){
     if(SL.state.bonus){SL.busy=true;ggSplash('drill',function(){SL.busy=false;drillStart(SL.state.bonus)})}
     else if(SL.state.free_left>0)ggMsg(SL.state.free_left+' free spins left · tap FREE');
     else ggMsg(SL.cred<SL.bet?'Not enough Bucks to spin':'Play '+((SL.pt&&SL.pt.lines.length)||20)+' lines · good luck')}).catch(function(e){ggMsg(e.message)})}
-function closeSlot(){if(SL.spinning||SL.busy||SL.roll)return;SL.open=false;SL.auto=0;ggStopCycle();aHum(false);aMusic(null);var el=slotRoot();el.classList.remove('open');document.body.style.overflow='';bookLoad()}
+function closeSlot(){if(SL.spinning||SL.busy||SL.roll)return;SL.open=false;SL.auto=0;ggStopCycle();aHum(false);aMusic(null);var el=slotRoot();el.classList.remove('open');document.body.style.overflow='';
+  clearTimeout(SL.hideT);var wasHidden=document.documentElement.classList.contains('ggon');document.documentElement.classList.remove('ggon');
+  if(S.behind){S.behind=false;render()}if(wasHidden)window.scrollTo(0,SL.scrollY||0);bookLoad()}
 function slotRender(){GG_OVER=0;
   var el=slotRoot(),st=SL.state,free=!!(st&&st.free_left>0);
   el.innerHTML='<div class="gg">'+
@@ -2071,16 +2074,16 @@ function ggCellSprites(){var r0=GR[0];if(!GGB.done||!r0||!r0.el||!r0.h)return;va
   Object.keys(GGB.c).forEach(function(k){sp[k]={};['s','b'].forEach(function(v){var c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d'),g=GG_GLOW[k];
     if(g){var R=Math.sqrt(W*W+H*H)/2,gr=x.createRadialGradient(W/2,H/2,0,W/2,H/2,R);gr.addColorStop(0,'rgba('+g[0]+','+g[1]+')');gr.addColorStop(g[2],'rgba('+g[0]+',0)');x.fillStyle=gr;x.fillRect(0,0,W,H)}
     var z=Math.min(W,H)*.88;x.drawImage(GGB.c[k][v],(W-z)/2,H*.06,z,z);sp[k][v]=c})});
-  GGB.cell={key:key,w:w,h:h,dpr:dpr,W:W,H:H,sp:sp};
+  GGB.cell={key:key,w:w,h:h,dpr:dpr,W:W,H:H,sp:sp};slotRoot().classList.add('baked');
   GR.forEach(function(r){if(r.cv){r.cv.width=W;r.cv.height=H*3}else rMake(r)})}
-function rMake(r){var C=GGB.cell;if(!C||!r.el||!r.strip)return;r.cv=document.createElement('canvas');r.cv.className='gg-rc';r.cv.width=C.W;r.cv.height=C.H*3;r.cx=r.cv.getContext('2d');r.el.insertBefore(r.cv,r.strip.nextSibling)}
+function rMake(r){var C=GGB.cell;if(!C||!r.el||!r.strip)return;r.cv=document.createElement('canvas');r.cv.className='gg-rc';r.cv.width=C.W;r.cv.height=C.H*3;r.cx=r.cv.getContext('2d');r.cv.style.display='none';r.el.insertBefore(r.cv,r.strip.nextSibling)}
 function rCanvas(r){var C=GGB.cell;if(!r.cv)rMake(r);
-  if(!r.cvOn){r.cvOn=true;r.cv.style.visibility='visible';r.strip.style.visibility='hidden'}
+  if(!r.cvOn){r.cvOn=true;r.cv.style.display='block';r.strip.style.visibility='hidden'}
   var x=r.cx||r.cv.getContext('2d'),len=r.s.length,bl=r.el.classList.contains('blur')?'b':'s',f=Math.floor(r.p);x.clearRect(0,0,r.cv.width,r.cv.height);
   for(var k=f-1;k<=f+3;k++){var c=C.sp[r.s[((k%len)+len)%len]];if(c)x.drawImage(c[bl],0,Math.round((k-r.p)*C.H))}}
 function rDraw(r){if(!r.strip)return;var len=r.s.length;
   if(r.mode&&r.mode!=='idle'&&GGB.cell){rCanvas(r);return}
-  if(r.cvOn){r.cvOn=false;r.cv.style.visibility='hidden';r.strip.style.visibility=''}
+  if(r.cvOn){r.cvOn=false;r.cv.style.display='none';r.strip.style.visibility=''}
   var sm=!!GGB.cell,span=sm?1:16;
   if(r.base==null||r.p<r.base||r.p>=r.base+span){r.base=Math.floor(r.p)-(sm?0:14);var h='';for(var k=r.base-1;k<=r.base+(sm?3:19);k++)h+=gc(r.s[((k%len)+len)%len]);r.strip.innerHTML=h}
   r.strip.style.transform='translate3d(0,'+(-(r.p-(r.base-1))*r.h).toFixed(2)+'px,0)'}
@@ -2197,7 +2200,7 @@ function reelLanded(r){var res=SL.res;if(!res)return;ggTag('land');var col=res.g
   if(sp)col.forEach(function(s,row){if(s==='TICKET'||s==='DRAFT'){var c=cellEl(r.i,row);if(c)c.classList.add('pop')}});
   SL.landed++;if(SL.landed===5){aHum(false);ggPerfEnd('spin');setTimeout(ggDone,140)}}
 function ggPops(off){[].forEach.call(document.querySelectorAll('#ggReels .gc.pop'),function(c){c.classList.remove('pop')})}
-function ggClearMarks(){[].forEach.call(document.querySelectorAll('#ggReels .gc.win,#ggReels .gc.dim'),function(c){c.classList.remove('win','dim')});var sv=document.getElementById('ggLines');if(sv)sv.innerHTML=''}
+function ggClearMarks(){[].forEach.call(document.querySelectorAll('#ggReels .gc.win,#ggReels .gc.dim'),function(c){c.classList.remove('win','dim')});var sv=document.getElementById('ggLines');if(sv){sv.innerHTML='';sv.classList.remove('on')}}
 function ggMark(cells){var on={};cells.forEach(function(c){on[c[0]+'-'+c[1]]=1});
   for(var i=0;i<5;i++)for(var row=0;row<3;row++){var e=cellEl(i,row);if(!e)continue;e.classList.toggle('win',!!on[i+'-'+row]);e.classList.toggle('dim',!on[i+'-'+row])}}
 function ggLineSvg(items){var box=document.getElementById('ggReels'),sv=document.getElementById('ggLines');if(!box||!sv||!SL.pt)return;var G=GG_GEO,B=G?{width:G.w,height:G.h,left:0,top:0}:box.getBoundingClientRect(),html='';
@@ -2206,7 +2209,7 @@ function ggLineSvg(items){var box=document.getElementById('ggReels'),sv=document
     GR.forEach(function(r,i){var c=G?null:r.el.getBoundingClientRect(),x=G?G.x[i]:c.left-B.left+c.width/2,y=(G?0:c.top-B.top)+r.h*(ln[i]+.5);if(!i)pts.push([0,y]);pts.push([x,y]);if(i===4)pts.push([B.width,y])});
     var d=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
     html+='<polyline points="'+d+'" fill="none" stroke="#000" stroke-opacity=".6" stroke-width="7.5" stroke-linejoin="round" stroke-linecap="round"/><polyline points="'+d+'" fill="none" stroke="'+GG_COL[it.line]+'" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>'});
-  sv.innerHTML=html}
+  sv.innerHTML=html;sv.classList.toggle('on',!!html)}
 function ggShowAll(items){var all=[];items.forEach(function(it){all=all.concat(it.cells)});ggMark(all);ggLineSvg(items)}
 function ggCycle(){ggTag('lines');ggStopCycle();var it=SL.items;if(!it||!it.length)return;if(it.length===1){ggMark(it[0].cells);ggLineSvg(it);ggMsg(it[0].label,'hot');return}
   var k=0,step=function(){ggTag('lines');var x=it[k%it.length];ggMark(x.cells);ggLineSvg([x]);ggMsg(x.label,'hot');k++};step();SL.cycleT=setInterval(step,1500)}
@@ -2990,6 +2993,9 @@ function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');c
 
 /* ---------- render + events ---------- */
 function render(){
+  /* While the slot is open the page behind it is hidden and frozen (Jayson, 2026-11-09: timed refreshes of the Book and
+     live scores were rebuilding the whole page behind the cabinet, freezing spins for up to a second). It catches up on close. */
+  if(typeof SL==='object'&&SL&&SL.open){S.behind=true;return}
   document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===S.tab);t.setAttribute('aria-current',t.dataset.tab===S.tab?'page':'false')});
   view.innerHTML=S.tab==='leagues'?leaguesV3():(!isHomeLg()&&(LG.loading||LG.err))?lgWait():S.tab==='home'?homeV3():S.tab==='league'?leagueV3():S.tab==='records'?hallV3():S.tab==='book'?(isHomeLg()?book():homeOnly('The Sportsbook')):meV3();
   document.body.classList.toggle('other',!isHomeLg());var tl=$('#tbLg');if(tl)tl.textContent=(isHomeLg()?D.league.name:LG.name||D.league.name)||'';
